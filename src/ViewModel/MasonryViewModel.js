@@ -1,4 +1,5 @@
 import { NOT_FOUND } from "../utils/value";
+import isFunction from "../vendors/isFunction";
 
 class MasonryViewModel {
   constructor({dataViewModel, node, itemCache}) {
@@ -36,7 +37,8 @@ class MasonryViewModel {
   }
 
   scrollToSpecialItem(itemId) {
-    if (this.masonry) {
+    if (this.masonry &&
+    this.masonry.current) {
       this.masonry.current.scrollToSpecialItem(itemId);
     }
   }
@@ -127,7 +129,7 @@ class MasonryViewModel {
 
   // region GET-SET
   get getDataList() {
-    return this.dataViewModel.getData;
+    return this.dataViewModel.getDataList;
   }
 
   get getMasonry() {
