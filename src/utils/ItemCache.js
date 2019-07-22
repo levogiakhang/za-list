@@ -1,7 +1,7 @@
 import { NOT_FOUND } from "./value";
 
 class ItemCache {
-  constructor({defaultHeight}) {
+  constructor(defaultHeight) {
     this.defaultHeight = defaultHeight;
 
     // A map stores `index -> itemId`
