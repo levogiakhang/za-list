@@ -76,6 +76,12 @@ class Masonry extends React.Component<Props> {
     this.oldLastItemBeforeDebut = undefined;
     this.isDataChange = false;
 
+    this.isStableAfterScrollToSpecialItem = false;
+    this.itemAddedAnim = {
+      itemId: undefined,
+      anim: undefined,
+    };
+
     this.estimateTotalHeight = 0;
     this.oldEstimateTotalHeight = 0;
 
@@ -149,7 +155,7 @@ class Masonry extends React.Component<Props> {
     }
     this._updateItemsPosition();
     console.log(data);
-    console.log(this.itemCache.getItemsMap);
+    console.log(this.viewModel.getItemCache.getItemsMap);
   }
 
   componentWillUnmount() {
@@ -273,6 +279,15 @@ class Masonry extends React.Component<Props> {
   invokeAnim(itemId, animationNames, timingResetAnimation) {
     const el = this.masonry.firstChild.children.namedItem(itemId);
     this.appendStyle(el, animationNames);
+    setTimeout(
+      () => {
+        this.isStableAfterScrollToSpecialItem = true;
+        this.itemAddedAnim = {
+          itemId: itemId,
+          anim: animationNames,
+        };
+      }, timingResetAnimation
+    );
   }
 
   appendStyle = (el, animationNames) => {
@@ -282,7 +297,7 @@ class Masonry extends React.Component<Props> {
       typeof el.classList.contains === "function" &&
       !el.classList.contains(`${animationNames}`) &&
       typeof el.setAttribute === "function") {
-      el.setAttribute("class", `${animationNames}`)
+      el.setAttribute("class", `${animationNames}`);
     }
   };
 
@@ -327,13 +342,14 @@ class Masonry extends React.Component<Props> {
     } = this.props;
 
     const data = this.viewModel.getDataList;
+    const itemCache = this.viewModel.getItemCache;
     const {scrollTop} = this.state;
     const removeCallback = this.viewModel.onRemoveItem;
 
     const curItem = this._getItemIdFromPosition(scrollTop);
     this.firstItemInViewport = {
       itemId: curItem,
-      disparity: scrollTop - this.itemCache.getPosition(curItem)
+      disparity: scrollTop - itemCache.getPosition(curItem)
     };
 
     if (isVirtualized) {
@@ -457,7 +473,7 @@ class Masonry extends React.Component<Props> {
           this.isLoadingTop = true;
           this.firstItemInViewportBeforeLoadTop = {
             itemId: curItem,
-            disparity: scrollTop - this.itemCache.getPosition(curItem)
+            disparity: scrollTop - itemCache.getPosition(curItem)
           };
           this.viewModel.getLoadMoreTopCallBack();
         } else {
@@ -536,7 +552,7 @@ class Masonry extends React.Component<Props> {
 
   componentDidUpdate() {
     const data = this.viewModel.getDataList;
-    const {height, isVirtualized} = this.props;
+    const {height} = this.props;
     const {scrollTop} = this.state;
 
     if (scrollTop > LOAD_MORE_TOP_TRIGGER_POS) {
@@ -706,10 +722,18 @@ class Masonry extends React.Component<Props> {
 
   _onScroll() {
     const {height} = this.props;
+
     if (this.flat) {
       this.masonry.scrollTop = this.posNeedToScr;
       this.flat = false;
     }
+
+    if(this.isStableAfterScrollToSpecialItem) {
+      const el = this.masonry.firstChild.children.namedItem(this.itemAddedAnim.itemId);
+      this.removeStyle(el, this.itemAddedAnim.anim);
+      this.isStableAfterScrollToSpecialItem = false;
+    }
+
     const eventScrollTop = this.masonry.scrollTop;
     const scrollTop = Math.min(
       Math.max(0, this.estimateTotalHeight - height),
@@ -809,7 +833,7 @@ class Masonry extends React.Component<Props> {
 
     if (!!data.length) {
       let currentItemId = itemId;
-      const currentIndex = this.itemCache.getIndex(itemId);
+      const currentIndex = itemCache.getIndex(itemId);
 
       if (currentIndex !== NOT_FOUND) {
         // TODO: High cost
