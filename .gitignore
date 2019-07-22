@@ -18,6 +18,15 @@
 .env.test.local
 .env.production.local
 
+## File-based project format:
+*.iws
+
+# Idea
+.idea/
+
+# IntelliJ
+/out/
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
