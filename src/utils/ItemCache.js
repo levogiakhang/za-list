@@ -1,7 +1,9 @@
 import { NOT_FOUND } from "./value";
 
 class ItemCache {
-  constructor() {
+  constructor({defaultHeight}) {
+    this.defaultHeight = defaultHeight;
+
     // A map stores `index -> itemId`
     this.__indexMap__ = new Map();
 
@@ -14,6 +16,10 @@ class ItemCache {
     this.__itemsMap__.clear();
   }
 
+  get getDefaultHeight(): number {
+    return this.defaultHeight;
+  }
+
   getItemId(index: number): string {
     return this.__indexMap__.has(index) ? this.__indexMap__.get(index) : NOT_FOUND;
   }
@@ -24,10 +30,6 @@ class ItemCache {
 
   getIndex(itemId: string): number {
     return this.__itemsMap__.has(itemId) ? this.__itemsMap__.get(itemId).index : NOT_FOUND
-  }
-
-  getDefaultHeight(itemId: string): number {
-    return this.__itemsMap__.has(itemId) ? this.__itemsMap__.get(itemId).defaultHeight : NOT_FOUND
   }
 
   getHeight(itemId: string): number {
@@ -50,25 +52,34 @@ class ItemCache {
     return this.__itemsMap__;
   }
 
+  updateItemHeight(itemId: string, newHeight) {
+    this.updateItemOnMap(
+      itemId,
+      this.getIndex(itemId),
+      newHeight,
+      this.getPosition(itemId),
+      true
+    );
+  }
+
   deleteItem(itemIndex, itemId, data) {
     // Update index map
     this.updateIndexMap(itemIndex - 1, data);
     this.__indexMap__.delete(data.length);
 
     // Update items map.
-    this.updateItemsMap(itemIndex - 1, data);
+    this.updateItemsMap(itemIndex - 1, data.length);
     this.__itemsMap__.delete(itemId);
   }
 
-  updateItemOnMap(itemId: string, itemIndex: number, defaultHeight: number, itemHeight: number, itemPosition: number, isRendered: boolean) {
+  updateItemOnMap(itemId: string, itemIndex: number, itemHeight: number, itemPosition: number, isRendered: boolean) {
     this.__itemsMap__.set(
       itemId,
       {
         index: itemIndex,
-        defaultHeight: defaultHeight,
         height: itemHeight,
         position: itemPosition,
-        isDebut: isRendered
+        isRendered: isRendered
       });
   }
 
@@ -76,16 +87,15 @@ class ItemCache {
     this.__indexMap__.set(index, itemId);
   }
 
-  updateItemsMap(startIndex: number, data: Array) {
-    if (!!data.length) {
+  updateItemsMap(startIndex: number, dataLength: number) {
+    if (dataLength) {
       let itemId;
       if (startIndex < 0) startIndex = 0;
-      for (let i = startIndex; i <= data.length - 1; i++) {
+      for (let i = startIndex; i <= dataLength - 1; i++) {
         itemId = this.getItemId(i);
         this.updateItemOnMap(
           itemId,
           i,
-          this.getDefaultHeight(itemId),
           this.getHeight(itemId),
           this.getPosition(itemId),
           this.isRendered(itemId));
