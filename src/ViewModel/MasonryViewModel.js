@@ -39,7 +39,12 @@ class MasonryViewModel {
   scrollToSpecialItem(itemId) {
     if (this.masonry &&
     this.masonry.current) {
-      this.masonry.current.scrollToSpecialItem(itemId);
+      if (!this.itemCache.hasItem(itemId)) {
+        // Send a notification to outside.
+        console.log('Dont have this item');
+      } else {
+        this.masonry.current.scrollToSpecialItem(itemId);
+      }
     }
   }
 
@@ -102,8 +107,11 @@ class MasonryViewModel {
     this.dataViewModel.insertItem(index, item);
   }
 
-  deleteItem(index: number, deleteCount: number = 1) {
-    this.dataViewModel.deleteItem(index, deleteCount);
+  deleteItem(itemId: string, deleteCount: number = 1) {
+    const itemIndex = this.itemCache.getIndex(itemId);
+    this.dataViewModel.deleteItem(itemIndex, deleteCount);
+    // Update index to id map after remove an item.
+    this.itemCache.deleteItem(itemIndex, itemId, this.dataViewModel.getDataList);
   }
 
   updateData(data) {

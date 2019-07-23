@@ -216,7 +216,6 @@ class Masonry extends React.Component<Props> {
   }
 
   onRemoveItem(itemId: string) {
-    const data = this.viewModel.getDataList;
     const itemCache = this.viewModel.getItemCache;
     const itemIndex = itemCache.getIndex(itemId);
 
@@ -225,11 +224,9 @@ class Masonry extends React.Component<Props> {
 
       // remove an item means this item has new height equals 0
       this._updateItemsOnChangedHeight(itemId, 0);
-      // Remove item on dataViewModel list, rendered maps and position maps
-      this.viewModel.deleteItem(itemIndex);
 
-      // Update index to id map after remove an item.
-      itemCache.deleteItem(itemIndex, itemId, data);
+      // Remove item on dataViewModel list, rendered maps and position maps
+      this.viewModel.deleteItem(itemId);
 
       this._updateEstimatedHeight(-itemHeight);
       this._updateOldData();
@@ -248,8 +245,6 @@ class Masonry extends React.Component<Props> {
     } = this.props;
 
     const itemCache = this.viewModel.getItemCache;
-
-    if (!itemCache.hasItem(itemId)) return;
 
     if (isVirtualized) {
       if (itemCache.isRendered(itemId)) {
