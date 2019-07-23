@@ -110,7 +110,6 @@ class MasonryViewModel {
   deleteItem(itemId: string, deleteCount: number = 1) {
     const itemIndex = this.itemCache.getIndex(itemId);
     this.dataViewModel.deleteItem(itemIndex, deleteCount);
-    // Update index to id map after remove an item.
     this.itemCache.deleteItem(itemIndex, itemId, this.dataViewModel.getDataList);
   }
 
