@@ -3,7 +3,11 @@
 import React from 'react';
 import './scss/Masonry.scss';
 import './anim/index.scss';
-import { NOT_FOUND, OUT_OF_RANGE, DEBOUNCING_TIMER } from "../utils/value";
+import {
+  NOT_FOUND,
+  OUT_OF_RANGE,
+  DEBOUNCING_TIMER
+} from "../utils/value";
 import CellMeasurer from '../CellMeasurer/CellMeasurer.js';
 import isFunction from "../vendors/isFunction";
 import debounce from "../vendors/debounce.js";
@@ -119,7 +123,7 @@ class Masonry extends React.Component<Props> {
   initialize() {
     const {isVirtualized} = this.props;
     const data = this.viewModel.getDataList;
-    const itemCache =this.viewModel.getItemCache;
+    const itemCache = this.viewModel.getItemCache;
 
     this._updateOldData();
     if (Array.isArray(data)) {
@@ -301,14 +305,25 @@ class Masonry extends React.Component<Props> {
     }
   };
 
+  hasWhiteSpace = (s) => {
+    return /\s/g.test(s);
+  };
+
   removeStyle = (el, animationNames) => {
+    const arrAnim = this.hasWhiteSpace(animationNames) ?
+      animationNames.split(' ') :
+      animationNames;
+
     if (
       el &&
       el.classList &&
       typeof el.classList.contains === "function" &&
-      el.classList.contains(`${animationNames}`) &&
       typeof el.classList.remove === "function") {
-      el.classList.remove(`${animationNames}`);
+      for (let i = 0; i < arrAnim.length; i++) {
+        if (el.classList.contains(arrAnim[i])) {
+          el.classList.remove(arrAnim[i]);
+        }
+      }
     }
   };
 
@@ -728,7 +743,7 @@ class Masonry extends React.Component<Props> {
       this.flat = false;
     }
 
-    if(this.isStableAfterScrollToSpecialItem) {
+    if (this.isStableAfterScrollToSpecialItem) {
       const el = this.masonry.firstChild.children.namedItem(this.itemAddedAnim.itemId);
       this.removeStyle(el, this.itemAddedAnim.anim);
       this.isStableAfterScrollToSpecialItem = false;
