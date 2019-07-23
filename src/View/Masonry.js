@@ -32,7 +32,7 @@ type Props = {
   timingResetAnimation?: number,
 };
 
-const LOAD_MORE_TOP_TRIGGER_POS = 200;
+const LOAD_MORE_TOP_TRIGGER_POS = 20;
 let LOAD_MORE_BOTTOM_TRIGGER_POS = 0;
 
 class Masonry extends React.Component<Props> {
@@ -191,23 +191,10 @@ class Masonry extends React.Component<Props> {
   }
 
   onAddItem(index, item) {
-    const data = this.viewModel.getDataList;
     const itemCache = this.viewModel.getItemCache;
     const {isVirtualized} = this.props;
 
-    const newItemPos = parseInt(index) === 0 ?
-      0 :
-      itemCache.getPosition(data[index - 1].itemId) + itemCache.getHeight(data[index - 1].itemId);
-
     this.viewModel.insertItem(index, item);
-    itemCache.updateIndexMap(index - 1, data);
-    itemCache.updateItemOnMap(
-      item.itemId,
-      data.indexOf(item),
-      itemCache.defaultHeight,
-      newItemPos,
-      false);
-    itemCache.updateItemsMap(index - 1, data.length);
 
     if (!isVirtualized) {
       this._addStaticItemToChildren(index, item)
@@ -367,6 +354,7 @@ class Masonry extends React.Component<Props> {
         !this.isLoadingTop &&
         !this.preventLoadTop
       ) {
+        this.viewModel.shouldLoadMoreTop();
         if (typeof this.viewModel.getLoadMoreTopCallBack === 'function') {
           this.isLoadingTop = true;
           this.firstItemInViewportBeforeLoadTop = {
@@ -377,7 +365,6 @@ class Masonry extends React.Component<Props> {
         } else {
           console.warn("loadMoreTopFunc callback is not a function")
         }
-        console.log('============load top===============');
       }
 
       // trigger load more bottom
@@ -388,6 +375,7 @@ class Masonry extends React.Component<Props> {
         !this.isLoadingBottom &&
         !this.preventLoadBottom
       ) {
+        this.viewModel.shouldLoadMoreBottom();
         if (typeof this.viewModel.getLoadMoreBottomCallBack === 'function') {
           this.isLoadingBottom = true;
           this.viewModel.getLoadMoreBottomCallBack();
@@ -476,6 +464,7 @@ class Masonry extends React.Component<Props> {
         !this.isLoadingTop &&
         !this.preventLoadTop
       ) {
+        this.viewModel.shouldLoadMoreTop();
         if (typeof this.viewModel.getLoadMoreTopCallBack === 'function') {
           this.isLoadingTop = true;
           this.firstItemInViewportBeforeLoadTop = {
@@ -486,7 +475,6 @@ class Masonry extends React.Component<Props> {
         } else {
           console.warn("loadMoreTopFunc callback is not a function")
         }
-        console.log('============load top===============');
       }
 
       // trigger load more bottom
@@ -497,6 +485,7 @@ class Masonry extends React.Component<Props> {
         !this.isLoadingBottom &&
         !this.preventLoadBottom
       ) {
+        this.viewModel.shouldLoadMoreBottom();
         if (typeof this.viewModel.getLoadMoreBottomCallBack === 'function') {
           this.isLoadingBottom = true;
           this.viewModel.getLoadMoreBottomCallBack();

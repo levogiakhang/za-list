@@ -108,7 +108,21 @@ class MasonryViewModel {
   }
 
   insertItem(index: number, item) {
+    const data = this.dataViewModel.getDataList;
+    const newItemPos = parseInt(index) === 0 ?
+      0 :
+      this.itemCache.getPosition(data[index - 1].itemId) + this.itemCache.getHeight(data[index - 1].itemId);
+
     this.dataViewModel.insertItem(index, item);
+
+    this.itemCache.updateIndexMap(index - 1, data);
+    this.itemCache.updateItemOnMap(
+      item.itemId,
+      data.indexOf(item),
+      this.itemCache.defaultHeight,
+      newItemPos,
+      false);
+    this.itemCache.updateItemsMap(index - 1, data.length);
   }
 
   deleteItem(itemId: string, deleteCount: number = 1) {
@@ -141,6 +155,14 @@ class MasonryViewModel {
     }
   }
 
+  shouldLoadMoreTop() {
+    console.log('============load top===============');
+  }
+
+  shouldLoadMoreBottom() {
+    console.log('============load bottom===============');
+  }
+
   // region GET-SET
   get getDataList() {
     return this.dataViewModel.getDataList;
@@ -169,10 +191,6 @@ class MasonryViewModel {
 
   setMasonry(masonry) {
     this.masonry = masonry;
-  }
-
-  setCellCache(cache) {
-    this.cellCache = cache;
   }
 
   // endregion
