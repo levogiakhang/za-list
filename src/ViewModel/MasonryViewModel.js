@@ -38,7 +38,7 @@ class MasonryViewModel {
 
   scrollToSpecialItem(itemId) {
     if (this.masonry &&
-    this.masonry.current) {
+      this.masonry.current) {
       if (!this.itemCache.hasItem(itemId)) {
         // Send a notification to outside.
         console.log('Dont have this item');
@@ -49,13 +49,15 @@ class MasonryViewModel {
   }
 
   scrollToTop() {
-    if (this.masonry) {
+    if (this.masonry &&
+      this.masonry.current) {
       this.masonry.current.scrollToTop();
     }
   }
 
   scrollToBottom() {
-    if (this.masonry) {
+    if (this.masonry &&
+      this.masonry.current) {
       this.masonry.current.scrollToBottom();
     }
   }
@@ -82,7 +84,9 @@ class MasonryViewModel {
   }
 
   onUpdateItem(itemId, item) {
-    if (this.masonry && this.isIdAlready(itemId)) {
+    if (this.masonry &&
+      this.masonry.current &&
+      this.isIdAlready(itemId)) {
       const itemIndex = this.masonry.current.itemCache.getIndex(itemId);
       if (itemIndex !== NOT_FOUND) {
         this.getDataList[itemIndex] = item;
@@ -114,7 +118,8 @@ class MasonryViewModel {
   }
 
   updateData(data) {
-    if (this.masonry) {
+    if (this.masonry &&
+      this.masonry.current) {
       this.clear();
       this.setData(data);
       this.masonry.current.initialize();
@@ -123,13 +128,15 @@ class MasonryViewModel {
   }
 
   appendStyle(el, animationNames) {
-    if (this.masonry) {
+    if (this.masonry &&
+      this.masonry.current) {
       this.masonry.current.appendStyle(el, animationNames);
     }
   }
 
   removeStyle(el, animationNames) {
-    if (this.masonry) {
+    if (this.masonry &&
+      this.masonry.current) {
       this.masonry.current.removeStyle(el, animationNames);
     }
   }
