@@ -11,6 +11,7 @@ import {
 import CellMeasurer from '../CellMeasurer/CellMeasurer.js';
 import isFunction from "../vendors/isFunction";
 import debounce from "../vendors/debounce.js";
+import hasWhiteSpace from "../utils/hasWhiteSpace";
 
 type Props = {
   className?: string,
@@ -300,12 +301,8 @@ class Masonry extends React.Component<Props> {
     }
   };
 
-  hasWhiteSpace = (s) => {
-    return /\s/g.test(s);
-  };
-
   removeStyle = (el, animationNames) => {
-    const arrAnim = this.hasWhiteSpace(animationNames) ?
+    const arrAnim = hasWhiteSpace(animationNames) ?
       animationNames.split(' ') :
       animationNames;
 
