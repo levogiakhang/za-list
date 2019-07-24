@@ -190,7 +190,7 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  updateCacheFromOtherViewModel(index, item) {
+  addChildrenOnDataChangedFromOtherViewModel(index, item) {
     this._updateEstimatedHeight(this.viewModel.getItemCache.defaultHeight);
 
     if (!this.props.isVirtualized) {

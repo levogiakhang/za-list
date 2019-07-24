@@ -25,30 +25,33 @@ class MasonryViewModel {
   }
 
   onDataChanged = (index: number, item: Object, senderId?: string) => {
-    if (this.masonry &&
-      this.masonry.current &&
-      isFunction(this.masonry.current.reRender)) {
-      if(senderId && senderId !== this.getRefId) {
-        const data = this.dataViewModel.getDataList;
-        const newItemPos = parseInt(index) === 0 ?
-          0 :
-          this.itemCache.getPosition(data[index - 1].itemId) + this.itemCache.getHeight(data[index - 1].itemId);
-
-        this.itemCache.updateIndexMap(index - 1, data);
-        this.itemCache.updateItemOnMap(
-          item.itemId,
-          data.indexOf(item),
-          this.itemCache.defaultHeight,
-          newItemPos,
-          false);
-        this.itemCache.updateItemsMap(index - 1, data.length);
-
-        this.masonry.current.updateCacheFromOtherViewModel(index, item);
+    if (senderId && senderId !== this.getRefId) {
+      if (this.masonry &&
+        this.masonry.current &&
+        isFunction(this.masonry.current.reRender) &&
+        isFunction(this.masonry.current.addChildrenOnDataChangedFromOtherViewModel)) {
+        this.updateCacheFromOtherViewModel(index, item);
+        this.masonry.current.addChildrenOnDataChangedFromOtherViewModel(index, item);
         this.masonry.current.reRender();
-        // add item cache and children on view;
       }
     }
   };
+
+  updateCacheFromOtherViewModel(index, item) {
+    const data = this.dataViewModel.getDataList;
+    const newItemPos = parseInt(index) === 0 ?
+      0 :
+      this.itemCache.getPosition(data[index - 1].itemId) + this.itemCache.getHeight(data[index - 1].itemId);
+
+    this.itemCache.updateIndexMap(index - 1, data);
+    this.itemCache.updateItemOnMap(
+      item.itemId,
+      data.indexOf(item),
+      this.itemCache.defaultHeight,
+      newItemPos,
+      false);
+    this.itemCache.updateItemsMap(index - 1, data.length);
+  }
 
   onLoadMoreTop(fn) {
     if (typeof fn === 'function') {
