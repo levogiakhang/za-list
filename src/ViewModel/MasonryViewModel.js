@@ -24,12 +24,29 @@ class MasonryViewModel {
     }
   }
 
-  onDataChanged = () => {
-    console.log(this.masonry);
+  onDataChanged = (index: number, item: Object, senderId?: string) => {
     if (this.masonry &&
       this.masonry.current &&
       isFunction(this.masonry.current.reRender)) {
-      this.masonry.current.reRender();
+      if(senderId && senderId !== this.getRefId) {
+        const data = this.dataViewModel.getDataList;
+        const newItemPos = parseInt(index) === 0 ?
+          0 :
+          this.itemCache.getPosition(data[index - 1].itemId) + this.itemCache.getHeight(data[index - 1].itemId);
+
+        this.itemCache.updateIndexMap(index - 1, data);
+        this.itemCache.updateItemOnMap(
+          item.itemId,
+          data.indexOf(item),
+          this.itemCache.defaultHeight,
+          newItemPos,
+          false);
+        this.itemCache.updateItemsMap(index - 1, data.length);
+
+        this.masonry.current.updateCacheFromOtherViewModel(index, item);
+        this.masonry.current.reRender();
+        // add item cache and children on view;
+      }
     }
   };
 
@@ -122,7 +139,7 @@ class MasonryViewModel {
       0 :
       this.itemCache.getPosition(data[index - 1].itemId) + this.itemCache.getHeight(data[index - 1].itemId);
 
-    this.dataViewModel.insertItem(index, item);
+    this.dataViewModel.insertItem(index, item, this.getRefId);
 
     this.itemCache.updateIndexMap(index - 1, data);
     this.itemCache.updateItemOnMap(
@@ -173,6 +190,16 @@ class MasonryViewModel {
   }
 
   // region GET-SET
+  get getRefId() {
+    if (
+      this.masonry &&
+      this.masonry.current &&
+      this.masonry.current.props) {
+      return this.masonry.current.props.id;
+    }
+    return null;
+  }
+
   get getDataList() {
     return this.dataViewModel.getDataList;
   }

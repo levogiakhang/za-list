@@ -33,10 +33,10 @@ class DataViewModel {
       this.storageEvent = {...this.storageEvent, [eventName]: [(callback)]};
   }
 
-  onDataChanged() {
+  onDataChanged(index: number, item: Object, senderId: string) {
     if(Array.isArray(this.storageEvent['onDataChanged'])) {
       this.storageEvent['onDataChanged'].forEach((eventCallback) => {
-        eventCallback();
+        eventCallback(index, item, senderId);
       });
     }
   }
@@ -51,7 +51,7 @@ class DataViewModel {
     this.init();
   }
 
-  insertItem(index: number, item: Object) {
+  insertItem(index: number, item: Object, senderId?: string) {
     if (
       Array.isArray(this.data) &&
       this._isValidIndex(index) &&
@@ -59,7 +59,7 @@ class DataViewModel {
     ) {
       this.data.splice(index, 0, item);
       this.dataMap.set(item.itemId, item);
-      this.onDataChanged();
+      this.onDataChanged(index, item, senderId);
     }
   }
 
