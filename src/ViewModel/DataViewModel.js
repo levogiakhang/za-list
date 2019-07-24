@@ -2,12 +2,18 @@
 
 import { NOT_FOUND } from "../utils/value";
 
+type EventTypes = 'onDataChanged';
+type Callback = (params: any) => any;
+
 class DataViewModel {
   constructor(data) {
     this.data = data;
 
     // for purpose quick look-up
     this.dataMap = new Map();
+
+    // stores storageEvent handler
+    this.storageEvent = {};
     this.init();
   }
 
@@ -18,6 +24,20 @@ class DataViewModel {
       })
     } else {
       console.error('The initialized data is NOT an array');
+    }
+  }
+
+  addEventListener(eventName: EventTypes, callback: Callback) {
+    this.storageEvent.hasOwnProperty(eventName) ?
+      this.storageEvent[eventName].push(callback) :
+      this.storageEvent = {...this.storageEvent, [eventName]: [(callback)]};
+  }
+
+  onDataChanged() {
+    if(Array.isArray(this.storageEvent['onDataChanged'])) {
+      this.storageEvent['onDataChanged'].forEach((eventCallback) => {
+        eventCallback();
+      });
     }
   }
 
@@ -39,6 +59,7 @@ class DataViewModel {
     ) {
       this.data.splice(index, 0, item);
       this.dataMap.set(item.itemId, item);
+      this.onDataChanged();
     }
   }
 

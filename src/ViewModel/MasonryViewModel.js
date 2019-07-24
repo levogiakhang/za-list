@@ -24,6 +24,15 @@ class MasonryViewModel {
     }
   }
 
+  onDataChanged = () => {
+    console.log(this.masonry);
+    if (this.masonry &&
+      this.masonry.current &&
+      isFunction(this.masonry.current.reRender)) {
+      this.masonry.current.reRender();
+    }
+  };
+
   onLoadMoreTop(fn) {
     if (typeof fn === 'function') {
       this.loadMoreTopCallback = fn;
