@@ -3,6 +3,7 @@
 import { NOT_FOUND } from "../utils/value";
 
 type EventTypes = 'onDataChanged';
+type ActionDataChanged = 'add' | 'remove';
 type Callback = (params: any) => any;
 
 class DataViewModel {
@@ -30,11 +31,22 @@ class DataViewModel {
   addEventListener(eventName: EventTypes, callback: Callback) {
     this.storageEvent.hasOwnProperty(eventName) ?
       this.storageEvent[eventName].push(callback) :
-      this.storageEvent = {...this.storageEvent, [eventName]: [(callback)]};
+      this.storageEvent = {
+        ...this.storageEvent,
+        [eventName]: [(callback)]
+      };
   }
 
-  onDataChanged(index: number, item: Object, senderId: string) {
-    if(Array.isArray(this.storageEvent['onDataChanged'])) {
+  onDataChangedEventListener(index: number, item: Object, senderId: string, action: ActionDataChanged) {
+    if (action === 'add') {
+      this.onAddDataEventListener(index, item, senderId);
+    } else if (action === ' remove') {
+
+    }
+  }
+
+  onAddDataEventListener(index: number, item: Object, senderId: string) {
+    if (Array.isArray(this.storageEvent['onDataChanged'])) {
       this.storageEvent['onDataChanged'].forEach((eventCallback) => {
         eventCallback(index, item, senderId);
       });
@@ -59,7 +71,7 @@ class DataViewModel {
     ) {
       this.data.splice(index, 0, item);
       this.dataMap.set(item.itemId, item);
-      this.onDataChanged(index, item, senderId);
+      this.onDataChangedEventListener(index, item, senderId, 'add');
     }
   }
 

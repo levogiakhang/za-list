@@ -136,7 +136,7 @@ class MasonryViewModel {
     this.onAddItem(this.getDataList.length, item);
   }
 
-  insertItem(index: number, item) {
+  _insertItem(index: number, item) {
     const data = this.dataViewModel.getDataList;
     const newItemPos = parseInt(index) === 0 ?
       0 :
@@ -154,7 +154,7 @@ class MasonryViewModel {
     this.itemCache.updateItemsMap(index - 1, data.length);
   }
 
-  deleteItem(itemId: string, deleteCount: number = 1) {
+  _deleteItem(itemId: string, deleteCount: number = 1) {
     const itemIndex = this.itemCache.getIndex(itemId);
     this.dataViewModel.deleteItem(itemIndex, deleteCount);
     this.itemCache.deleteItem(itemIndex, itemId, this.dataViewModel.getDataList);

@@ -23,6 +23,8 @@ class Demo extends React.Component {
 
     this.itemCount = DATA_NUMBER;
 
+    this.dataViewModel = new DataViewModel(this._fakeDataList());
+
     this.handleChangeIndex = this.handleChangeIndex.bind(this);
     this.loadMoreTop = this.loadMoreTop.bind(this);
     this.loadMoreBottom = this.loadMoreBottom.bind(this);
@@ -30,8 +32,13 @@ class Demo extends React.Component {
   }
 
   componentDidMount(): void {
+    this.initList();
+    this.initListTwo();
+    this.setState({isLoading: false});
+  }
+
+  initList() {
     this.masonry = React.createRef();
-    this.dataViewModel = new DataViewModel(this._fakeDataList());
     this.itemCache = new ItemCache(150);
 
     this.viewModel = new MasonryViewModel({
@@ -40,10 +47,26 @@ class Demo extends React.Component {
       itemCache: this.itemCache
     });
 
-    this.viewModel.onLoadMoreTop(this.loadMoreTop);
-    this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
-    this.setState({isLoading: false});
-  }
+    this.dataViewModel.addEventListener('onDataChanged', this.viewModel.onDataChanged);
+    //this.viewModel.onLoadMoreTop(this.loadMoreTop);
+    //this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
+  };
+
+  initListTwo() {
+    this.masonryTwo = React.createRef();
+    this.itemCacheTwo = new ItemCache(150);
+
+    this.viewModelTwo = new MasonryViewModel({
+      dataViewModel: this.dataViewModel,
+      node: this.masonryTwo,
+      itemCache: this.itemCacheTwo
+    });
+
+    this.dataViewModel.addEventListener('onDataChanged', this.viewModelTwo.onDataChanged);
+
+    //this.viewModel.onLoadMoreTop(this.loadMoreTop);
+    //this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
+  };
 
   _fakeDataList() {
     let _fakeDataList = [];
@@ -83,6 +106,7 @@ class Demo extends React.Component {
   };
 
   static cellRender({item, index, removeCallback}) {
+    if (index < 2) return;
     return (
       <Message id={item.itemId}
                key={item.itemId}
@@ -142,7 +166,11 @@ class Demo extends React.Component {
           Add new item at
         </button>
 
-        <div style={{display: 'flex', margin: '20px', justifyContent: 'space-around'}}>
+        <div style={{
+          display: 'flex',
+          margin: '20px',
+          justifyContent: 'space-around'
+        }}>
           <button onClick={() => {
             this.viewModel.scrollToSpecialItem('id_' + this.state.moreIndex)
           }}> Scroll To
@@ -157,6 +185,25 @@ class Demo extends React.Component {
             this.viewModel.scrollToBottom()
           }}> Scroll Bottom
           </button>
+
+          <button onClick={() => {
+            this.dataViewModel.insertItem(1, this._randomItem(this.itemCount));
+            this.itemCount++;
+          }}> Insert Item
+          </button>
+
+          <button onClick={() => {
+            console.log(this.dataViewModel.getDataList);
+            console.log(this.viewModel.itemCache.getItemsMap);
+            console.log(this.viewModel.itemCache.getIndexMap);
+          }}> Show Data
+          </button>
+
+          <button onClick={() => {
+            this.dataViewModel.onDataChanged();
+          }}> Show Data VM
+          </button>
+
         </div>
       </div>
     );
@@ -166,14 +213,30 @@ class Demo extends React.Component {
     return (
       <Masonry ref={this.masonry}
                style={{marginTop: "10px", borderRadius: '5px'}}
-               id={'MasonryTwo'}
+               id={'Masonry'}
                viewModel={this.viewModel}
                cellRenderer={Demo.cellRender}
                isVirtualized={false}
                isStartAtBottom={true}
                isItemScrollToInBottom={true}
-               animationName={'zoomIn'}
-               width={1000}
+               animationName={'highlighted zoomIn'}
+               width={800}
+               timingResetAnimation={500}/>
+    )
+  };
+
+  _renderListTwo = () => {
+    return (
+      <Masonry ref={this.masonryTwo}
+               style={{marginTop: "10px", borderRadius: '5px'}}
+               id={'MasonryTwo'}
+               viewModel={this.viewModelTwo}
+               cellRenderer={Demo.cellRender}
+               isVirtualized={false}
+               isStartAtBottom={true}
+               isItemScrollToInBottom={true}
+               animationName={'highlighted zoomIn'}
+               width={800}
                timingResetAnimation={500}/>
     )
   };
@@ -185,12 +248,18 @@ class Demo extends React.Component {
         <div>Loading...</div>
         :
         <div className={'container'}>
-          <div style={{display: 'flex', justifyContent: 'space-around'}}>
-            <div>
-            </div>
-            <div>
+          <div
+            style={{display: 'flex', justifyContent: 'space-around'}}>
+            <div style={{width: '100%'}}>
               {this._renderControlView()}
-              {this._renderList()}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-around',
+                width: '100%'
+              }}>
+                {this._renderList()}
+                {this._renderListTwo()}
+              </div>
             </div>
           </div>
         </div>

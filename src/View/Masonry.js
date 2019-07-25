@@ -202,7 +202,7 @@ class Masonry extends React.Component<Props> {
     const itemCache = this.viewModel.getItemCache;
     const {isVirtualized} = this.props;
 
-    this.viewModel.insertItem(index, item);
+    this.viewModel._insertItem(index, item);
 
     if (!isVirtualized) {
       this._addStaticItemToChildren(index, item)
@@ -222,7 +222,7 @@ class Masonry extends React.Component<Props> {
       this._updateItemsOnChangedHeight(itemId, 0);
 
       // Remove item on dataViewModel list, rendered maps and position maps
-      this.viewModel.deleteItem(itemId);
+      this.viewModel._deleteItem(itemId);
 
       this._updateEstimatedHeight(-itemHeight);
       this._updateOldData();
