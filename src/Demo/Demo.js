@@ -210,7 +210,6 @@ class Demo extends React.Component {
                id={'Masonry'}
                viewModel={this.viewModel}
                cellRenderer={Demo.cellRender}
-               isVirtualized={false}
                isStartAtBottom={true}
                isItemScrollToInBottom={true}
                animationName={'highlighted zoomIn'}
