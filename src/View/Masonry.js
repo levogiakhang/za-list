@@ -52,9 +52,6 @@ class Masonry extends React.Component<Props> {
     this.viewModel = props.viewModel;
 
     /* Scroll to bottom when the first loading */
-    // Count number of render called.
-    this.firstLoadingCount = 0;
-    // Trigger is the first loading.
     this.isFirstLoadingDone = false;
     this.isLoadingTop = false;
     this.isLoadingBottom = false;
@@ -63,7 +60,6 @@ class Masonry extends React.Component<Props> {
     this.firstItemInViewportBeforeLoadTop = {};
 
     this.isDebut = false;
-    this.flat = undefined;
     this.posNeedToScr = 0;
     this.firstItemInViewportBeforeDebut = {};
 
@@ -75,7 +71,6 @@ class Masonry extends React.Component<Props> {
       lastItem: {}
     };
 
-    this.oldLastItemBeforeDebut = undefined;
     this.isDataChange = false;
 
     this.isStableAfterScrollToSpecialItem = false;
@@ -169,7 +164,6 @@ class Masonry extends React.Component<Props> {
       const dis = this.firstItemInViewport.disparity;
       if (this.isFirstLoadingDone && !itemCache.isRendered(itemId)) {
         this.firstItemInViewportBeforeDebut = {curItem, dis};
-        this.flat = itemCache.getIndex(this.oldLastItemBeforeDebut) >= itemCache.getIndex(itemId);
         this.isDebut = true;
       }
       itemCache.updateItemHeight(
