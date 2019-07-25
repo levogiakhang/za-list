@@ -3,6 +3,7 @@
 import React from 'react';
 import './scss/index.scss';
 import isFunction from "../vendors/isFunction";
+import { MessageTypes } from "./utils/FakeData";
 
 type OnRemoveItemCallback = any;
 
@@ -10,7 +11,8 @@ type MessageProps = {
   id: string;
   userAvatarUrl: string;
   userName: string;
-  messageContent: string;
+  msgType: number;
+  msgContent: string;
   sentTime: string;
   isMine: boolean;
   onRemoveItem: OnRemoveItemCallback;
@@ -29,7 +31,7 @@ export default class Message extends React.PureComponent<MessageProps> {
   }
 
   render() {
-    const {id, index, userAvatarUrl, userName, messageContent, sentTime, isMine} = this.props;
+    const {id, index, userAvatarUrl, userName, msgType, msgContent, sentTime, isMine} = this.props;
     const {isExpanded} = this.state;
 
     return (
@@ -55,7 +57,7 @@ export default class Message extends React.PureComponent<MessageProps> {
               </div>
 
               <div className="my-message-content-content">
-                <p>{messageContent}</p>
+                <p>{msgContent}</p>
               </div>
 
               <div className="my-message-content-sent-time">
@@ -96,7 +98,11 @@ export default class Message extends React.PureComponent<MessageProps> {
             </div>
 
             <div className="their-message-content-content">
-              <p>{messageContent}</p>
+              {
+                msgType === MessageTypes.MESSAGE ?
+                  <p>{msgContent}</p> :
+                  <img src={msgContent} alt={'myImg'}/>
+              }
             </div>
 
             <div className="their-message-content-sent-time">

@@ -1,7 +1,7 @@
 import React from 'react';
 import './scss/Demo.scss';
 import Masonry from '../View/Masonry.js';
-import { fakeData } from "./utils/FakeData";
+import { fakeData, MessageTypes } from "./utils/FakeData";
 import { ListMessageExample } from "./utils/ListMessageExample";
 import MasonryViewModel from "../ViewModel/MasonryViewModel";
 import Message from "./Message";
@@ -33,7 +33,6 @@ class Demo extends React.Component {
 
   componentDidMount(): void {
     this.initList();
-    this.initListTwo();
     this.setState({isLoading: false});
   }
 
@@ -48,22 +47,6 @@ class Demo extends React.Component {
     });
 
     this.dataViewModel.addEventListener('onDataChanged', this.viewModel.onDataChanged);
-    //this.viewModel.onLoadMoreTop(this.loadMoreTop);
-    //this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
-  };
-
-  initListTwo() {
-    this.masonryTwo = React.createRef();
-    this.itemCacheTwo = new ItemCache(150);
-
-    this.viewModelTwo = new MasonryViewModel({
-      dataViewModel: this.dataViewModel,
-      node: this.masonryTwo,
-      itemCache: this.itemCacheTwo
-    });
-
-    this.dataViewModel.addEventListener('onDataChanged', this.viewModelTwo.onDataChanged);
-
     //this.viewModel.onLoadMoreTop(this.loadMoreTop);
     //this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
   };
@@ -106,14 +89,14 @@ class Demo extends React.Component {
   };
 
   static cellRender({item, index, removeCallback}) {
-    if (index < 2) return;
     return (
       <Message id={item.itemId}
                key={item.itemId}
                index={index}
                userAvatarUrl={item.avatar}
                userName={item.userName}
-               messageContent={item.msgContent}
+               msgType={item.msgType}
+               msgContent={item.msgContent}
                sentTime={item.timestamp}
                isMine={item.isMine}
                onRemoveItem={removeCallback}/>
@@ -136,8 +119,15 @@ class Demo extends React.Component {
     const result = {...fakeData};
     result.itemId = result.itemId + index;
     result.userName = result.userName + index;
-    result.msgContent = ListMessageExample[Math.floor(Math.random() * 20)];
-    result.avatar = result.avatar + Math.floor(Math.random() * 99) + ".jpg";
+    const imgUrl = result.avatar;
+    const imgNum = Math.floor(Math.random() * 99) + ".jpg";
+    result.avatar = imgUrl + "thumb/men/" + Math.floor(Math.random() * 99) + ".jpg";
+    result.msgType = Math.random() > 0.5 ?
+      MessageTypes.MESSAGE :
+      MessageTypes.IMAGE;
+    result.msgContent = result.msgType === MessageTypes.MESSAGE ?
+      ListMessageExample[Math.floor(Math.random() * 20)] :
+      imgUrl + "men/" + imgNum;
     return result;
   };
 
@@ -155,17 +145,21 @@ class Demo extends React.Component {
     const {moreIndex} = this.state;
     return (
       <div className={'control-view'}>
-        <input className={'input-demo input-index'}
-               type={'number'}
-               placeholder={`Index`}
-               value={moreIndex}
-               onChange={this.handleChangeIndex}/>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+        }}>
+          <input className={'input-demo input-index'}
+                 type={'number'}
+                 placeholder={`Index`}
+                 value={moreIndex}
+                 onChange={this.handleChangeIndex}/>
 
-        <button className={'btn-control btn-add'}
-                onClick={this.onAddItem}>
-          Add new item at
-        </button>
-
+          <button className={'btn-control btn-add'}
+                  onClick={this.onAddItem}>
+            Add new item at
+          </button>
+        </div>
         <div style={{
           display: 'flex',
           margin: '20px',
@@ -225,22 +219,6 @@ class Demo extends React.Component {
     )
   };
 
-  _renderListTwo = () => {
-    return (
-      <Masonry ref={this.masonryTwo}
-               style={{marginTop: "10px", borderRadius: '5px'}}
-               id={'MasonryTwo'}
-               viewModel={this.viewModelTwo}
-               cellRenderer={Demo.cellRender}
-               isVirtualized={false}
-               isStartAtBottom={true}
-               isItemScrollToInBottom={true}
-               animationName={'highlighted zoomIn'}
-               width={800}
-               timingResetAnimation={500}/>
-    )
-  };
-
   render() {
     const {isLoading} = this.state;
     return (
@@ -258,7 +236,6 @@ class Demo extends React.Component {
                 width: '100%'
               }}>
                 {this._renderList()}
-                {this._renderListTwo()}
               </div>
             </div>
           </div>
