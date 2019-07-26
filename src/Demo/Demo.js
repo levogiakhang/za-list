@@ -213,7 +213,6 @@ class Demo extends React.Component {
                isStartAtBottom={true}
                isItemScrollToInBottom={true}
                animationName={'highlighted zoomIn'}
-               width={800}
                timingResetAnimation={500}/>
     )
   };

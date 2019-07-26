@@ -17,7 +17,6 @@ type Props = {
   className?: string,
   id?: ?string,
   style?: mixed,
-  width?: number,
   minWidth?: number,
   height?: number,
   minHeight?: number,
@@ -35,8 +34,7 @@ let LOAD_MORE_BOTTOM_TRIGGER_POS = 0;
 
 class Masonry extends React.Component<Props> {
   static defaultProps = {
-    width: 500,
-    minWidth: 500,
+    minWidth: 200,
     height: 500,
     minHeight: 500,
     style: {marginTop: "10px", borderRadius: '5px'},
@@ -377,7 +375,7 @@ class Masonry extends React.Component<Props> {
                boxSizing: 'border-box',
                overflowX: 'hidden',
                overflowY: this.estimateTotalHeight < height ? 'hidden' : 'auto',
-               width: width,
+               width: 'auto',
                minWidth: minWidth,
                height: height,
                minHeight: minHeight,
