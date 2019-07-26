@@ -29,7 +29,7 @@ type Props = {
   timingResetAnimation?: number,
 };
 
-const LOAD_MORE_TOP_TRIGGER_POS = 20;
+const LOAD_MORE_TOP_TRIGGER_POS = 50;
 let LOAD_MORE_BOTTOM_TRIGGER_POS = 0;
 
 class Masonry extends React.Component<Props> {
@@ -296,7 +296,6 @@ class Masonry extends React.Component<Props> {
     const {
       className,
       id,
-      width,
       minWidth,
       height,
       minHeight,

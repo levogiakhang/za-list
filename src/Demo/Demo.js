@@ -19,7 +19,7 @@ class Demo extends React.Component {
     };
 
     this.loadTopCount = 2;
-    this.loadBottomCount = 2;
+    this.loadBottomCount = 5;
 
     this.itemCount = DATA_NUMBER;
 
@@ -47,8 +47,8 @@ class Demo extends React.Component {
     });
 
     this.dataViewModel.addEventListener('onDataChanged', this.viewModel.onDataChanged);
-    //this.viewModel.onLoadMoreTop(this.loadMoreTop);
-    //this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
+    this.viewModel.onLoadMoreTop(this.loadMoreTop);
+    this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
   };
 
   _fakeDataList() {
@@ -228,13 +228,7 @@ class Demo extends React.Component {
             style={{display: 'flex', justifyContent: 'space-around'}}>
             <div style={{width: '100%'}}>
               {this._renderControlView()}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-around',
-                width: '100%'
-              }}>
-                {this._renderList()}
-              </div>
+              {this._renderList()}
             </div>
           </div>
         </div>
