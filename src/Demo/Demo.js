@@ -1,12 +1,13 @@
 import React from 'react';
 import './scss/Demo.scss';
 import Masonry from '../View/Masonry.js';
-import { fakeData, MessageTypes } from "./utils/FakeData";
-import { ListMessageExample } from "./utils/ListMessageExample";
 import MasonryViewModel from "../ViewModel/MasonryViewModel";
-import Message from "./Message";
+import Message from "./Message/Message";
 import DataViewModel from "../ViewModel/DataViewModel";
 import ItemCache from "../utils/ItemCache";
+import generation from "./utils/Generation";
+import { randomInclusive } from "./utils/math";
+import GConst from "./utils/values";
 
 const DATA_NUMBER = 10;
 
@@ -51,17 +52,24 @@ class Demo extends React.Component {
     this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
   };
 
-  _fakeDataList() {
+  _fakeDataList = () => {
     let _fakeDataList = [];
     for (let i = 0; i < DATA_NUMBER; i++) {
-      _fakeDataList.push(this._randomItem(i));
+      const msgType = randomInclusive(1, 3);
+      let item = undefined;
+      if (msgType === GConst.MessageTypes.Message) {
+        item = generation.generateItem(msgType, randomInclusive(0, 1) === 0);
+      } else {
+        item = generation.generateItem(msgType, randomInclusive(0, 1) === 0, 174, 368);
+      }
+      _fakeDataList.push(item);
     }
     return _fakeDataList;
-  }
+  };
 
   loadMoreTop() {
     if (this.loadTopCount > 0) {
-      const res = this._generateMoreItems(10);
+      const res = generation.generateItems(10);
       for (let i = 0; i < res.length; i++) {
         this.viewModel.addTop(res[i]);
       }
@@ -71,7 +79,7 @@ class Demo extends React.Component {
 
   loadMoreBottom() {
     if (this.loadBottomCount > 0) {
-      const res = this._generateMoreItems(10, false);
+      const res = generation.generateItems(10, false);
       for (let i = 0; i < res.length; i++) {
         this.viewModel.addBottom(res[i]);
       }
@@ -81,7 +89,13 @@ class Demo extends React.Component {
 
   onAddItem() {
     const {moreIndex} = this.state;
-    const item = this._randomItem(this.itemCount);
+    const msgType = randomInclusive(1, 3);
+    let item = undefined;
+    if (msgType === GConst.MessageTypes.Message) {
+      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0);
+    } else {
+      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0, 174, 368);
+    }
     this.itemCount++;
     if (this._isInRange(moreIndex, 0, this.dataViewModel.getDataList.length)) {
       this.viewModel.onAddItem(moreIndex, item);
@@ -90,15 +104,16 @@ class Demo extends React.Component {
 
   static cellRender({item, index, removeCallback}) {
     return (
-      <Message id={item.itemId}
+      <Message itemId={item.itemId}
                key={item.itemId}
                index={index}
-               userAvatarUrl={item.avatar}
+               userId={item.userId}
                userName={item.userName}
-               msgType={item.msgType}
-               msgContent={item.msgContent}
-               sentTime={item.timestamp}
+               userAva={item.userAva}
+               msgInfo={item.msgInfo}
+               sentTime={item.sentTime}
                isMine={item.isMine}
+               sentStatus={item.sentStatus}
                onRemoveItem={removeCallback}/>
     );
   }
@@ -113,32 +128,6 @@ class Demo extends React.Component {
 
   _isInRange = function (index: number, startIndex: number, endIndex: number): boolean {
     return index >= startIndex && index <= endIndex;
-  };
-
-  _randomItem = function (index): Object {
-    const result = {...fakeData};
-    result.itemId = result.itemId + index;
-    result.userName = result.userName + index;
-    const imgUrl = result.avatar;
-    const imgNum = Math.floor(Math.random() * 99) + ".jpg";
-    result.avatar = imgUrl + "thumb/men/" + Math.floor(Math.random() * 99) + ".jpg";
-    result.msgType = Math.random() > 0.5 ?
-      MessageTypes.MESSAGE :
-      MessageTypes.IMAGE;
-    result.msgContent = result.msgType === MessageTypes.MESSAGE ?
-      ListMessageExample[Math.floor(Math.random() * 20)] :
-      imgUrl + "men/" + imgNum;
-    return result;
-  };
-
-  _generateMoreItems(num: number) {
-    let arrayItems = [];
-    for (let i = 0; i < num; i++) {
-      arrayItems.push(this._randomItem(this.itemCount + i));
-    }
-
-    this.itemCount += num;
-    return arrayItems;
   };
 
   _renderControlView = () => {
