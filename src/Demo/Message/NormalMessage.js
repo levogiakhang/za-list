@@ -41,7 +41,8 @@ class NormalMessage extends React.Component<NormalMessageType> {
       }}>
         <div style={{
           fontSize: `${GConst.Font.Size.Small}`,
-          color: `${GConst.Color.Gray}`
+          color: `${GConst.Color.Gray}`,
+          paddingRight: GConst.Spacing[0.75],
         }}>
           {userName}
         </div>
