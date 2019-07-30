@@ -39,16 +39,19 @@ class NormalMessage extends React.Component<NormalMessageType> {
           GConst.BackgroundMessage.Their}`,
         borderRadius: `${GConst.Border.Radius}`,
       }}>
-        <div style={{
-          fontSize: `${GConst.Font.Size.Small}`,
-          color: `${GConst.Color.Gray}`,
-          paddingRight: GConst.Spacing[0.75],
-        }}>
-          {userName}
-        </div>
+        {
+          isMine ? null :
+            <div style={{
+              fontSize: `${GConst.Font.Size.Small}`,
+              color: `${GConst.Color.Gray}`,
+              paddingRight: GConst.Spacing[0.75],
+            }}>
+              {userName}
+            </div>
+        }
 
         <div style={{
-          padding: `${GConst.Padding.MsgContent.Top} 
+          padding: `${isMine ? GConst.Spacing["0"]: GConst.Padding.MsgContent.Top} 
                     ${GConst.Spacing["0"]}
                     ${GConst.Padding.MsgContent.Bottom}`,
           fontSize: `${GConst.Font.Size.Medium}`,
