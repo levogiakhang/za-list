@@ -75,7 +75,7 @@ class Image extends React.PureComponent<ImageType> {
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              padding: `${GConst.Spacing[0.5]} 
+              padding: `${GConst.Spacing[0]} 
                         ${GConst.Padding.MsgContent.Left}
                         ${GConst.Spacing[0.5]}`,
               fontSize: `${GConst.Font.Medium}`,
