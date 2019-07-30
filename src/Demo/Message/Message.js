@@ -126,15 +126,14 @@ export default class Message extends React.PureComponent<MessageProps> {
   render() {
     const {
       itemId,
-      key,
       isMine
     } = this.props;
-    const {isExpanded} = this.state;
+
 
     return (
         isMine ?
           <div id={itemId}
-               key={key}
+               key={itemId}
                style={{
                  display: 'flex',
                  justifyContent: 'flex-end',
@@ -150,7 +149,7 @@ export default class Message extends React.PureComponent<MessageProps> {
           </div>
           :
           <div id={itemId}
-               key={key}
+               key={itemId}
                style={{
                  display: 'flex',
                  paddingTop: GConst.Spacing["0.5"],
