@@ -154,6 +154,10 @@ class Masonry extends React.Component<Props> {
     const itemCache = this.viewModel.getItemCache;
 
     if (itemCache.getHeight(itemId) !== newHeight) {
+      if (!itemCache.isRendered(itemId) && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldData.firstItem)) {
+        this.isScrollBack = true;
+      }
+
       itemCache.updateItemHeight(
         itemId,
         itemCache.getIndex(itemId),
@@ -397,7 +401,6 @@ class Masonry extends React.Component<Props> {
       this.isLoadingTop = false;
     }
 
-
     if (scrollTop < this.estimateTotalHeight - height - 20 && this.isFirstLoadingDone) {
       this.preventLoadBottom = false;
     }
@@ -416,12 +419,16 @@ class Masonry extends React.Component<Props> {
       this.viewModel.enableLoadMoreTop();
     }
 
-    // Check scroll to old position when data changed.
-    if (this.oldData.oldLength !== data.length && this.isScrollBack) {
+    // Check scroll to old position when load more top.
+    if (this.isScrollBack) {
       this._scrollToItem(
         this.firstItemInViewportBeforeLoadTop.itemId,
         this.firstItemInViewportBeforeLoadTop.disparity
       );
+      this.isScrollBack = false;
+    }
+
+    if (this.oldData.oldLength !== data.length && !this.isLoadingTop) {
       this._updateOldData();
     }
   }
@@ -489,10 +496,7 @@ class Masonry extends React.Component<Props> {
    * Scroll to bottom when the first loading
    */
   _scrollToBottomAtFirst(numOfItemsInBatch = 0) {
-    if (
-      this.masonry !== undefined &&
-      this.loadDone
-    ) {
+    if (this.masonry !== undefined && this.loadDone) {
       this.isFirstLoadingDone = true;
       this.masonry.firstChild.scrollIntoView(false);
     }
