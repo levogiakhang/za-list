@@ -54,15 +54,11 @@ class MasonryViewModel {
   }
 
   onLoadMoreTop(fn) {
-    if (typeof fn === 'function') {
-      this.loadMoreTopCallback = fn;
-    }
+
   }
 
   onLoadMoreBottom(fn) {
-    if (typeof fn === 'function') {
-      this.loadMoreBottomCallback = fn;
-    }
+
   }
 
   scrollToSpecialItem(itemId) {
@@ -184,12 +180,12 @@ class MasonryViewModel {
     }
   }
 
-  shouldLoadMoreTop() {
-    console.log('============load top===============');
+  enableLoadMoreTop() {
+    console.log('============Enable Load top===============');
   }
 
-  shouldLoadMoreBottom() {
-    console.log('============load bottom===============');
+  enableLoadMoreBottom() {
+    console.log('============Enable Load bottom===============');
   }
 
   // region GET-SET
@@ -217,6 +213,18 @@ class MasonryViewModel {
 
   get getLoadMoreTopCallBack() {
     return this.loadMoreTopCallback;
+  }
+
+  setLoadMoreTopCallback(fn) {
+    if (typeof fn === 'function') {
+      this.loadMoreTopCallback = fn;
+    }
+  }
+
+  setLoadMoreBottomCallback(fn) {
+    if (typeof fn === 'function') {
+      this.loadMoreBottomCallback = fn;
+    }
   }
 
   get getLoadMoreBottomCallBack() {
