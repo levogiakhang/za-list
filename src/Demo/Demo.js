@@ -9,7 +9,7 @@ import generation from "./utils/Generation";
 import { randomInclusive } from "./utils/math";
 import GConst from "./utils/values";
 
-const DATA_NUMBER = 10;
+const DATA_NUMBER = 2;
 
 class Demo extends React.Component {
   constructor(props) {
@@ -170,7 +170,11 @@ class Demo extends React.Component {
           </button>
 
           <button onClick={() => {
-            this.dataViewModel.insertItem(1, this._randomItem(this.itemCount));
+            this.dataViewModel.insertItem(1, generation.generateItem(
+              randomInclusive(1,3),
+              randomInclusive(0,1) === 1,
+              100,
+              300));
             this.itemCount++;
           }}> Insert Item
           </button>
@@ -198,6 +202,7 @@ class Demo extends React.Component {
                style={{marginTop: "10px", borderRadius: '5px'}}
                id={'Masonry'}
                viewModel={this.viewModel}
+               height={700}
                cellRenderer={Demo.cellRender}
                isStartAtBottom={true}
                isItemScrollToInBottom={true}
