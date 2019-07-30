@@ -15,8 +15,10 @@ import hasWhiteSpace from "../utils/hasWhiteSpace";
 
 type Props = {
   className?: string,
+  innerScrollClassName?: string,
   id?: ?string,
   style?: mixed,
+  innerScrollStyle?: mixed,
   minWidth?: number,
   height?: number,
   minHeight?: number,
@@ -60,8 +62,6 @@ class Masonry extends React.Component<Props> {
     this.loadDone = false;
     this.initItemCount = 0;
 
-    // for add more above
-    this.firstItemInViewport = {};
     this.oldData = {
       oldLength: 0,
       firstItem: {},
@@ -296,11 +296,13 @@ class Masonry extends React.Component<Props> {
   render() {
     const {
       className,
+      innerScrollClassName,
       id,
       minWidth,
       height,
       minHeight,
       style,
+      innerScrollStyle,
       isScrolling,
     } = this.props;
 
@@ -308,10 +310,6 @@ class Masonry extends React.Component<Props> {
     const {scrollTop} = this.state;
 
     const curItem = this._getItemIdFromPosition(scrollTop);
-    this.firstItemInViewport = {
-      itemId: curItem,
-      disparity: scrollTop - itemCache.getPosition(curItem)
-    };
 
     if (
       scrollTop < LOAD_MORE_TOP_TRIGGER_POS &&
@@ -374,16 +372,18 @@ class Masonry extends React.Component<Props> {
                willChange: 'auto',
                ...style
              }}>
-          <div className="innerScrollContainer"
-               style={{
-                 width: '100%',
-                 height: this.estimateTotalHeight,
-                 maxWidth: '100%',
-                 maxHeight: this.estimateTotalHeight,
-                 overflow: 'hidden',
-                 position: 'relative',
-                 pointerEvents: isScrolling ? 'none' : '', // property defines whether or not an element reacts to pointer events.
-               }}>
+          <div
+            className={`${innerScrollClassName ? innerScrollClassName : 'innerScrollContainer'}`}
+            style={{
+              width: '100%',
+              height: this.estimateTotalHeight,
+              maxWidth: '100%',
+              maxHeight: this.estimateTotalHeight,
+              overflow: 'hidden',
+              position: 'relative',
+              pointerEvents: isScrolling ? 'none' : '', // property defines whether or not an element reacts to pointer events.
+              ...innerScrollStyle
+            }}>
             {this.children}
           </div>
         </div>
