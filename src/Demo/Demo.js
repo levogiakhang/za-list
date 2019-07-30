@@ -9,7 +9,7 @@ import generation from "./utils/Generation";
 import { randomInclusive } from "./utils/math";
 import GConst from "./utils/values";
 
-const DATA_NUMBER = 10;
+const DATA_NUMBER = 1;
 
 class Demo extends React.Component {
   constructor(props) {
@@ -19,7 +19,7 @@ class Demo extends React.Component {
       moreIndex: 0,
     };
 
-    this.loadTopCount = 2;
+    this.loadTopCount = 5;
     this.loadBottomCount = 5;
 
     this.itemCount = DATA_NUMBER;
@@ -47,7 +47,7 @@ class Demo extends React.Component {
       itemCache: this.itemCache
     });
 
-    this.dataViewModel.addEventListener('onDataChanged', this.viewModel.onDataChanged);
+    //this.dataViewModel.addEventListener('onDataChanged', this.viewModel.onDataChanged);
     this.viewModel.onLoadMoreTop(this.loadMoreTop);
     this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
   };
@@ -155,7 +155,7 @@ class Demo extends React.Component {
           justifyContent: 'space-around'
         }}>
           <button onClick={() => {
-            this.viewModel.scrollToSpecialItem('id_' + this.state.moreIndex)
+            this.viewModel.scrollToSpecialItem('itemId_' + this.state.moreIndex)
           }}> Scroll To
           </button>
 
