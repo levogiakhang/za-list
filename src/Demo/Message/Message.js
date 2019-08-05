@@ -6,6 +6,7 @@ import isFunction from "../../vendors/isFunction";
 import Image from "./Image";
 import NormalMessage from "./NormalMessage";
 import GConst from "../utils/values";
+import reactImg from '../resources/img/emoji.png';
 
 type OnRemoveItemCallback = any;
 
@@ -72,7 +73,8 @@ export default class Message extends React.PureComponent<MessageProps> {
                  minHeight: '34px',
                  maxHeight: '34px',
                  borderRadius: '50%',
-               }}/>
+               }}
+               onClick={this._onRemove}/>
         </div>
       </div>
     )
@@ -131,37 +133,37 @@ export default class Message extends React.PureComponent<MessageProps> {
 
 
     return (
-        isMine ?
-          <div id={itemId}
-               key={itemId}
-               style={{
-                 display: 'flex',
-                 justifyContent: 'flex-end',
-                 paddingTop: GConst.Spacing["0.5"],
-                 paddingBottom: GConst.Spacing["0.5"],
-               }}>
-            {this.renderContent()}
-            <div style={{
-              paddingLeft: GConst.Spacing["0.5"],
-            }}>
-              {this.renderAvatar()}
-            </div>
-          </div>
-          :
-          <div id={itemId}
-               key={itemId}
-               style={{
-                 display: 'flex',
-                 paddingTop: GConst.Spacing["0.5"],
-                 paddingBottom: GConst.Spacing["0.5"],
-               }}>
+      isMine ?
+        <div id={itemId}
+             key={itemId}
+             style={{
+               display: 'flex',
+               justifyContent: 'flex-end',
+               paddingTop: GConst.Spacing["0.5"],
+               paddingBottom: GConst.Spacing["0.5"],
+             }}>
+          {this.renderContent()}
+          <div style={{
+            paddingLeft: GConst.Spacing["0.5"],
+          }}>
             {this.renderAvatar()}
-            <div style={{
-              paddingLeft: GConst.Spacing["0.5"],
-            }}>
-              {this.renderContent()}
-            </div>
           </div>
+        </div>
+        :
+        <div id={itemId}
+             key={itemId}
+             style={{
+               display: 'flex',
+               paddingTop: GConst.Spacing["0.5"],
+               paddingBottom: GConst.Spacing["0.5"],
+             }}>
+          {this.renderAvatar()}
+          <div style={{
+            paddingLeft: GConst.Spacing["0.5"],
+          }}>
+            {this.renderContent()}
+          </div>
+        </div>
     );
   }
 
