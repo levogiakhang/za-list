@@ -12,6 +12,8 @@ import CellMeasurer from '../CellMeasurer/CellMeasurer.js';
 import isFunction from "../vendors/isFunction";
 import debounce from "../vendors/debounce.js";
 import hasWhiteSpace from "../utils/hasWhiteSpace";
+import removeClass from "../utils/removeClass";
+import addClass from "../utils/addClass";
 
 type Props = {
   className?: string,
@@ -251,13 +253,12 @@ class Masonry extends React.Component<Props> {
   }
 
   appendStyle = (el, animationNames) => {
-    if (
-      el &&
-      el.classList &&
-      typeof el.classList.contains === "function" &&
-      !el.classList.contains(`${animationNames}`) &&
-      typeof el.setAttribute === "function") {
-      el.setAttribute("class", `${animationNames}`);
+    const arrAnim = hasWhiteSpace(animationNames) ?
+      animationNames.split(' ') :
+      animationNames;
+
+    for (let i = 0; i < arrAnim.length; i++) {
+      addClass(el, arrAnim[i]);
     }
   };
 
@@ -266,16 +267,8 @@ class Masonry extends React.Component<Props> {
       animationNames.split(' ') :
       animationNames;
 
-    if (
-      el &&
-      el.classList &&
-      typeof el.classList.contains === "function" &&
-      typeof el.classList.remove === "function") {
-      for (let i = 0; i < arrAnim.length; i++) {
-        if (el.classList.contains(arrAnim[i])) {
-          el.classList.remove(arrAnim[i]);
-        }
-      }
+    for (let i = 0; i < arrAnim.length; i++) {
+      removeClass(el, arrAnim[i]);
     }
   };
 
