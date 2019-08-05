@@ -15,8 +15,10 @@ function removeClass(el, className) {
   } else if (typeof el.className === 'string') {
     el.className = replaceClassName(el.className, className);
   } else {
-    // eslint-disable-next-line no-mixed-operators
-    el.setAttribute('class', replaceClassName(el.className && el.className.baseVal || '', className));
+    if (typeof el.setAttribute === "function") {
+      // eslint-disable-next-line no-mixed-operators
+      el.setAttribute('class', replaceClassName(el.className && el.className.baseVal || '', className));
+    }
   }
 }
 

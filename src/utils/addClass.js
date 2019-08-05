@@ -7,11 +7,13 @@ function addClass(el, className) {
     typeof el.classList.add === "function") {
     el.classList.add(className);
   } else if (!hasClass(el, className)) {
-    if(typeof el.className === "string") {
+    if (typeof el.className === "string") {
       el.className = `${el.className}${className}`;
     } else {
-      // eslint-disable-next-line no-mixed-operators
-      el.setAttribute('class', `${el.className && el.className.baseVal || ''}${className}`);
+      if (typeof el.setAttribute === "function") {
+        // eslint-disable-next-line no-mixed-operators
+        el.setAttribute('class', `${el.className && el.className.baseVal || ''}${className}`);
+      }
     }
   }
 }
