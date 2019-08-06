@@ -288,7 +288,6 @@ class Masonry extends React.Component<Props> {
       animationNames.split(' ') :
       animationNames;
 
-    console.log(el, animationNames);
     if (typeof arrAnim === 'string') {
       removeClass(el, arrAnim);
     } else {
@@ -301,6 +300,7 @@ class Masonry extends React.Component<Props> {
   getElementFromId(itemId) {
     return this.masonry.firstChild.children.namedItem(itemId);
   }
+
   scrollToTop() {
     this.preventLoadTop = true;
     this._scrollToOffset(0);
