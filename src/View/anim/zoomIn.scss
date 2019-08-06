@@ -1,25 +1,14 @@
-$scaleRatio: 1.05;
-
 @keyframes zoomIn {
     from {
         opacity: 0;
+        transform: scale3d(0.3, 0.3, 0.3);
     }
 
     50% {
         opacity: 1;
-        transform: scale($scaleRatio);
-        -webkit-transform: scale($scaleRatio);
-        -moz-transform: scale($scaleRatio);
-        -ms-transform: scale($scaleRatio);
-        -o-transform: scale($scaleRatio);
-    }
-
-    to {
-        transform: scale(1);
-        -webkit-transform: scale(1);
     }
 }
 
 .zoomIn {
-    animation: zoomIn  0.8s linear;
+    animation: zoomIn 0.3s linear;
 }
