@@ -31,7 +31,7 @@ type Props = {
   isItemScrollToInBottom?: boolean,
   animationName?: string,
   additionAnim?: string,
-  removeAnim?: string,
+  removalAnim?: string,
   timingResetAnimation?: number,
 };
 
@@ -205,12 +205,12 @@ class Masonry extends React.Component<Props> {
     const itemCache = this.viewModel.getItemCache;
     const itemIndex = itemCache.getIndex(itemId);
 
-    const {removeAnim, timingResetAnimation} = this.props;
+    const {removalAnim, timingResetAnimation} = this.props;
 
     if (itemIndex !== NOT_FOUND) {
       const itemHeight = itemCache.getHeight(itemId);
 
-      this.appendStyle(this.getElementFromId(itemId), removeAnim);
+      this.appendStyle(this.getElementFromId(itemId), removalAnim);
       setTimeout(
         () => {
           this._updateItemsOnChangedHeight(itemId, 0);
