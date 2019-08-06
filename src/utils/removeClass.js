@@ -7,7 +7,7 @@ function replaceClassName(oriClass, classToRemove) {
 }
 
 function removeClass(el, className) {
-  if(el) {
+  if(el && el.className) {
     if (
       el.classList &&
       typeof el.classList.remove === "function") {

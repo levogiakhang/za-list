@@ -1,12 +1,17 @@
 function hasClass(el, className) {
-  if (
-    el &&
-    el.classList &&
-    typeof el.classList.contains === "function") {
-    return !!className && el.classList.contains(className);
+  let rValue = undefined;
+  if (el && el.classList) {
+    if (
+      typeof el.classList.contains === "function") {
+      rValue = !!className && el.classList.contains(className);
+    } else {
+      rValue = `${el.className.baseVal || el.className}`.indexOf(`${className}`) !== -1;
+    }
+  } else {
+    rValue = false;
   }
 
-  return `${el.className.baseVal || el.className}`.indexOf(`${className}`) !== -1;
+  return rValue;
 }
 
 export default hasClass;
