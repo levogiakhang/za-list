@@ -7,17 +7,18 @@ function replaceClassName(oriClass, classToRemove) {
 }
 
 function removeClass(el, className) {
-  if (
-    el &&
-    el.classList &&
-    typeof el.classList.remove === "function") {
-    el.classList.remove(className);
-  } else if (typeof el.className === 'string') {
-    el.className = replaceClassName(el.className, className);
-  } else {
-    if (typeof el.setAttribute === "function") {
-      // eslint-disable-next-line no-mixed-operators
-      el.setAttribute('class', replaceClassName(el.className && el.className.baseVal || '', className));
+  if(el) {
+    if (
+      el.classList &&
+      typeof el.classList.remove === "function") {
+      el.classList.remove(className);
+    } else if (typeof el.className === 'string') {
+      el.className = replaceClassName(el.className, className);
+    } else {
+      if (typeof el.setAttribute === "function") {
+        // eslint-disable-next-line no-mixed-operators
+        el.setAttribute('class', replaceClassName(el.className && el.className.baseVal || '', className));
+      }
     }
   }
 }
