@@ -30,6 +30,7 @@ type Props = {
   hideScrollToBottomBtn?: boolean,
   isItemScrollToInBottom?: boolean,
   animationName?: string,
+  additionAnim?: string,
   removeAnim?: string,
   timingResetAnimation?: number,
 };
@@ -161,6 +162,14 @@ class Masonry extends React.Component<Props> {
         this.isScrollBack = true;
       }
 
+      if(!itemCache.isRendered(itemId) && this.isFirstLoadingDone) {
+        const {additionAnim, timingResetAnimation} = this.props;
+        this.appendStyle(this.getElementFromId(itemId), additionAnim);
+        setTimeout(() => {
+          this.removeStyle(this.getElementFromId(itemId), additionAnim);
+        }, timingResetAnimation);
+      }
+
       itemCache.updateItemHeight(
         itemId,
         itemCache.getIndex(itemId),
@@ -201,7 +210,7 @@ class Masonry extends React.Component<Props> {
     if (itemIndex !== NOT_FOUND) {
       const itemHeight = itemCache.getHeight(itemId);
 
-      this.invokeAnim(itemId, removeAnim, timingResetAnimation);
+      this.appendStyle(this.getElementFromId(itemId), removeAnim);
       setTimeout(
         () => {
           this._updateItemsOnChangedHeight(itemId, 0);
@@ -233,23 +242,22 @@ class Masonry extends React.Component<Props> {
     this.preventLoadTop = true;
     this.preventLoadBottom = true;
 
-    this.invokeAnim(itemId, animationName, timingResetAnimation);
-
     if (
       itemHeight > height ||
       itemPos + itemHeight < height ||
       !isItemScrollToInBottom
     ) {
       this._scrollToItem(itemId, 0);
+      this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
     } else {
       const scrollTop = itemPos + itemHeight - height;
       this._scrollToOffset(scrollTop);
+      this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
     }
   }
 
-  invokeAnim(itemId, animationNames, timingResetAnimation) {
-    const el = this.masonry.firstChild.children.namedItem(itemId);
-    this.appendStyle(el, animationNames);
+  addAnimWhenScrollToSpecialItem(itemId, animationNames, timingResetAnimation) {
+    this.appendStyle(this.getElementFromId(itemId), animationNames);
     setTimeout(
       () => {
         this.isStableAfterScrollToSpecialItem = true;
@@ -280,11 +288,19 @@ class Masonry extends React.Component<Props> {
       animationNames.split(' ') :
       animationNames;
 
-    for (let i = 0; i < arrAnim.length; i++) {
-      removeClass(el, arrAnim[i]);
+    console.log(el, animationNames);
+    if (typeof arrAnim === 'string') {
+      removeClass(el, arrAnim);
+    } else {
+      for (let i = 0; i < arrAnim.length; i++) {
+        removeClass(el, arrAnim[i]);
+      }
     }
   };
 
+  getElementFromId(itemId) {
+    return this.masonry.firstChild.children.namedItem(itemId);
+  }
   scrollToTop() {
     this.preventLoadTop = true;
     this._scrollToOffset(0);
