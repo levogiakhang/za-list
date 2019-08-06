@@ -30,6 +30,7 @@ type Props = {
   hideScrollToBottomBtn?: boolean,
   isItemScrollToInBottom?: boolean,
   animationName?: string,
+  removeAnim?: string,
   timingResetAnimation?: number,
 };
 
@@ -195,16 +196,24 @@ class Masonry extends React.Component<Props> {
     const itemCache = this.viewModel.getItemCache;
     const itemIndex = itemCache.getIndex(itemId);
 
+    const {removeAnim, timingResetAnimation} = this.props;
+
     if (itemIndex !== NOT_FOUND) {
       const itemHeight = itemCache.getHeight(itemId);
 
-      this._updateItemsOnChangedHeight(itemId, 0);
-      this.viewModel._deleteItem(itemId);
+      this.invokeAnim(itemId, removeAnim, timingResetAnimation);
+      setTimeout(
+        () => {
+          this._updateItemsOnChangedHeight(itemId, 0);
+          this.viewModel._deleteItem(itemId);
 
-      this._updateEstimatedHeight(-itemHeight);
-      this._updateOldData();
+          this._updateEstimatedHeight(-itemHeight);
+          this._updateOldData();
 
-      this.children.splice(itemIndex, 1);
+          this.children.splice(itemIndex, 1);
+          this.setState(this.state);
+        }, timingResetAnimation
+      );
     }
   }
 
@@ -257,8 +266,12 @@ class Masonry extends React.Component<Props> {
       animationNames.split(' ') :
       animationNames;
 
-    for (let i = 0; i < arrAnim.length; i++) {
-      addClass(el, arrAnim[i]);
+    if (typeof arrAnim === 'string') {
+      addClass(el, arrAnim);
+    } else {
+      for (let i = 0; i < arrAnim.length; i++) {
+        addClass(el, arrAnim[i]);
+      }
     }
   };
 
