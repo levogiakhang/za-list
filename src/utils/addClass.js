@@ -1,7 +1,6 @@
 import hasClass from "./hasClass";
 
 function addClass(el, className) {
-  console.log(el);
   if (el && el.classList) {
     if (
       typeof el.classList.add === "function") {
