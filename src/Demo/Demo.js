@@ -9,7 +9,7 @@ import generation from "./utils/Generation";
 import { randomInclusive } from "./utils/math";
 import GConst from "./utils/values";
 
-const DATA_NUMBER = 2;
+const DATA_NUMBER = 20;
 
 class Demo extends React.Component {
   constructor(props) {
@@ -48,8 +48,8 @@ class Demo extends React.Component {
     });
 
     //this.dataViewModel.addEventListener('onDataChanged', this.viewModel.onDataChanged);
-    this.viewModel.setLoadMoreTopCallback(this.loadMoreTop);
-    this.viewModel.setLoadMoreBottomCallback(this.loadMoreBottom);
+    //this.viewModel.setLoadMoreTopCallback(this.loadMoreTop);
+    //this.viewModel.setLoadMoreBottomCallback(this.loadMoreBottom);
   };
 
   _fakeDataList = () => {

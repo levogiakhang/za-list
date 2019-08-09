@@ -1,10 +1,10 @@
+:root {
+  --itemHeight: 300px;
+}
+
 @keyframes makeInvisible {
   0% {
-    height: 300px;
-  }
-
-  50% {
-    height: 150px;
+    height: var(--itemHeight);
   }
 
   100% {

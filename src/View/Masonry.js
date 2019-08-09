@@ -162,7 +162,7 @@ class Masonry extends React.Component<Props> {
         this.isScrollBack = true;
       }
 
-      if(!itemCache.isRendered(itemId) && this.isFirstLoadingDone) {
+      if (!itemCache.isRendered(itemId) && this.isFirstLoadingDone) {
         const {additionAnim, timingResetAnimation} = this.props;
         this.appendStyle(this.getElementFromId(itemId), additionAnim);
         setTimeout(() => {
@@ -210,19 +210,43 @@ class Masonry extends React.Component<Props> {
     if (itemIndex !== NOT_FOUND) {
       const itemHeight = itemCache.getHeight(itemId);
 
-      this.appendStyle(this.getElementFromId(itemId), removalAnim);
-      setTimeout(
-        () => {
-          this._updateItemsOnChangedHeight(itemId, 0);
-          this.viewModel._deleteItem(itemId);
+      const el = document.getElementById(itemId);
+      el.style.position = "absolute";
+      el.style.top = itemCache.getPosition(itemId) + 'px';
 
-          this._updateEstimatedHeight(-itemHeight);
-          this._updateOldData();
+      const parent = el.parentElement;
 
-          this.children.splice(itemIndex, 1);
-          this.setState(this.state);
-        }, timingResetAnimation
-      );
+      const stuntman = document.createElement('DIV');
+      stuntman.id = itemId + "_fake";
+      stuntman.setAttribute("style", `height: ${itemHeight}px; width:100%; clear:both; position: relative`);
+
+      parent.insertBefore(stuntman, el);
+
+
+      this.appendStyle(el, removalAnim);
+      el.addEventListener('animationstart', () => {
+        console.log('aa')
+        el.style.setProperty('--itemHeight', itemHeight);
+      });
+      const removeAnim = document.querySelector(`.${removalAnim}`);
+      removeAnim.addEventListener('animationend', () => {
+        // clear real el from data, itemCache
+        this.viewModel._deleteItem(itemId);
+        this._updateOldData();
+
+        // remove from UI
+        this.children.splice(itemIndex,1);
+        this._updateEstimatedHeight(-itemHeight);
+        this.setState(this.state);
+      });
+
+      const zoomInAnimName = 'makeInvisible';
+      this.appendStyle(stuntman, zoomInAnimName);
+      const zoomInAnim = document.querySelector(`.${zoomInAnimName}`);
+      zoomInAnim.addEventListener('animationend', () => {
+        // remove from UI
+        parent.removeChild(stuntman);
+      });
     }
   }
 
