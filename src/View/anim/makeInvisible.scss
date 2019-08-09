@@ -1,0 +1,17 @@
+@keyframes makeInvisible {
+  0% {
+    height: 300px;
+  }
+
+  50% {
+    height: 150px;
+  }
+
+  100% {
+    height: 0;
+  }
+}
+
+.makeInvisible {
+  animation: makeInvisible 0.3s linear;
+}
