@@ -61,7 +61,10 @@ class Masonry extends React.Component<Props> {
     this.preventLoadTop = true;
     this.preventLoadBottom = true;
     this.firstItemInViewportBeforeLoadTop = {};
+    this.curItemInViewPort = {};
+    this.firstItemInViewportBeforeAddMore = {};
 
+    this.isAddMore = false;
     this.isScrollBack = false;
     this.loadDone = false;
     this.initItemCount = 0;
@@ -157,7 +160,13 @@ class Masonry extends React.Component<Props> {
     const itemCache = this.viewModel.getItemCache;
 
     if (itemCache.getHeight(itemId) !== newHeight) {
+      // For load more top
       if (!itemCache.isRendered(itemId) && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldData.firstItem)) {
+        this.isScrollBack = true;
+      }
+
+      // For add more
+      if(itemCache.getIndex(this.curItemInViewPort) > itemCache.getIndex(itemId)) {
         this.isScrollBack = true;
       }
 
@@ -171,6 +180,7 @@ class Masonry extends React.Component<Props> {
 
       this._updateItemsOnChangedHeight(itemId, newHeight, true);
       this._updateEstimatedHeight(newHeight - oldHeight);
+
 
       if (this.initItemCount < this.viewModel.getDataList.length - 1) {
         this.initItemCount++;
@@ -188,10 +198,14 @@ class Masonry extends React.Component<Props> {
   }
 
   onAddItem(index, item) {
-    const itemCache = this.viewModel.getItemCache;
+    this.isAddMore = true;
+    this.firstItemInViewportBeforeAddMore ={
+      itemId: this.curItemInViewPort,
+      disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort)
+    };
     this.viewModel._insertItem(index, item);
     this._addStaticItemToChildren(index, item);
-    this._updateEstimatedHeight(itemCache.defaultHeight);
+    this._updateEstimatedHeight(this.viewModel.itemCache.defaultHeight);
   }
 
   onRemoveItem(itemId: string) {
@@ -344,7 +358,7 @@ class Masonry extends React.Component<Props> {
     const itemCache = this.viewModel.getItemCache;
     const {scrollTop} = this.state;
 
-    const curItem = this._getItemIdFromPosition(scrollTop);
+    this.curItemInViewPort = this._getItemIdFromPosition(scrollTop);
 
     if (
       scrollTop < LOAD_MORE_TOP_TRIGGER_POS &&
@@ -356,8 +370,8 @@ class Masonry extends React.Component<Props> {
       if (typeof this.viewModel.getLoadMoreTopCallBack === 'function') {
         this.isLoadingTop = true;
         this.firstItemInViewportBeforeLoadTop = {
-          itemId: curItem,
-          disparity: scrollTop - itemCache.getPosition(curItem)
+          itemId: this.curItemInViewPort,
+          disparity: scrollTop - itemCache.getPosition(this.curItemInViewPort)
         };
         this.viewModel.getLoadMoreTopCallBack();
       } else {
@@ -456,10 +470,17 @@ class Masonry extends React.Component<Props> {
 
     // Check scroll to old position when load more top.
     if (this.isScrollBack) {
-      this._scrollToItem(
-        this.firstItemInViewportBeforeLoadTop.itemId,
-        this.firstItemInViewportBeforeLoadTop.disparity
-      );
+      if(this.isAddMore) {
+        this._scrollToItem(
+          this.firstItemInViewportBeforeAddMore.itemId,
+          this.firstItemInViewportBeforeAddMore.disparity
+        );
+      } else {
+        this._scrollToItem(
+          this.firstItemInViewportBeforeLoadTop.itemId,
+          this.firstItemInViewportBeforeLoadTop.disparity
+        );
+      }
       this.isScrollBack = false;
     }
 
