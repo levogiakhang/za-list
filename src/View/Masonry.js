@@ -216,9 +216,6 @@ class Masonry extends React.Component<Props> {
       parent.insertBefore(stuntman, el);
 
       this.appendStyle(el, removalAnim);
-      el.addEventListener('animationstart', () => {
-        el.style.setProperty('--itemHeight', itemHeight);
-      });
       const removeAnim = document.querySelector(`.${removalAnim}`);
       removeAnim.addEventListener('animationend', () => {
         // clear real el from data, itemCache
@@ -232,6 +229,7 @@ class Masonry extends React.Component<Props> {
       });
 
       const zoomInAnimName = 'makeInvisible';
+      stuntman.style.setProperty('--itemHeight', itemHeight + 'px');
       this.appendStyle(stuntman, zoomInAnimName);
       const zoomInAnim = document.querySelector(`.${zoomInAnimName}`);
       zoomInAnim.addEventListener('animationend', () => {

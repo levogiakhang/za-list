@@ -1,17 +1,13 @@
-:root {
-  --itemHeight: 300px;
-}
-
 @keyframes makeInvisible {
-  0% {
+  from {
     height: var(--itemHeight);
   }
 
-  100% {
+  to {
     height: 0;
   }
 }
 
 .makeInvisible {
-  animation: makeInvisible 0.3s linear;
+  animation: makeInvisible 0.3s ease;
 }
