@@ -1,14 +1,17 @@
 import { NOT_FOUND, OUT_OF_RANGE } from "../utils/value";
 import isFunction from "../vendors/isFunction";
 
+type EventTypes = 'loadTop' | 'loadBottom';
+type Callback = (params: any) => any;
+
 class MasonryViewModel {
   constructor({dataViewModel, node, itemCache}) {
     this.dataViewModel = dataViewModel;
     this.masonry = node;
     this.itemCache = itemCache;
 
-    this.loadMoreTopCallback = undefined;
-    this.loadMoreBottomCallback = undefined;
+    // stores storageEvent handler
+    this.storageEvent = {};
 
     this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
     this.scrollToTop = this.scrollToTop.bind(this);
@@ -22,6 +25,15 @@ class MasonryViewModel {
     if (this.itemCache) {
       this.itemCache.clear();
     }
+  }
+
+  addEventListener(eventName: EventTypes, callback: Callback) {
+    this.storageEvent.hasOwnProperty(eventName) ?
+      this.storageEvent[eventName].push(callback) :
+      this.storageEvent = {
+        ...this.storageEvent,
+        [eventName]: [(callback)]
+      };
   }
 
   onDataChanged = (index: number, item: Object, senderId?: string) => {
@@ -53,13 +65,24 @@ class MasonryViewModel {
     this.itemCache.updateItemsMap(index - 1, data.length);
   }
 
-  onLoadMoreTop(fn) {
+  onLoadMoreTop = (fn) => {
+    if (
+      this.masonry &&
+      this.masonry.current &&
+      typeof fn === 'function') {
+      this.masonry.current.onLoadMoreTop();
+      fn();
+    }
+  };
 
-  }
-
-  onLoadMoreBottom(fn) {
-
-  }
+  onLoadMoreBottom = (fn) => {
+    if (
+      this.masonry &&
+      this.masonry.current &&
+      typeof fn === 'function') {
+      fn();
+    }
+  };
 
   scrollToSpecialItem(itemId) {
     if (this.masonry &&
@@ -230,11 +253,19 @@ class MasonryViewModel {
   }
 
   enableLoadMoreTop() {
-    console.log('============Enable Load top===============');
+    if (Array.isArray(this.storageEvent['loadTop'])) {
+      this.storageEvent['loadTop'].forEach((eventCallback) => {
+        eventCallback();
+      });
+    }
   }
 
   enableLoadMoreBottom() {
-    console.log('============Enable Load bottom===============');
+    if (Array.isArray(this.storageEvent['loadBottom'])) {
+      this.storageEvent['loadBottom'].forEach((eventCallback) => {
+        eventCallback();
+      });
+    }
   }
 
   // region GET-SET
@@ -258,26 +289,6 @@ class MasonryViewModel {
 
   get getItemCache() {
     return this.itemCache;
-  }
-
-  get getLoadMoreTopCallBack() {
-    return this.loadMoreTopCallback;
-  }
-
-  setLoadMoreTopCallback(fn) {
-    if (typeof fn === 'function') {
-      this.loadMoreTopCallback = fn;
-    }
-  }
-
-  setLoadMoreBottomCallback(fn) {
-    if (typeof fn === 'function') {
-      this.loadMoreBottomCallback = fn;
-    }
-  }
-
-  get getLoadMoreBottomCallBack() {
-    return this.loadMoreBottomCallback;
   }
 
   setData(data) {

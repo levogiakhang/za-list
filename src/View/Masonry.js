@@ -367,16 +367,6 @@ class Masonry extends React.Component<Props> {
       !this.preventLoadTop
     ) {
       this.viewModel.enableLoadMoreTop();
-      if (typeof this.viewModel.getLoadMoreTopCallBack === 'function') {
-        this.isLoadingTop = true;
-        this.firstItemInViewportBeforeLoadTop = {
-          itemId: this.curItemInViewPort,
-          disparity: scrollTop - itemCache.getPosition(this.curItemInViewPort)
-        };
-        this.viewModel.getLoadMoreTopCallBack();
-      } else {
-        console.warn("loadMoreTopFunc callback is not a function")
-      }
     }
 
     // trigger load more bottom
@@ -387,11 +377,6 @@ class Masonry extends React.Component<Props> {
       !this.preventLoadBottom
     ) {
       this.viewModel.enableLoadMoreBottom();
-      if (typeof this.viewModel.getLoadMoreBottomCallBack === 'function') {
-        this.viewModel.getLoadMoreBottomCallBack();
-      } else {
-        console.warn("loadMoreBottomFunc callback is not a function")
-      }
     }
 
     if (this.isDataChange) {
@@ -487,6 +472,14 @@ class Masonry extends React.Component<Props> {
     if (this.oldData.oldLength !== data.length && !this.isLoadingTop) {
       this._updateOldData();
     }
+  }
+
+  onLoadMoreTop() {
+    this.isLoadingTop = true;
+    this.firstItemInViewportBeforeLoadTop = {
+      itemId: this.curItemInViewPort,
+      disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort)
+    };
   }
 
   isEqual(arr, other) {

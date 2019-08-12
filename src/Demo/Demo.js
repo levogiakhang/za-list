@@ -9,7 +9,7 @@ import generation from "./utils/Generation";
 import { randomInclusive } from "./utils/math";
 import GConst from "./utils/values";
 
-const DATA_NUMBER = 20;
+const DATA_NUMBER = 4;
 
 class Demo extends React.Component {
   constructor(props) {
@@ -30,6 +30,8 @@ class Demo extends React.Component {
     this.loadMoreTop = this.loadMoreTop.bind(this);
     this.loadMoreBottom = this.loadMoreBottom.bind(this);
     this.onAddItem = this.onAddItem.bind(this);
+    this.enableLoadMoreTop = this.enableLoadMoreTop.bind(this);
+    this.enableLoadMoreBottom = this.enableLoadMoreBottom.bind(this);
   }
 
   componentDidMount(): void {
@@ -48,9 +50,17 @@ class Demo extends React.Component {
     });
 
     //this.dataViewModel.addEventListener('onDataChanged', this.viewModel.onDataChanged);
-    //this.viewModel.setLoadMoreTopCallback(this.loadMoreTop);
-    //this.viewModel.setLoadMoreBottomCallback(this.loadMoreBottom);
+    this.viewModel.addEventListener("loadTop", this.enableLoadMoreTop);
+    this.viewModel.addEventListener("loadBottom", this.enableLoadMoreBottom);
   };
+
+  enableLoadMoreTop() {
+    this.viewModel.onLoadMoreTop(this.loadMoreTop);
+  }
+
+  enableLoadMoreBottom() {
+    this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
+  }
 
   _fakeDataList = () => {
     let _fakeDataList = [];
