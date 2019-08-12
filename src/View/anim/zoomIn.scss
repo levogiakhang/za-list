@@ -1,7 +1,7 @@
 @keyframes zoomIn {
     from {
         opacity: 0;
-        transform: scale3d(0.3, 0.3, 0.3);
+        transform: scale(0.3, 0.3);
     }
 
     50% {
@@ -10,5 +10,5 @@
 }
 
 .zoomIn {
-    animation: zoomIn 0.3s linear;
+    animation: zoomIn 0.2s linear;
 }

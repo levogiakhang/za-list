@@ -1,10 +1,11 @@
 @keyframes zoomOut {
   from {
     opacity: 1;
+    transform-origin: center;
   }
   50% {
     opacity: 0;
-    transform: scale3d(0.3, 0.3, 0);
+    transform: scale(0.3, 0.3);
   }
   to {
     opacity: 0;
@@ -12,5 +13,5 @@
 }
 
 .zoomOut {
-  animation: zoomOut 0.35s linear;
+  animation: zoomOut 0.3s linear;
 }
