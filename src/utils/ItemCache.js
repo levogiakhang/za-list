@@ -62,6 +62,16 @@ class ItemCache {
     );
   }
 
+  updateItemRender(itemId: string, isRendered: boolean = true) {
+    this.updateItemOnMap(
+      itemId,
+      this.getIndex(itemId),
+      this.getHeight(itemId),
+      this.getPosition(itemId),
+      isRendered
+    );
+  }
+
   deleteItem(itemIndex, itemId, data) {
     // Update index map
     this.updateIndexMap(itemIndex - 1, data);
