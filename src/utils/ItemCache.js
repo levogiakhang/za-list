@@ -52,13 +52,13 @@ class ItemCache {
     return this.__itemsMap__;
   }
 
-  updateItemHeight(itemId: string, newHeight) {
+  updateItemHeight(itemId: string, newHeight, isRendered: boolean = true) {
     this.updateItemOnMap(
       itemId,
       this.getIndex(itemId),
       newHeight,
       this.getPosition(itemId),
-      true
+      isRendered
     );
   }
 

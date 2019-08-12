@@ -147,7 +147,6 @@ class Masonry extends React.Component<Props> {
     if (this.parentRef !== undefined) {
       this.btnScrollBottomPos.top = this.parentRef.current.offsetTop + height - 50;
     }
-    this._updateItemsPosition();
   }
 
   componentWillUnmount() {
@@ -170,13 +169,7 @@ class Masonry extends React.Component<Props> {
         }, timingResetAnimation);
       }
 
-      itemCache.updateItemHeight(
-        itemId,
-        itemCache.getIndex(itemId),
-        newHeight,
-        itemCache.getPosition(itemId),
-        true);
-      this._updateItemsOnChangedHeight(itemId, newHeight);
+      this._updateItemsOnChangedHeight(itemId, newHeight, true);
       this._updateEstimatedHeight(newHeight - oldHeight);
 
       if (this.initItemCount < this.viewModel.getDataList.length - 1) {
@@ -222,10 +215,8 @@ class Masonry extends React.Component<Props> {
 
       parent.insertBefore(stuntman, el);
 
-
       this.appendStyle(el, removalAnim);
       el.addEventListener('animationstart', () => {
-        console.log('aa')
         el.style.setProperty('--itemHeight', itemHeight);
       });
       const removeAnim = document.querySelector(`.${removalAnim}`);
@@ -235,7 +226,7 @@ class Masonry extends React.Component<Props> {
         this._updateOldData();
 
         // remove from UI
-        this.children.splice(itemIndex,1);
+        this.children.splice(itemIndex, 1);
         this._updateEstimatedHeight(-itemHeight);
         this.setState(this.state);
       });
@@ -673,49 +664,9 @@ class Masonry extends React.Component<Props> {
   /**
    *  Update other items' position below the item that changed height.
    */
-  _updateItemsOnChangedHeight(itemId: string, newHeight: number) {
-    const itemCache = this.viewModel.getItemCache;
-
-    itemCache.updateItemOnMap(
-      itemId,
-      itemCache.getIndex(itemId),
-      newHeight,
-      itemCache.getPosition(itemId),
-      itemCache.isRendered(itemId)
-    );
-    this._updateItemsPositionFromSpecifiedItem(itemId);
-  }
-
-  /**
-   *  Calculate items' position from specified item to end the data list => reduces number of calculation
-   */
-  _updateItemsPositionFromSpecifiedItem(itemId: string) {
-    const data = this.viewModel.getDataList;
-    const itemCache = this.viewModel.getItemCache;
-
-    if (!!data.length) {
-      let currentItemId = itemId;
-      const currentIndex = itemCache.getIndex(itemId);
-
-      if (currentIndex !== NOT_FOUND) {
-        // TODO: High cost
-        for (let i = currentIndex; i < data.length; i++) {
-          const currentItemPosition = itemCache.getPosition(currentItemId);
-          let currentItemHeight = itemCache.getHeight(currentItemId);
-          const followingItemId = this._getItemIdFromIndex(i + 1);
-          if (followingItemId !== OUT_OF_RANGE) {
-            itemCache.updateItemOnMap(
-              followingItemId,
-              itemCache.getIndex(followingItemId),
-              itemCache.getHeight(followingItemId),
-              currentItemPosition + currentItemHeight,
-              itemCache.isRendered(followingItemId)
-            );
-            currentItemId = followingItemId;
-          }
-        }
-      }
-    }
+  _updateItemsOnChangedHeight(itemId: string, newHeight: number, isRendered: boolean = true) {
+    this.viewModel.getItemCache.updateItemHeight(itemId, newHeight, isRendered);
+    this.viewModel._updateItemsPositionFromSpecifiedItem(itemId);
   }
 
   /**
@@ -738,22 +689,6 @@ class Masonry extends React.Component<Props> {
           return key;
         }
       }
-    }
-  }
-
-  /**
-   *  Get itemId from index.
-   *
-   *  @param {number} index - Index of item.
-   *
-   *  @return {string} - itemId.
-   *  @return {number} - OUT_OF_RANGE: if index out of range of data.
-   */
-  _getItemIdFromIndex(index: number): string {
-    const data = this.viewModel.getDataList;
-    if (!!data.length) {
-      if (index >= data.length || index < 0) return OUT_OF_RANGE;
-      return this.viewModel.getItemCache.getItemId(index);
     }
   }
 

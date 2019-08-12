@@ -1,4 +1,4 @@
-import { NOT_FOUND } from "../utils/value";
+import { NOT_FOUND, OUT_OF_RANGE } from "../utils/value";
 import isFunction from "../vendors/isFunction";
 
 class MasonryViewModel {
@@ -152,8 +152,57 @@ class MasonryViewModel {
 
   _deleteItem(itemId: string, deleteCount: number = 1) {
     const itemIndex = this.itemCache.getIndex(itemId);
+    this.itemCache.updateItemHeight(itemId, 0);
+    this._updateItemsPositionFromSpecifiedItem(itemId);
     this.dataViewModel.deleteItem(itemIndex, deleteCount);
     this.itemCache.deleteItem(itemIndex, itemId, this.dataViewModel.getDataList);
+  }
+
+  /**
+   *  Calculate items' position from specified item to end the data list => reduces number of calculation
+   */
+  _updateItemsPositionFromSpecifiedItem(itemId: string) {
+    const data = this.getDataList;
+    const itemCache = this.getItemCache;
+
+    if (!!data.length) {
+      let currentItemId = itemId;
+      const currentIndex = itemCache.getIndex(itemId);
+      if (currentIndex !== NOT_FOUND) {
+        // TODO: High cost
+        for (let i = currentIndex; i < data.length; i++) {
+          const currentItemPosition = itemCache.getPosition(currentItemId);
+          let currentItemHeight = itemCache.getHeight(currentItemId);
+          const followingItemId = this._getItemIdFromIndex(i + 1);
+          if (followingItemId !== OUT_OF_RANGE) {
+            itemCache.updateItemOnMap(
+              followingItemId,
+              itemCache.getIndex(followingItemId),
+              itemCache.getHeight(followingItemId),
+              currentItemPosition + currentItemHeight,
+              itemCache.isRendered(followingItemId)
+            );
+            currentItemId = followingItemId;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   *  Get itemId from index.
+   *
+   *  @param {number} index - Index of item.
+   *
+   *  @return {string} - itemId.
+   *  @return {number} - OUT_OF_RANGE: if index out of range of data.
+   */
+  _getItemIdFromIndex(index: number): string {
+    const data = this.getDataList;
+    if (!!data.length) {
+      if (index >= data.length || index < 0) return OUT_OF_RANGE;
+      return this.getItemCache.getItemId(index);
+    }
   }
 
   updateData(data) {
