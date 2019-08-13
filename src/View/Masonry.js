@@ -37,6 +37,8 @@ type Props = {
 
 const LOAD_MORE_TOP_TRIGGER_POS = 50;
 let LOAD_MORE_BOTTOM_TRIGGER_POS = 0;
+const NEED_TO_SCROLL_TOP_POS = 300;
+const NEED_TO_SCROLL_BOTTOM_POS = 600;
 
 class Masonry extends React.Component<Props> {
   static defaultProps = {
@@ -68,6 +70,11 @@ class Masonry extends React.Component<Props> {
     this.firstItemInViewportBeforeAddMore = {};
 
     this.isAddMore = false;
+    this.isAddFirst = false;
+    this.needScrollTop = false;
+    this.isAddLast = false;
+    this.needScrollBottom = false;
+    this.newLastItemHeight = 0;
     this.isScrollBack = false;
     this.loadDone = false;
     this.initItemCount = 0;
@@ -176,6 +183,17 @@ class Masonry extends React.Component<Props> {
         this.isScrollBack = true;
       }
 
+      if (this.isAddFirst) {
+        this.isAddFirst = false;
+        this.needScrollTop = true;
+      }
+
+      if (this.isAddLast) {
+        this.isAddLast = false;
+        this.needScrollBottom = true;
+        this.newLastItemHeight = newHeight;
+      }
+
       if (!itemCache.isRendered(itemId) && this.isFirstLoadingDone) {
         const {additionAnim, timingResetAnimation} = this.props;
         this.appendStyle(this.getElementFromId(itemId), additionAnim);
@@ -206,6 +224,13 @@ class Masonry extends React.Component<Props> {
 
   onAddItem(index, item) {
     this.isAddMore = true;
+
+    if (parseInt(index) === 0) {
+      this.isAddFirst = true;
+    }
+    if (parseInt(index) === this.viewModel.getDataList.length) {
+      this.isAddLast = true;
+    }
     this.firstItemInViewportBeforeAddMore = {
       itemId: this.curItemInViewPort,
       disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort),
@@ -485,6 +510,20 @@ class Masonry extends React.Component<Props> {
         );
       }
       this.isScrollBack = false;
+    }
+
+    if (this.needScrollTop) {
+      this.needScrollTop = false;
+      if (scrollTop <= NEED_TO_SCROLL_TOP_POS) {
+        this._scrollToOffset(0);
+      }
+    }
+
+    if (this.needScrollBottom) {
+      this.needScrollBottom = false;
+      if (scrollTop >= this.estimateTotalHeight - this.newLastItemHeight - height - NEED_TO_SCROLL_BOTTOM_POS) {
+        this._scrollToOffset(this.estimateTotalHeight);
+      }
     }
 
     if (this.oldData.oldLength !== data.length && !this.isLoadingTop) {
