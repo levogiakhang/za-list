@@ -113,6 +113,7 @@ class Masonry extends React.Component<Props> {
 
     this.state = {
       scrollTop: 0,
+      intervalId: 0,
     };
 
     this._onScroll = this._onScroll.bind(this);
@@ -127,9 +128,46 @@ class Masonry extends React.Component<Props> {
     this.initialize();
   }
 
+  scrollToItemWithAnimUp(
+    offset: number,
+    {itemId, animationName, timingResetAnimation},
+    stepInPixel: number = 30,
+    msDelayInEachStep: number = 16.66) {
+
+    let intervalId = setInterval(() => {
+      this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
+      if (this.state.scrollTop <= offset) {
+        clearInterval(this.state.intervalId);
+        this._scrollToOffset(offset);
+        this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
+      }
+    }, msDelayInEachStep);
+
+    this.setState({intervalId: intervalId});
+  }
+
+  scrollToItemWithAnimDown(
+    offset: number,
+    {itemId, animationName, timingResetAnimation},
+    stepInPixel: number = 30,
+    msDelayInEachStep: number = 16.66) {
+
+    let intervalId = setInterval(() => {
+      this.masonry.scrollTo(0, this.state.scrollTop + stepInPixel);
+      if (this.state.scrollTop >= offset) {
+        clearInterval(this.state.intervalId);
+        this._scrollToOffset(offset);
+        this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
+      }
+    }, msDelayInEachStep);
+
+    this.setState({intervalId: intervalId});
+  }
+
   initialize() {
     const data = this.viewModel.getDataList;
     const itemCache = this.viewModel.getItemCache;
+    this.children = [];
 
     this._updateOldData();
     if (Array.isArray(data)) {
@@ -295,24 +333,50 @@ class Masonry extends React.Component<Props> {
 
     const itemCache = this.viewModel.getItemCache;
 
-    // Non-VL
-    const itemPos = itemCache.getPosition(itemId);
-    const itemHeight = itemCache.getHeight(itemId);
     this.preventLoadTop = true;
     this.preventLoadBottom = true;
+
+    const itemPos = itemCache.getPosition(itemId);
+    const itemHeight = itemCache.getHeight(itemId);
+    let scrollTop = 0;
 
     if (
       itemHeight > height ||
       itemPos + itemHeight < height ||
       !isItemScrollToInBottom
     ) {
-      this._scrollToItem(itemId, 0);
-      this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
+      scrollTop = itemPos;
     }
     else {
-      const scrollTop = itemPos + itemHeight - height;
-      this._scrollToOffset(scrollTop);
-      this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
+      scrollTop = itemPos + itemHeight - height;
+    }
+
+    const diff = this.state.scrollTop - scrollTop;
+    const distance = 200;
+
+    if (diff >= distance) {
+      this._scrollToOffset(scrollTop + distance);
+    }
+    else if (diff <= -distance) {
+      this._scrollToOffset(scrollTop - distance);
+    }
+
+    if (scrollTop < this.state.scrollTop) {
+      this.scrollToItemWithAnimUp(scrollTop,
+        {
+          itemId: itemId,
+          animationName: animationName,
+          timingResetAnimation: timingResetAnimation,
+        },
+      );
+    }
+    else {
+      this.scrollToItemWithAnimDown(scrollTop, {
+          itemId: itemId,
+          animationName: animationName,
+          timingResetAnimation: timingResetAnimation,
+        },
+      );
     }
   }
 
