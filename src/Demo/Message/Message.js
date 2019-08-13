@@ -53,6 +53,7 @@ export default class Message extends React.PureComponent<MessageProps> {
         justifyContent: 'center',
         minWidth: '40px',
         height: '100%',
+        cursor: 'pointer'
       }}>
         <div style={{
           display: 'flex',
