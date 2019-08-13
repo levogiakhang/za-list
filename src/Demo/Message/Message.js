@@ -2,10 +2,10 @@
 
 import React from 'react';
 import '../scss/index.scss';
-import isFunction from "../../vendors/isFunction";
-import Image from "./Image";
-import NormalMessage from "./NormalMessage";
-import GConst from "../utils/values";
+import isFunction from '../../vendors/isFunction';
+import Image from './Image';
+import NormalMessage from './NormalMessage';
+import GConst from '../utils/values';
 import reactImg from '../resources/img/emoji.png';
 
 type OnRemoveItemCallback = any;
@@ -66,7 +66,7 @@ export default class Message extends React.PureComponent<MessageProps> {
           borderRadius: '50%',
         }}>
           <img src={`${userAva}`}
-               alt={"Avatar"}
+               alt={'Avatar'}
                style={{
                  minWidth: '34px',
                  maxWidth: '34px',
@@ -77,7 +77,7 @@ export default class Message extends React.PureComponent<MessageProps> {
                onClick={this._onRemove}/>
         </div>
       </div>
-    )
+    );
   };
 
   renderContent = () => {
@@ -128,7 +128,7 @@ export default class Message extends React.PureComponent<MessageProps> {
   render() {
     const {
       itemId,
-      isMine
+      isMine,
     } = this.props;
 
 
@@ -144,7 +144,7 @@ export default class Message extends React.PureComponent<MessageProps> {
              }}>
           {this.renderContent()}
           <div style={{
-            paddingLeft: GConst.Spacing["0.5"],
+            paddingLeft: GConst.Spacing['0.5'],
           }}>
             {this.renderAvatar()}
           </div>
@@ -154,14 +154,20 @@ export default class Message extends React.PureComponent<MessageProps> {
              key={itemId}
              style={{
                display: 'flex',
-               paddingTop: GConst.Spacing["0.5"],
-               paddingBottom: GConst.Spacing["0.5"],
+               paddingTop: GConst.Spacing['0.5'],
+               paddingBottom: GConst.Spacing['0.5'],
              }}>
           {this.renderAvatar()}
           <div style={{
-            paddingLeft: GConst.Spacing["0.5"],
-          }}>
-            {this.renderContent()}
+            paddingLeft: GConst.Spacing['0.5'],
+          }}
+               onClick={this._onExpandHeight}>
+            <div>
+              {this.renderContent()}
+              {this.state.isExpanded ?
+                <div style={{fontSize: '2rem'}}>Expanded</div> :
+                null}
+            </div>
           </div>
         </div>
     );
@@ -171,7 +177,7 @@ export default class Message extends React.PureComponent<MessageProps> {
     const {isExpanded} = this.state;
     isExpanded ?
       this.setState({isExpanded: false}) :
-      this.setState({isExpanded: true})
+      this.setState({isExpanded: true});
   }
 
   _onRemove() {
