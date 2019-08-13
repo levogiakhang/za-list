@@ -6,14 +6,14 @@ import './anim/index.scss';
 import {
   NOT_FOUND,
   OUT_OF_RANGE,
-  DEBOUNCING_TIMER
-} from "../utils/value";
+  DEBOUNCING_TIMER,
+} from '../utils/value';
 import CellMeasurer from '../CellMeasurer/CellMeasurer.js';
-import isFunction from "../vendors/isFunction";
-import debounce from "../vendors/debounce.js";
-import hasWhiteSpace from "../utils/hasWhiteSpace";
-import removeClass from "../utils/removeClass";
-import addClass from "../utils/addClass";
+import isFunction from '../vendors/isFunction';
+import debounce from '../vendors/debounce.js';
+import hasWhiteSpace from '../utils/hasWhiteSpace';
+import removeClass from '../utils/removeClass';
+import addClass from '../utils/addClass';
 
 type Props = {
   className?: string,
@@ -43,7 +43,10 @@ class Masonry extends React.Component<Props> {
     minWidth: 200,
     height: 500,
     minHeight: 500,
-    style: {marginTop: "10px", borderRadius: '5px'},
+    style: {
+      marginTop: '10px',
+      borderRadius: '5px',
+    },
     id: 'Masonry',
     isStartAtBottom: false,
     hideScrollToBottomBtn: false,
@@ -72,7 +75,7 @@ class Masonry extends React.Component<Props> {
     this.oldData = {
       oldLength: 0,
       firstItem: {},
-      lastItem: {}
+      lastItem: {},
     };
 
     this.isDataChange = false;
@@ -137,6 +140,9 @@ class Masonry extends React.Component<Props> {
     } else {
       console.error("Data list is not an array");
     }
+    else {
+      console.error('Data list is not an array');
+    }
 
     //this.itemsInBatch = [...dataViewModel];
     this.estimateTotalHeight = this._getEstimatedTotalHeight();
@@ -166,7 +172,7 @@ class Masonry extends React.Component<Props> {
       }
 
       // For add more
-      if(itemCache.getIndex(this.curItemInViewPort) > itemCache.getIndex(itemId)) {
+      if (itemCache.getIndex(this.curItemInViewPort) > itemCache.getIndex(itemId)) {
         this.isScrollBack = true;
       }
 
@@ -184,7 +190,8 @@ class Masonry extends React.Component<Props> {
 
       if (this.initItemCount < this.viewModel.getDataList.length - 1) {
         this.initItemCount++;
-      } else if (this.initItemCount === this.viewModel.getDataList.length - 1) {
+      }
+      else if (this.initItemCount === this.viewModel.getDataList.length - 1) {
         this.loadDone = true;
       }
 
@@ -199,9 +206,9 @@ class Masonry extends React.Component<Props> {
 
   onAddItem(index, item) {
     this.isAddMore = true;
-    this.firstItemInViewportBeforeAddMore ={
+    this.firstItemInViewportBeforeAddMore = {
       itemId: this.curItemInViewPort,
-      disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort)
+      disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort),
     };
     this.viewModel._insertItem(index, item);
     this._addStaticItemToChildren(index, item);
@@ -218,14 +225,14 @@ class Masonry extends React.Component<Props> {
       const itemHeight = itemCache.getHeight(itemId);
 
       const el = document.getElementById(itemId);
-      el.style.position = "absolute";
+      el.style.position = 'absolute';
       el.style.top = itemCache.getPosition(itemId) + 'px';
 
       const parent = el.parentElement;
 
       const stuntman = document.createElement('DIV');
-      stuntman.id = itemId + "_fake";
-      stuntman.setAttribute("style", `height: ${itemHeight}px; width:100%; clear:both; position: relative`);
+      stuntman.id = itemId + '_fake';
+      stuntman.setAttribute('style', `height: ${itemHeight}px; width:100%; clear:both; position: relative`);
 
       parent.insertBefore(stuntman, el);
 
@@ -258,7 +265,7 @@ class Masonry extends React.Component<Props> {
       height,
       isItemScrollToInBottom,
       animationName,
-      timingResetAnimation
+      timingResetAnimation,
     } = this.props;
 
     const itemCache = this.viewModel.getItemCache;
@@ -276,7 +283,8 @@ class Masonry extends React.Component<Props> {
     ) {
       this._scrollToItem(itemId, 0);
       this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
-    } else {
+    }
+    else {
       const scrollTop = itemPos + itemHeight - height;
       this._scrollToOffset(scrollTop);
       this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
@@ -292,7 +300,7 @@ class Masonry extends React.Component<Props> {
           itemId: itemId,
           anim: animationNames,
         };
-      }, timingResetAnimation
+      }, timingResetAnimation,
     );
   }
 
@@ -303,7 +311,8 @@ class Masonry extends React.Component<Props> {
 
     if (typeof arrAnim === 'string') {
       addClass(el, arrAnim);
-    } else {
+    }
+    else {
       for (let i = 0; i < arrAnim.length; i++) {
         addClass(el, arrAnim[i]);
       }
@@ -317,7 +326,8 @@ class Masonry extends React.Component<Props> {
 
     if (typeof arrAnim === 'string') {
       removeClass(el, arrAnim);
-    } else {
+    }
+    else {
       for (let i = 0; i < arrAnim.length; i++) {
         removeClass(el, arrAnim[i]);
       }
@@ -397,17 +407,21 @@ class Masonry extends React.Component<Props> {
                backgroundColor: 'cornflowerblue',
                boxSizing: 'border-box',
                overflowX: 'hidden',
-               overflowY: this.estimateTotalHeight < height ? 'hidden' : 'auto',
+               overflowY: this.estimateTotalHeight < height ?
+                 'hidden' :
+                 'auto',
                width: 'auto',
                minWidth: minWidth,
                height: height,
                minHeight: minHeight,
                position: 'relative',
                willChange: 'auto',
-               ...style
+               ...style,
              }}>
           <div
-            className={`${innerScrollClassName ? innerScrollClassName : 'innerScrollContainer'}`}
+            className={`${innerScrollClassName ?
+              innerScrollClassName :
+              'innerScrollContainer'}`}
             style={{
               width: '100%',
               height: this.estimateTotalHeight,
@@ -415,8 +429,10 @@ class Masonry extends React.Component<Props> {
               maxHeight: this.estimateTotalHeight,
               overflow: 'hidden',
               position: 'relative',
-              pointerEvents: isScrolling ? 'none' : '', // property defines whether or not an element reacts to pointer events.
-              ...innerScrollStyle
+              pointerEvents: isScrolling ?
+                'none' :
+                '', // property defines whether or not an element reacts to pointer events.
+              ...innerScrollStyle,
             }}>
             {this.children}
           </div>
@@ -443,7 +459,8 @@ class Masonry extends React.Component<Props> {
     if (this.props.isStartAtBottom && !this.isFirstLoadingDone) {
       this._scrollToBottomAtFirst();
       this.preventLoadBottom = true;
-    } else if (!this.props.isStartAtBottom && !this.isFirstLoadingDone) {
+    }
+    else if (!this.props.isStartAtBottom && !this.isFirstLoadingDone) {
       this.preventLoadTop = true;
       this.isFirstLoadingDone = true;
     }
@@ -455,15 +472,16 @@ class Masonry extends React.Component<Props> {
 
     // Check scroll to old position when load more top.
     if (this.isScrollBack) {
-      if(this.isAddMore) {
+      if (this.isAddMore) {
         this._scrollToItem(
           this.firstItemInViewportBeforeAddMore.itemId,
-          this.firstItemInViewportBeforeAddMore.disparity
+          this.firstItemInViewportBeforeAddMore.disparity,
         );
-      } else {
+      }
+      else {
         this._scrollToItem(
           this.firstItemInViewportBeforeLoadTop.itemId,
-          this.firstItemInViewportBeforeLoadTop.disparity
+          this.firstItemInViewportBeforeLoadTop.disparity,
         );
       }
       this.isScrollBack = false;
@@ -478,7 +496,7 @@ class Masonry extends React.Component<Props> {
     this.isLoadingTop = true;
     this.firstItemInViewportBeforeLoadTop = {
       itemId: this.curItemInViewPort,
-      disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort)
+      disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort),
     };
   }
 
@@ -487,15 +505,28 @@ class Masonry extends React.Component<Props> {
     let type = Object.prototype.toString.call(arr);
 
     // If the two objects are not the same type, return false
-    if (type !== Object.prototype.toString.call(other)) return false;
+    if (type !== Object.prototype.toString.call(other)) {
+      return false;
+    }
 
     // If items are not an object or array, return false
-    if (['[object Array]', '[object Object]'].indexOf(type) < 0) return false;
+    if ([
+      '[object Array]',
+      '[object Object]',
+    ].indexOf(type) < 0) {
+      return false;
+    }
 
     // Compare the length of the length of the two items
-    let arrLength = type === '[object Array]' ? arr.length : Object.keys(arr).length;
-    let otherLength = type === '[object Array]' ? other.length : Object.keys(other).length;
-    if (arrLength !== otherLength) return false;
+    let arrLength = type === '[object Array]' ?
+      arr.length :
+      Object.keys(arr).length;
+    let otherLength = type === '[object Array]' ?
+      other.length :
+      Object.keys(other).length;
+    if (arrLength !== otherLength) {
+      return false;
+    }
 
     // Compare two items
     let compare = function (item1, item2) {
@@ -503,22 +534,35 @@ class Masonry extends React.Component<Props> {
       let itemType = Object.prototype.toString.call(item1);
 
       // If an object or array, compare recursively
-      if (['[object Array]', '[object Object]'].indexOf(itemType) >= 0) {
-        if (item1 !== item2) return false;
+      if ([
+        '[object Array]',
+      }
+        '[object Object]',
+      ].indexOf(itemType) >= 0) {
+        if (item1 !== item2) {
+          return false;
+        }
       }
 
       // Otherwise, do a simple comparison
       else {
 
         // If the two items are not the same type, return false
-        if (itemType !== Object.prototype.toString.call(item2)) return false;
+        if (itemType !== Object.prototype.toString.call(item2)) {
+          return false;
+        }
 
         // Else if it's a function, convert to a string and compare
         // Otherwise, just compare
         if (itemType === '[object Function]') {
-          if (item1.toString() !== item2.toString()) return false;
-        } else {
-          if (item1 !== item2) return false;
+          if (item1.toString() !== item2.toString()) {
+            return false;
+          }
+        }
+        else {
+          if (item1 !== item2) {
+            return false;
+          }
         }
 
       }
@@ -527,12 +571,17 @@ class Masonry extends React.Component<Props> {
     // Compare properties
     if (type === '[object Array]') {
       for (let i = 0; i < arrLength; i++) {
-        if (compare(arr[i], other[i]) === false) return false;
+        if (compare(arr[i], other[i]) === false) {
+          return false;
+        }
       }
-    } else {
+    }
+    else {
       for (let key in arr) {
         if (arr.hasOwnProperty(key)) {
-          if (compare(arr[key], other[key]) === false) return false;
+          if (compare(arr[key], other[key]) === false) {
+            return false;
+          }
         }
       }
     }
@@ -576,17 +625,20 @@ class Masonry extends React.Component<Props> {
                     defaultHeight={defaultHeight}
                     isVirtualized={isVirtualized}
                     onChangedHeight={this.onChildrenChangeHeight}
-                    position={{top: 0, left: 0}}>
+                    position={{
+                      top: 0,
+                      left: 0,
+                    }}>
         {
           isFunction(cellRenderer) ?
             cellRenderer({
               item,
               index,
-              removeCallback
+              removeCallback,
             }) :
             null
         }
-      </CellMeasurer>
+      </CellMeasurer>,
     );
   }
 
@@ -602,10 +654,12 @@ class Masonry extends React.Component<Props> {
     const eventScrollTop = this.masonry.scrollTop;
     const scrollTop = Math.min(
       Math.max(0, this.estimateTotalHeight - height),
-      eventScrollTop
+      eventScrollTop,
     );
 
-    if (Math.round(eventScrollTop) !== Math.round(scrollTop)) return;
+    if (Math.round(eventScrollTop) !== Math.round(scrollTop)) {
+      return;
+    }
 
     if (this.state.scrollTop !== scrollTop) {
       this.setState({scrollTop});
@@ -693,7 +747,9 @@ class Masonry extends React.Component<Props> {
     const data = this.viewModel.getDataList;
     const itemCache = this.viewModel.getItemCache;
     if (!!data.length) {
-      if (positionTop >= this.estimateTotalHeight) return itemCache.getItemId(data.length - 1);
+      if (positionTop >= this.estimateTotalHeight) {
+        return itemCache.getItemId(data.length - 1);
+      }
 
       for (let key of itemCache.getItemsMap.keys()) {
         if (positionTop >= itemCache.getPosition(key) &&
