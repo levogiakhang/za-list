@@ -128,42 +128,6 @@ class Masonry extends React.Component<Props> {
     this.initialize();
   }
 
-  scrollToItemWithAnimUp(
-    offset: number,
-    {itemId, animationName, timingResetAnimation},
-    stepInPixel: number = 30,
-    msDelayInEachStep: number = 16.66) {
-
-    let intervalId = setInterval(() => {
-      this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
-      if (this.state.scrollTop <= offset) {
-        clearInterval(this.state.intervalId);
-        this._scrollToOffset(offset);
-        this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
-      }
-    }, msDelayInEachStep);
-
-    this.setState({intervalId: intervalId});
-  }
-
-  scrollToItemWithAnimDown(
-    offset: number,
-    {itemId, animationName, timingResetAnimation},
-    stepInPixel: number = 30,
-    msDelayInEachStep: number = 16.66) {
-
-    let intervalId = setInterval(() => {
-      this.masonry.scrollTo(0, this.state.scrollTop + stepInPixel);
-      if (this.state.scrollTop >= offset) {
-        clearInterval(this.state.intervalId);
-        this._scrollToOffset(offset);
-        this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
-      }
-    }, msDelayInEachStep);
-
-    this.setState({intervalId: intervalId});
-  }
-
   initialize() {
     const data = this.viewModel.getDataList;
     const itemCache = this.viewModel.getItemCache;
@@ -362,7 +326,7 @@ class Masonry extends React.Component<Props> {
     }
 
     if (scrollTop < this.state.scrollTop) {
-      this.scrollToItemWithAnimUp(scrollTop,
+      this._scrollToItemWithAnimUp(scrollTop,
         {
           itemId: itemId,
           animationName: animationName,
@@ -371,7 +335,7 @@ class Masonry extends React.Component<Props> {
       );
     }
     else {
-      this.scrollToItemWithAnimDown(scrollTop, {
+      this._scrollToItemWithAnimDown(scrollTop, {
           itemId: itemId,
           animationName: animationName,
           timingResetAnimation: timingResetAnimation,
@@ -692,6 +656,42 @@ class Masonry extends React.Component<Props> {
     // If nothing failed, return true
     return true;
   };
+
+  _scrollToItemWithAnimUp(
+    offset: number,
+    {itemId, animationName, timingResetAnimation},
+    stepInPixel: number = 30,
+    msDelayInEachStep: number = 16.66) {
+
+    let intervalId = setInterval(() => {
+      this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
+      if (this.state.scrollTop <= offset) {
+        clearInterval(this.state.intervalId);
+        this._scrollToOffset(offset);
+        this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
+      }
+    }, msDelayInEachStep);
+
+    this.setState({intervalId: intervalId});
+  }
+
+  _scrollToItemWithAnimDown(
+    offset: number,
+    {itemId, animationName, timingResetAnimation},
+    stepInPixel: number = 30,
+    msDelayInEachStep: number = 16.66) {
+
+    let intervalId = setInterval(() => {
+      this.masonry.scrollTo(0, this.state.scrollTop + stepInPixel);
+      if (this.state.scrollTop >= offset) {
+        clearInterval(this.state.intervalId);
+        this._scrollToOffset(offset);
+        this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
+      }
+    }, msDelayInEachStep);
+
+    this.setState({intervalId: intervalId});
+  }
 
   /*
    * Scroll to bottom when the first loading
