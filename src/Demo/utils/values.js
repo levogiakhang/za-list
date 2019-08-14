@@ -23,6 +23,7 @@ const Spacing = Object.freeze({
   1.5: '1.5rem',
   1.75: '1.75rem',
   2: '2rem',
+  3: '3rem',
 });
 
 const Padding = Object.freeze({
