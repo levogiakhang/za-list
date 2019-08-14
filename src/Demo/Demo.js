@@ -1,37 +1,45 @@
 import React from 'react';
 import './scss/Demo.scss';
 import Masonry from '../View/Masonry.js';
-import MasonryViewModel from "../ViewModel/MasonryViewModel";
-import Message from "./Message/Message";
-import DataViewModel from "../ViewModel/DataViewModel";
-import ItemCache from "../utils/ItemCache";
-import generation from "./utils/Generation";
-import { randomInclusive } from "./utils/math";
-import GConst from "./utils/values";
+import MasonryViewModel from '../ViewModel/MasonryViewModel';
+import Message from './Message/Message';
+import DataViewModel from '../ViewModel/DataViewModel';
+import ItemCache from '../utils/ItemCache';
+import generation from './utils/Generation';
+import { randomInclusive } from './utils/math';
+import GConst from './utils/values';
 
-const DATA_NUMBER = 4;
+const DATA_TOTAL_NUMBER = 100;
+const DATA_UI_NUMBER = 20;
 
 class Demo extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       isLoading: true,
-      moreIndex: 0,
+      indexToAddMore: 0,
+      itemIdToScroll: 0,
     };
 
     this.loadTopCount = 5;
     this.loadBottomCount = 5;
 
-    this.itemCount = DATA_NUMBER;
+    this.itemCount = DATA_TOTAL_NUMBER;
+    this.dataTotal = this._fakeDataList();
+    this.dataTotalMap = new Map();
+    this.dataTotal.forEach((item) => {
+      this.dataTotalMap.set(item.itemId, this.dataTotal.indexOf(item));
+    });
 
-    this.dataViewModel = new DataViewModel(this._fakeDataList());
+    this.dataViewModel = new DataViewModel(this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER));
 
     this.handleChangeIndex = this.handleChangeIndex.bind(this);
+    this.handleChangeItemIdToScroll = this.handleChangeItemIdToScroll.bind(this);
     this.loadMoreTop = this.loadMoreTop.bind(this);
     this.loadMoreBottom = this.loadMoreBottom.bind(this);
-    this.onAddItem = this.onAddItem.bind(this);
     this.enableLoadMoreTop = this.enableLoadMoreTop.bind(this);
     this.enableLoadMoreBottom = this.enableLoadMoreBottom.bind(this);
+    this.lookUpItem = this.lookUpItem.bind(this);
   }
 
   componentDidMount(): void {
@@ -46,12 +54,13 @@ class Demo extends React.Component {
     this.viewModel = new MasonryViewModel({
       dataViewModel: this.dataViewModel,
       node: this.masonry,
-      itemCache: this.itemCache
+      itemCache: this.itemCache,
     });
 
     //this.dataViewModel.addEventListener('onDataChanged', this.viewModel.onDataChanged);
-    this.viewModel.addEventListener("loadTop", this.enableLoadMoreTop);
-    this.viewModel.addEventListener("loadBottom", this.enableLoadMoreBottom);
+    this.viewModel.addEventListener('loadTop', this.enableLoadMoreTop);
+    this.viewModel.addEventListener('loadBottom', this.enableLoadMoreBottom);
+    this.viewModel.addEventListener('lookUpItemToScroll', this.lookUpItem);
   };
 
   enableLoadMoreTop() {
@@ -62,14 +71,69 @@ class Demo extends React.Component {
     this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
   }
 
+  lookUpItem(itemId: string) {
+    if (!this.dataTotalMap.has(itemId)) {
+      alert('Dont have this item');
+    }
+    else {
+      const itemIndex = this.dataTotalMap.get(itemId);
+      const newData = this._getDataFromDataTotal(itemIndex - DATA_UI_NUMBER / 2, itemIndex + DATA_UI_NUMBER / 2 - 1, DATA_TOTAL_NUMBER);
+      const newArrItemId = [];
+      newData.forEach(item => {
+        newArrItemId.push(item.itemId);
+      });
+      const oldArrItemId = [];
+      this.viewModel.getDataList.forEach(item => {
+        oldArrItemId.push(item.itemId);
+      });
+      this.viewModel.updateData(newData);
+      this.viewModel.pendingScrollToSpecialItem(this._getDiff(newArrItemId, oldArrItemId).length, itemId);
+    }
+  }
+
+  _getDiff = (a, b) => {
+    return a.filter(function (i) {
+      return b.indexOf(i) < 0;
+    });
+  };
+
+  _getDataFromDataTotal = (startIndex: number, endIndex: number, dataLength: number) => {
+    let start = startIndex;
+    let end = endIndex;
+    let results = [];
+
+    if (startIndex < 0) {
+      start = 0;
+    }
+    if (startIndex >= dataLength) {
+      start = dataLength - 1;
+    }
+    if (endIndex >= dataLength) {
+      end = dataLength - 1;
+    }
+    if (endIndex < start) {
+      end = start;
+    }
+    if (endIndex < 0) {
+      end = start;
+    }
+
+    for (let i = start; i <= end; i++) {
+      results.push(this.dataTotal[i]);
+    }
+
+    return results;
+  };
+
   _fakeDataList = () => {
     let _fakeDataList = [];
-    for (let i = 0; i < DATA_NUMBER; i++) {
+    for (let i = 0; i < DATA_TOTAL_NUMBER; i++) {
       const msgType = randomInclusive(1, 3);
       let item = undefined;
       if (msgType === GConst.MessageTypes.Message) {
         item = generation.generateItem(msgType, randomInclusive(0, 1) === 0);
-      } else {
+      }
+      else {
         item = generation.generateItem(msgType, randomInclusive(0, 1) === 0, 174, 368);
       }
       _fakeDataList.push(item);
@@ -97,19 +161,46 @@ class Demo extends React.Component {
     }
   }
 
-  onAddItem() {
-    const {moreIndex} = this.state;
+  onAddItem = () => {
+    const {indexToAddMore} = this.state;
     const msgType = randomInclusive(1, 3);
     let item = undefined;
     if (msgType === GConst.MessageTypes.Message) {
       item = generation.generateItem(msgType, randomInclusive(0, 1) === 0);
-    } else {
+    }
+    else {
       item = generation.generateItem(msgType, randomInclusive(0, 1) === 0, 174, 368);
     }
     this.itemCount++;
-    if (this._isInRange(moreIndex, 0, this.dataViewModel.getDataList.length)) {
-      this.viewModel.onAddItem(moreIndex, item);
+    if (this._isInRange(indexToAddMore, 0, this.dataViewModel.getDataList.length)) {
+      this.viewModel.onAddItem(indexToAddMore, item);
     }
+  };
+
+  onAddItemTop = () => {
+    const msgType = randomInclusive(1, 3);
+    let item = undefined;
+    if (msgType === GConst.MessageTypes.Message) {
+      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0);
+    }
+    else {
+      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0, 174, 368);
+    }
+    this.itemCount++;
+    this.viewModel.onAddItem(0, item);
+  };
+
+  onAddItemBottom = () => {
+    const msgType = randomInclusive(1, 3);
+    let item = undefined;
+    if (msgType === GConst.MessageTypes.Message) {
+      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0);
+    }
+    else {
+      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0, 174, 368);
+    }
+    this.itemCount++;
+    this.viewModel.onAddItem(this.dataViewModel.getDataList.length, item);
   };
 
   static cellRender({item, index, removeCallback}) {
@@ -130,24 +221,31 @@ class Demo extends React.Component {
 
   handleChangeIndex(e) {
     if (this._isInRange(e.target.value, 0, this.dataViewModel.getDataList.length)) {
-      this.setState({moreIndex: e.target.value});
-    } else {
+      this.setState({indexToAddMore: e.target.value});
+    }
+    else {
       alert('OUT OF RANGE');
     }
   };
+
+  handleChangeItemIdToScroll(e) {
+    this.setState({itemIdToScroll: e.target.value});
+  }
 
   _isInRange = function (index: number, startIndex: number, endIndex: number): boolean {
     return index >= startIndex && index <= endIndex;
   };
 
-  _renderControlView = () => {
-    const {moreIndex} = this.state;
+  _renderControlView1 = () => {
+    const {itemIndexToScroll, moreIndex} = this.state;
     return (
       <div className={'control-view'}>
         <div style={{
           display: 'flex',
           justifyContent: 'center',
         }}>
+
+
           <input className={'input-demo input-index'}
                  type={'number'}
                  placeholder={`Index`}
@@ -156,33 +254,20 @@ class Demo extends React.Component {
 
           <button className={'btn-control btn-add'}
                   onClick={this.onAddItem}>
-            Add new item at
+            Add new item at:
           </button>
         </div>
         <div style={{
           display: 'flex',
           margin: '20px',
-          justifyContent: 'space-around'
+          justifyContent: 'space-around',
         }}>
-          <button onClick={() => {
-            this.viewModel.scrollToSpecialItem('itemId_' + this.state.moreIndex)
-          }}> Scroll To
-          </button>
 
-          <button onClick={() => {
-            this.viewModel.scrollToTop()
-          }}> Scroll Top
-          </button>
-
-          <button onClick={() => {
-            this.viewModel.scrollToBottom()
-          }}> Scroll Bottom
-          </button>
 
           <button onClick={() => {
             this.dataViewModel.insertItem(1, generation.generateItem(
-              randomInclusive(1,3),
-              randomInclusive(0,1) === 1,
+              randomInclusive(1, 3),
+              randomInclusive(0, 1) === 1,
               100,
               300));
             this.itemCount++;
@@ -206,10 +291,379 @@ class Demo extends React.Component {
     );
   };
 
+  _renderHeader = () => {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: GConst.Spacing['0.5']
+        }}>
+        <h1 style={{
+          margin: GConst.Spacing['1']
+        }}>React List Demo</h1>
+      </div>
+    );
+  };
+
+  _renderControlView = () => {
+    return (
+      <div style={{
+        minWidth: '400px',
+        width: '400px',
+        minHeight: '100%',
+        height: '100%',
+        padding: `0 ${GConst.Spacing[0.5]}`,
+      }}>
+        {this._renderAddControl()}
+        {this._renderScrollControl()}
+        {this._renderDevTool()}
+      </div>
+    );
+  };
+
+  _renderAddControl = () => {
+    const {indexToAddMore} = this.state;
+    return (
+      <div className={'card'}
+           style={{
+             marginTop: 0,
+             borderRadius: '5px',
+             padding: `
+         ${GConst.Spacing['0.25']}
+         ${GConst.Spacing['0.75']}
+         ${GConst.Spacing['0.5']}
+         ${GConst.Spacing['0.75']}`,
+           }}>
+        <div style={{
+          fontStyle: GConst.Font.Style.Italic,
+          fontSize: GConst.Font.Size.Medium,
+          marginBottom: GConst.Spacing['0.5'],
+        }}>
+          Add Controller
+        </div>
+
+        <div style={{
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={this.onAddItem}>
+              Add new item at:
+            </button>
+          </div>
+          <div style={{
+            display: 'flex',
+            width: '50%',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <div style={{
+              display: 'flex',
+              maxWidth: '180px',
+              alignItems: 'center',
+            }}>
+              <input style={{
+                minWidth: '100px',
+                width: '50%',
+                minHeight: '34px',
+                height: 'auto',
+                maxHeight: '34px',
+                borderRadius: '5px',
+                outline: 'none',
+                fontSize: '1rem',
+                textAlign: 'center',
+                paddingLeft: GConst.Spacing['0.5'],
+              }}
+                     type={'number'}
+                     placeholder={`Index`}
+                     value={indexToAddMore}
+                     onChange={this.handleChangeIndex}/>
+
+              <div style={{
+                display: 'flex',
+                width: '100%',
+                justifyContent: 'center',
+              }}>
+                <p
+                  style={{margin: 0}}>(index)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          marginTop: GConst.Spacing['0.75'],
+          border: '0.5px dashed #000',
+        }}/>
+
+        <div style={{
+          display: 'flex',
+          marginTop: GConst.Spacing['0.75'],
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={this.onAddItemTop}>
+              Add Top
+            </button>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={this.onAddItemBottom}>
+              Add Bottom
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  _renderScrollControl = () => {
+    const {itemIdToScroll} = this.state;
+    return (
+      <div className={'card'}
+           style={{
+             marginTop: GConst.Spacing['3'],
+             borderRadius: '5px',
+             padding: `
+         ${GConst.Spacing['0.25']}
+         ${GConst.Spacing['0.75']}
+         ${GConst.Spacing['0.5']}
+         ${GConst.Spacing['0.75']}`,
+           }}>
+        <div style={{
+          fontStyle: GConst.Font.Style.Italic,
+          fontSize: GConst.Font.Size.Medium,
+          marginBottom: GConst.Spacing['0.5'],
+        }}>
+          Scroll Controller
+        </div>
+
+        <div style={{
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              className={'other-hover'}
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={() => {
+                this.viewModel.scrollToSpecialItem('itemId_' + itemIdToScroll);
+              }}>
+              Scroll to item ID:
+            </button>
+          </div>
+          <div style={{
+            display: 'flex',
+            width: '50%',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <div style={{
+              display: 'flex',
+              maxWidth: '180px',
+              alignItems: 'center',
+            }}>
+              <input style={{
+                minWidth: '100px',
+                width: '50%',
+                minHeight: '34px',
+                height: 'auto',
+                maxHeight: '34px',
+                borderRadius: '5px',
+                outline: 'none',
+                fontSize: '1rem',
+                textAlign: 'center',
+                paddingLeft: GConst.Spacing['0.5'],
+              }}
+                     type={'number'}
+                     placeholder={`Item ID`}
+                     value={itemIdToScroll}
+                     onChange={this.handleChangeItemIdToScroll}/>
+
+              <div style={{
+                display: 'flex',
+                width: '100%',
+                justifyContent: 'center',
+              }}>
+                <p
+                  style={{margin: 0}}>(ID)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          marginTop: GConst.Spacing['0.75'],
+          border: '0.5px dashed #000',
+        }}/>
+
+        <div style={{
+          display: 'flex',
+          marginTop: GConst.Spacing['0.75'],
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              className={'other-hover'}
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={() => {
+                this.viewModel.scrollToTop();
+              }}>
+              Scroll To Top
+            </button>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              className={'other-hover'}
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={() => {
+                this.viewModel.scrollToBottom();
+              }}>
+              Scroll To Bottom
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  _renderDevTool = () => {
+    return (
+      <div className={'card'}
+           style={{
+             marginTop: GConst.Spacing['3'],
+             borderRadius: '5px',
+             padding: `
+         ${GConst.Spacing['0.25']}
+         ${GConst.Spacing['0.75']}
+         ${GConst.Spacing['0.5']}
+         ${GConst.Spacing['0.75']}`,
+           }}>
+        <div style={{
+          fontStyle: GConst.Font.Style.Italic,
+          fontSize: GConst.Font.Size.Medium,
+          marginBottom: GConst.Spacing['0.5'],
+        }}>
+          Dev tools
+        </div>
+
+        <div style={{
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+        }}>
+          <button
+            style={{
+              minWidth: '100px',
+              width: '100%',
+              minHeight: '40px',
+              height: 'auto',
+              maxHeight: '40px',
+              margin: GConst.Spacing[0],
+              fontSize: GConst.Font.Size.Medium,
+            }}
+            onClick={() => {
+              console.log(this.dataViewModel.getDataList);
+              console.log(this.viewModel.itemCache.getItemsMap);
+              console.log(this.viewModel.itemCache.getIndexMap);
+            }}>
+            Log data
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   _renderList = () => {
     return (
       <Masonry ref={this.masonry}
-               style={{marginTop: "10px", borderRadius: '5px'}}
+               style={{
+                 marginTop: '0px',
+                 borderRadius: '5px',
+               }}
                id={'Masonry'}
                viewModel={this.viewModel}
                height={700}
@@ -220,7 +674,7 @@ class Demo extends React.Component {
                additionAnim={'zoomIn'}
                removalAnim={'zoomOut'}
                timingResetAnimation={300}/>
-    )
+    );
   };
 
   render() {
@@ -230,12 +684,14 @@ class Demo extends React.Component {
         <div>Loading...</div>
         :
         <div className={'container'}>
-          <div
-            style={{display: 'flex', justifyContent: 'space-around'}}>
-            <div style={{width: '100%'}}>
-              {this._renderControlView()}
-              {this._renderList()}
-            </div>
+          {this._renderHeader()}
+
+          <div style={{
+            display: 'flex',
+            height: '870px',
+          }}>
+            {this._renderControlView()}
+            {this._renderList()}
           </div>
         </div>
     );
