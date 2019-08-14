@@ -28,7 +28,7 @@ type Props = {
   isStartAtBottom?: boolean,
   hideScrollToBottomBtn?: boolean,
   isItemScrollToInBottom?: boolean,
-  animationName?: string,
+  scrollToAnim?: string,
   additionAnim?: string,
   removalAnim?: string,
   timingResetAnimation?: number,
@@ -87,7 +87,7 @@ class Masonry extends React.Component<Props> {
     this.isDataChange = false;
 
     this.isStableAfterScrollToSpecialItem = false;
-    this.itemAddedAnim = {
+    this.itemAddedScrollToAnim = {
       itemId: undefined,
       anim: undefined,
     };
@@ -245,7 +245,7 @@ class Masonry extends React.Component<Props> {
     const itemCache = this.viewModel.getItemCache;
     const itemIndex = itemCache.getIndex(itemId);
 
-    const {removalAnim, timingResetAnimation} = this.props;
+    const {scrollToAnim, removalAnim} = this.props;
 
     if (itemIndex !== NOT_FOUND) {
       const itemHeight = itemCache.getHeight(itemId);
@@ -290,7 +290,7 @@ class Masonry extends React.Component<Props> {
     const {
       height,
       isItemScrollToInBottom,
-      animationName,
+      scrollToAnim,
       timingResetAnimation,
     } = this.props;
 
@@ -328,7 +328,7 @@ class Masonry extends React.Component<Props> {
       this._scrollToItemWithAnimUp(scrollTop,
         {
           itemId: itemId,
-          animationName: animationName,
+          animationName: scrollToAnim,
           timingResetAnimation: timingResetAnimation,
         },
       );
@@ -336,7 +336,7 @@ class Masonry extends React.Component<Props> {
     else {
       this._scrollToItemWithAnimDown(scrollTop, {
           itemId: itemId,
-          animationName: animationName,
+          animationName: scrollToAnim,
           timingResetAnimation: timingResetAnimation,
         },
       );
@@ -348,7 +348,7 @@ class Masonry extends React.Component<Props> {
     setTimeout(
       () => {
         this.isStableAfterScrollToSpecialItem = true;
-        this.itemAddedAnim = {
+        this.itemAddedScrollToAnim = {
           itemId: itemId,
           anim: animationNames,
         };
@@ -748,7 +748,7 @@ class Masonry extends React.Component<Props> {
 
     if (this.isStableAfterScrollToSpecialItem) {
       const el = this.masonry.firstChild.children.namedItem(this.itemAddedAnim.itemId);
-      this.removeStyle(el, this.itemAddedAnim.anim);
+      this.removeStyle(el, this.itemAddedScrollToAnim.anim);
       this.isStableAfterScrollToSpecialItem = false;
     }
 
