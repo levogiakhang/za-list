@@ -236,61 +236,6 @@ class Demo extends React.Component {
     return index >= startIndex && index <= endIndex;
   };
 
-  _renderControlView1 = () => {
-    const {itemIndexToScroll, moreIndex} = this.state;
-    return (
-      <div className={'control-view'}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-        }}>
-
-
-          <input className={'input-demo input-index'}
-                 type={'number'}
-                 placeholder={`Index`}
-                 value={moreIndex}
-                 onChange={this.handleChangeIndex}/>
-
-          <button className={'btn-control btn-add'}
-                  onClick={this.onAddItem}>
-            Add new item at:
-          </button>
-        </div>
-        <div style={{
-          display: 'flex',
-          margin: '20px',
-          justifyContent: 'space-around',
-        }}>
-
-
-          <button onClick={() => {
-            this.dataViewModel.insertItem(1, generation.generateItem(
-              randomInclusive(1, 3),
-              randomInclusive(0, 1) === 1,
-              100,
-              300));
-            this.itemCount++;
-          }}> Insert Item
-          </button>
-
-          <button onClick={() => {
-            console.log(this.dataViewModel.getDataList);
-            console.log(this.viewModel.itemCache.getItemsMap);
-            console.log(this.viewModel.itemCache.getIndexMap);
-          }}> Show Data
-          </button>
-
-          <button onClick={() => {
-            this.dataViewModel.onDataChanged();
-          }}> Show Data VM
-          </button>
-
-        </div>
-      </div>
-    );
-  };
-
   _renderHeader = () => {
     return (
       <div
