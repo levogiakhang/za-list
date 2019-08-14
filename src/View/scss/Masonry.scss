@@ -4,6 +4,7 @@ $background_color_2: rgba(0, 0, 0, 0.2);
 $background_color_3: white;
 
 .masonry-parent {
+  width: 100%;
   >div {
     &::-webkit-scrollbar-track {
       background-color: $background_color_1;
