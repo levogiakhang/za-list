@@ -291,7 +291,6 @@ class Masonry extends React.Component<Props> {
       height,
       isItemScrollToInBottom,
       scrollToAnim,
-      timingResetAnimation,
     } = this.props;
 
     const itemCache = this.viewModel.getItemCache;
@@ -329,7 +328,6 @@ class Masonry extends React.Component<Props> {
         {
           itemId: itemId,
           animationName: scrollToAnim,
-          timingResetAnimation: timingResetAnimation,
         },
       );
     }
@@ -337,13 +335,12 @@ class Masonry extends React.Component<Props> {
       this._scrollToItemWithAnimDown(scrollTop, {
           itemId: itemId,
           animationName: scrollToAnim,
-          timingResetAnimation: timingResetAnimation,
         },
       );
     }
   }
 
-  addAnimWhenScrollToSpecialItem(itemId, animationNames, timingResetAnimation) {
+  addAnimWhenScrollToSpecialItem(itemId, animationNames) {
     this.appendStyle(this.getElementFromId(itemId), animationNames);
     setTimeout(
       () => {
@@ -352,7 +349,7 @@ class Masonry extends React.Component<Props> {
           itemId: itemId,
           anim: animationNames,
         };
-      }, timingResetAnimation,
+      }, 16.66,
     );
   }
 
@@ -657,7 +654,7 @@ class Masonry extends React.Component<Props> {
 
   _scrollToItemWithAnimUp(
     offset: number,
-    {itemId, animationName, timingResetAnimation},
+    {itemId, animationName},
     stepInPixel: number = 30,
     msDelayInEachStep: number = 16.66) {
 
@@ -666,7 +663,7 @@ class Masonry extends React.Component<Props> {
       if (this.state.scrollTop <= offset) {
         clearInterval(this.state.intervalId);
         this._scrollToOffset(offset);
-        this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
+        this.addAnimWhenScrollToSpecialItem(itemId, animationName);
       }
     }, msDelayInEachStep);
 
@@ -675,7 +672,7 @@ class Masonry extends React.Component<Props> {
 
   _scrollToItemWithAnimDown(
     offset: number,
-    {itemId, animationName, timingResetAnimation},
+    {itemId, animationName},
     stepInPixel: number = 30,
     msDelayInEachStep: number = 16.66) {
 
@@ -684,7 +681,7 @@ class Masonry extends React.Component<Props> {
       if (this.state.scrollTop >= offset) {
         clearInterval(this.state.intervalId);
         this._scrollToOffset(offset);
-        this.addAnimWhenScrollToSpecialItem(itemId, animationName, timingResetAnimation);
+        this.addAnimWhenScrollToSpecialItem(itemId, animationName);
       }
     }, msDelayInEachStep);
 
@@ -747,7 +744,7 @@ class Masonry extends React.Component<Props> {
     const {height} = this.props;
 
     if (this.isStableAfterScrollToSpecialItem) {
-      const el = this.masonry.firstChild.children.namedItem(this.itemAddedAnim.itemId);
+      const el = this.masonry.firstChild.children.namedItem(this.itemAddedScrollToAnim.itemId);
       this.removeStyle(el, this.itemAddedScrollToAnim.anim);
       this.isStableAfterScrollToSpecialItem = false;
     }
