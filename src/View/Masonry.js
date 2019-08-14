@@ -463,7 +463,6 @@ class Masonry extends React.Component<Props> {
                height: height,
                minHeight: minHeight,
                position: 'relative',
-               willChange: 'auto',
                ...style,
              }}>
           <div
@@ -477,6 +476,7 @@ class Masonry extends React.Component<Props> {
               maxHeight: this.estimateTotalHeight,
               overflow: 'hidden',
               position: 'relative',
+              willChange: 'transform',
               pointerEvents: isScrolling ?
                 'none' :
                 '', // property defines whether or not an element reacts to pointer events.
@@ -598,7 +598,6 @@ class Masonry extends React.Component<Props> {
       // If an object or array, compare recursively
       if ([
         '[object Array]',
-      }
         '[object Object]',
       ].indexOf(itemType) >= 0) {
         if (item1 !== item2) {
