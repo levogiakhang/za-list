@@ -5,7 +5,6 @@ import './scss/Masonry.scss';
 import './anim/index.scss';
 import {
   NOT_FOUND,
-  OUT_OF_RANGE,
   DEBOUNCING_TIMER,
 } from '../utils/value';
 import CellMeasurer from '../CellMeasurer/CellMeasurer.js';
@@ -418,7 +417,6 @@ class Masonry extends React.Component<Props> {
       isScrolling,
     } = this.props;
 
-    const itemCache = this.viewModel.getItemCache;
     const {scrollTop} = this.state;
 
     this.curItemInViewPort = this._getItemIdFromPosition(scrollTop);

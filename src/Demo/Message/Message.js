@@ -6,7 +6,6 @@ import isFunction from '../../vendors/isFunction';
 import Image from './Image';
 import NormalMessage from './NormalMessage';
 import GConst from '../utils/values';
-import reactImg from '../resources/img/emoji.png';
 
 type OnRemoveItemCallback = any;
 
