@@ -59,6 +59,7 @@ class DataViewModel {
   }
 
   updateNewData(data) {
+    this.clearData();
     this.setData(data);
     this.init();
   }
@@ -116,6 +117,10 @@ class DataViewModel {
     this.data.length === 0 ?
       this.insertItems(0, arrItem) :
       this.insertItems(this.data.length - 1, arrItem);
+  }
+
+  hasItem(itemId: string): boolean {
+    return this.dataMap.has(itemId);
   }
 
   getItem(itemId: string): Object {

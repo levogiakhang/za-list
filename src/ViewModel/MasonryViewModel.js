@@ -1,7 +1,10 @@
-import { NOT_FOUND, OUT_OF_RANGE } from "../utils/value";
-import isFunction from "../vendors/isFunction";
+import {
+  NOT_FOUND,
+  OUT_OF_RANGE,
+} from '../utils/value';
+import isFunction from '../vendors/isFunction';
 
-type EventTypes = 'loadTop' | 'loadBottom';
+type EventTypes = 'loadTop' | 'loadBottom' | 'lookUpItemToScroll';
 type Callback = (params: any) => any;
 
 class MasonryViewModel {
@@ -32,7 +35,7 @@ class MasonryViewModel {
       this.storageEvent[eventName].push(callback) :
       this.storageEvent = {
         ...this.storageEvent,
-        [eventName]: [(callback)]
+        [eventName]: [(callback)],
       };
   }
 
@@ -87,12 +90,20 @@ class MasonryViewModel {
   scrollToSpecialItem(itemId) {
     if (this.masonry &&
       this.masonry.current) {
-      if (!this.itemCache.hasItem(itemId)) {
+      if (!this.dataViewModel.hasItem(itemId)) {
         // Send a notification to outside.
-        console.log('Dont have this item');
-      } else {
+        this.storageEvent['lookUpItemToScroll'][0](itemId);
+      }
+      else {
         this.masonry.current.scrollToSpecialItem(itemId);
       }
+    }
+  }
+
+  pendingScrollToSpecialItem(numOfItems: number, itemId: string) {
+    if (this.masonry &&
+      this.masonry.current) {
+      this.masonry.current.pendingScrollToSpecialItem(numOfItems, itemId);
     }
   }
 
@@ -203,7 +214,7 @@ class MasonryViewModel {
               itemCache.getIndex(followingItemId),
               itemCache.getHeight(followingItemId),
               currentItemPosition + currentItemHeight,
-              itemCache.isRendered(followingItemId)
+              itemCache.isRendered(followingItemId),
             );
             currentItemId = followingItemId;
           }
@@ -223,7 +234,9 @@ class MasonryViewModel {
   _getItemIdFromIndex(index: number): string {
     const data = this.getDataList;
     if (!!data.length) {
-      if (index >= data.length || index < 0) return OUT_OF_RANGE;
+      if (index >= data.length || index < 0) {
+        return OUT_OF_RANGE;
+      }
       return this.getItemCache.getItemId(index);
     }
   }
@@ -232,7 +245,7 @@ class MasonryViewModel {
     if (this.masonry &&
       this.masonry.current) {
       this.clear();
-      this.setData(data);
+      this.dataViewModel.updateNewData(data);
       this.masonry.current.initialize();
       this.masonry.current.reRender();
     }
@@ -289,11 +302,6 @@ class MasonryViewModel {
 
   get getItemCache() {
     return this.itemCache;
-  }
-
-  setData(data) {
-    this.dataViewModel = [];
-    this.dataViewModel = data;
   }
 
   setMasonry(masonry) {

@@ -41,7 +41,7 @@ const NEED_TO_SCROLL_BOTTOM_POS = 600;
 
 class Masonry extends React.Component<Props> {
   static defaultProps = {
-    minWidth: 200,
+    minWidth: 500,
     height: 500,
     minHeight: 500,
     style: {
@@ -77,6 +77,9 @@ class Masonry extends React.Component<Props> {
     this.isScrollBack = false;
     this.loadDone = false;
     this.initItemCount = 0;
+    this.scrollToSpecialItemCount = 0;
+    this.numOfNewLoading = 0;
+    this.itemIdToScroll = '';
 
     this.oldData = {
       oldLength: 0,
@@ -145,8 +148,6 @@ class Masonry extends React.Component<Props> {
         this._addStaticItemToChildren(index, item);
       });
       itemCache.updateIndexMap(0, data);
-    } else {
-      console.error("Data list is not an array");
     }
     else {
       console.error('Data list is not an array');
@@ -172,7 +173,6 @@ class Masonry extends React.Component<Props> {
 
   onChildrenChangeHeight(itemId: string, oldHeight: number, newHeight: number) {
     const itemCache = this.viewModel.getItemCache;
-
     if (itemCache.getHeight(itemId) !== newHeight) {
       // For load more top
       if (!itemCache.isRendered(itemId) && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldData.firstItem)) {
@@ -214,6 +214,14 @@ class Masonry extends React.Component<Props> {
         this.loadDone = true;
       }
 
+      if (this.scrollToSpecialItemCount < this.numOfNewLoading - 1) {
+        this.scrollToSpecialItemCount++;
+      }
+      else {
+        this.scrollToSpecialItemCount = 0;
+        this.numOfNewLoading = 0;
+        //this.scrollToSpecialItem(this.itemIdToScroll);
+      }
       this.setState(this.state); // instead of this.forceUpdate();
     }
   }
@@ -253,6 +261,7 @@ class Masonry extends React.Component<Props> {
       const el = document.getElementById(itemId);
       el.style.position = 'absolute';
       el.style.top = itemCache.getPosition(itemId) + 'px';
+      this.removeStyle(el, scrollToAnim);
 
       const parent = el.parentElement;
 
@@ -424,7 +433,7 @@ class Masonry extends React.Component<Props> {
       !this.isLoadingTop &&
       !this.preventLoadTop
     ) {
-      this.viewModel.enableLoadMoreTop();
+      //this.viewModel.enableLoadMoreTop();
     }
 
     // trigger load more bottom
@@ -434,7 +443,7 @@ class Masonry extends React.Component<Props> {
       this.isFirstLoadingDone &&
       !this.preventLoadBottom
     ) {
-      this.viewModel.enableLoadMoreBottom();
+      //this.viewModel.enableLoadMoreBottom();
     }
 
     if (this.isDataChange) {
@@ -515,7 +524,7 @@ class Masonry extends React.Component<Props> {
 
     // Notify if viewport is not full.
     if (this.isFirstLoadingDone && this.estimateTotalHeight < height) {
-      this.viewModel.enableLoadMoreTop();
+      //this.viewModel.enableLoadMoreTop();
     }
 
     // Check scroll to old position when load more top.
@@ -545,6 +554,7 @@ class Masonry extends React.Component<Props> {
     if (this.needScrollBottom) {
       this.needScrollBottom = false;
       if (scrollTop >= this.estimateTotalHeight - this.newLastItemHeight - height - NEED_TO_SCROLL_BOTTOM_POS) {
+       //TODO: conflict with "resize" after add bottom
         this._scrollToOffset(this.estimateTotalHeight);
       }
     }
@@ -560,6 +570,11 @@ class Masonry extends React.Component<Props> {
       itemId: this.curItemInViewPort,
       disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort),
     };
+  }
+
+  pendingScrollToSpecialItem(numOfItems, itemId) {
+    this.numOfNewLoading = numOfItems;
+    this.itemIdToScroll = itemId;
   }
 
   isEqual(arr, other) {
