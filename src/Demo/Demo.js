@@ -216,7 +216,7 @@ class Demo extends React.Component {
                cellRenderer={Demo.cellRender}
                isStartAtBottom={true}
                isItemScrollToInBottom={true}
-               animationName={'highlighted shake'}
+               scrollToAnim={'highlighted zoomScaling'}
                additionAnim={'zoomIn'}
                removalAnim={'zoomOut'}
                timingResetAnimation={300}/>

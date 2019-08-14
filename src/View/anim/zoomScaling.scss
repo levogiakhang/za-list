@@ -1,0 +1,21 @@
+@keyframes zoomScaling {
+  from {
+
+  }
+
+  35% {
+    transform: scale(1.05);
+  }
+
+  60% {
+    transform: scale(1.05);
+  }
+
+  to {
+
+  }
+}
+
+.zoomScaling {
+  animation: zoomScaling 0.5s linear;
+}
