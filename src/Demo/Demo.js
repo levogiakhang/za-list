@@ -55,6 +55,8 @@ class Demo extends React.Component {
     });
 
     //this.dataViewModel.addEventListener('onDataChanged', this.viewModel.onDataChanged);
+    this.viewModel.addEventListener('addItem', this.addItemToDataTotal);
+    this.viewModel.addEventListener('removeItem', this.removeItemFromDataTotal);
     this.viewModel.addEventListener('loadTop', this.enableLoadMoreTop);
     this.viewModel.addEventListener('loadBottom', this.enableLoadMoreBottom);
     this.viewModel.addEventListener('lookUpItemToScroll', this.lookUpItem);
@@ -196,6 +198,36 @@ class Demo extends React.Component {
     let item = generation.generateItems(1)[0];
     this.viewModel.onAddItem(this.viewModel.getDataList.length, item);
   };
+
+  addItemToDataTotal = (item, beforeItemId, afterItemId) => {
+    if (Array.isArray(this.dataTotal)) {
+      if(beforeItemId !== null) {
+        this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, 0, item);
+      } else {
+        this.dataTotal.splice(this.dataTotalMap.get(afterItemId), 0, item);
+      }
+      this.updateDataIndexMap();
+    }
+  };
+
+  removeItemFromDataTotal = (itemId, beforeItemId, afterItemId) => {
+    if (Array.isArray(this.dataTotal)) {
+      if(beforeItemId !== null) {
+        this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, 1);
+      } else {
+        this.dataTotal.splice(this.dataTotalMap.get(afterItemId) - 2, 1);
+      }
+      this.updateDataIndexMap();
+      this.dataTotalMap.delete(itemId);
+    }
+  };
+
+  updateDataIndexMap() {
+    // High cost :)
+    this.dataTotal.forEach((item) => {
+      this.dataTotalMap.set(item.itemId, this.dataTotal.indexOf(item));
+    });
+  }
 
 
   /* ========================================================================
@@ -602,6 +634,7 @@ class Demo extends React.Component {
             }}
             onClick={() => {
               console.log('total data: ', this.dataTotal);
+              console.log('total data map: ', this.dataTotalMap);
               console.log('data on VM: ', this.viewModel.getDataList);
               console.log('items map: ', this.viewModel.itemCache.getItemsMap);
               console.log('index map: ', this.viewModel.itemCache.getIndexMap);

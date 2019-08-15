@@ -4,7 +4,12 @@ import {
 } from '../utils/value';
 import isFunction from '../vendors/isFunction';
 
-type EventTypes = 'loadTop' | 'loadBottom' | 'lookUpItemToScroll';
+type EventTypes =
+  'addItem' |
+  'removeItem' |
+  'loadTop' |
+  'loadBottom' |
+  'lookUpItemToScroll';
 type Callback = (params: any) => any;
 
 class MasonryViewModel {
@@ -182,6 +187,19 @@ class MasonryViewModel {
       newItemPos,
       false);
     this.itemCache.updateItemsMap(index - 1, data.length);
+
+    let beforeItemId = this.itemCache.getItemId(index - 1);
+    let afterItemId = this.itemCache.getItemId(index + 1);
+
+    if (beforeItemId === NOT_FOUND) {
+      beforeItemId = null;
+    }
+    if (afterItemId === NOT_FOUND) {
+      afterItemId = null;
+    }
+
+    // notify to outside to add new item.
+    this.storageEvent['addItem'][0](item, beforeItemId, afterItemId);
   }
 
   _deleteItem(itemId: string, deleteCount: number = 1) {
@@ -190,6 +208,18 @@ class MasonryViewModel {
     this._updateItemsPositionFromSpecifiedItem(itemId);
     this.dataViewModel.deleteItem(itemIndex, deleteCount);
     this.itemCache.deleteItem(itemIndex, itemId, this.dataViewModel.getDataList);
+
+    let beforeItemId = this.itemCache.getItemId(itemIndex - 1);
+    let afterItemId = this.itemCache.getItemId(itemIndex + 1);
+
+    if (beforeItemId === NOT_FOUND) {
+      beforeItemId = null;
+    }
+    if (afterItemId === NOT_FOUND) {
+      afterItemId = null;
+    }
+    // notify to outside to remove item.
+    this.storageEvent['removeItem'][0](itemId, beforeItemId, afterItemId);
   }
 
   /**
