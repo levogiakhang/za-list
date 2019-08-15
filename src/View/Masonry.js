@@ -131,29 +131,21 @@ class Masonry extends React.Component<Props> {
   }
 
   initialize() {
-    const data = this.viewModel.getDataList;
-    const itemCache = this.viewModel.getItemCache;
+    const data = this.viewModel.getDataOnList;
     this.children = [];
-
     this._updateOldData();
+
     if (Array.isArray(data)) {
       // eslint-disable-next-line array-callback-return
       data.map((item, index) => {
-        itemCache.updateItemOnMap(
-          item.itemId,
-          data.indexOf(item),
-          itemCache.defaultHeight,
-          0,
-          false);
         this._addStaticItemToChildren(index, item);
       });
-      itemCache.updateIndexMap(0, data);
     }
     else {
       console.error('Data list is not an array');
     }
 
-    //this.itemsInBatch = [...dataViewModel];
+    //this.itemsInBatch = [...dataOnList];
     this.estimateTotalHeight = this._getEstimatedTotalHeight();
     this.oldEstimateTotalHeight = this.estimateTotalHeight;
   }
@@ -207,10 +199,10 @@ class Masonry extends React.Component<Props> {
       this._updateEstimatedHeight(newHeight - oldHeight);
 
 
-      if (this.initItemCount < this.viewModel.getDataList.length - 1) {
+      if (this.initItemCount < this.viewModel.getDataOnList.length - 1) {
         this.initItemCount++;
       }
-      else if (this.initItemCount === this.viewModel.getDataList.length - 1) {
+      else if (this.initItemCount === this.viewModel.getDataOnList.length - 1) {
         this.loadDone = true;
       }
 
@@ -226,18 +218,13 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  addChildrenOnDataChangedFromOtherViewModel(index, item) {
-    this._updateEstimatedHeight(this.viewModel.getItemCache.defaultHeight);
-    this._addStaticItemToChildren(index, item);
-  }
-
   onAddItem(index, item) {
     this.isAddMore = true;
 
     if (parseInt(index) === 0) {
       this.isAddFirst = true;
     }
-    if (parseInt(index) === this.viewModel.getDataList.length) {
+    if (parseInt(index) === this.viewModel.getDataOnList.length) {
       this.isAddLast = true;
     }
     this.firstItemInViewportBeforeAddMore = {
@@ -274,7 +261,7 @@ class Masonry extends React.Component<Props> {
       this.appendStyle(el, removalAnim);
       const removeAnim = document.querySelector(`.${removalAnim}`);
       removeAnim.addEventListener('animationend', () => {
-        // clear real el from data, itemCache
+        // clear real el from dataOnList, itemCache
         this.viewModel._deleteItem(itemId);
         this._updateOldData();
 
@@ -447,7 +434,7 @@ class Masonry extends React.Component<Props> {
     }
 
     if (this.isDataChange) {
-      console.log('data changed');
+      console.log('dataOnList changed');
     }
 
     if (!this.isEqual(this.itemsInBatch, this.oldItemsInBatch)) {
@@ -499,7 +486,7 @@ class Masonry extends React.Component<Props> {
   }
 
   componentDidUpdate() {
-    const data = this.viewModel.getDataList;
+    const data = this.viewModel.getDataOnList;
     const {height} = this.props;
     const {scrollTop} = this.state;
 
@@ -791,7 +778,7 @@ class Masonry extends React.Component<Props> {
    *  Get total height in estimation.
    */
   _getEstimatedTotalHeight(): number {
-    const data = this.viewModel.getDataList;
+    const data = this.viewModel.getDataOnList;
     let totalHeight = 0;
 
     if (!!data.length) {
@@ -806,7 +793,7 @@ class Masonry extends React.Component<Props> {
   }
 
   _updateOldData() {
-    const data = this.viewModel.getDataList;
+    const data = this.viewModel.getDataOnList;
     if (!!data.length) {
       this.oldData.oldLength = data.length;
       if (!!data[0]) {
@@ -822,7 +809,7 @@ class Masonry extends React.Component<Props> {
    *  Update all items' position
    */
   _updateItemsPosition() {
-    const data = this.viewModel.getDataList;
+    const data = this.viewModel.getDataOnList;
     const itemCache = this.viewModel.getItemCache;
 
     if (Array.isArray(data)) {
@@ -856,7 +843,7 @@ class Masonry extends React.Component<Props> {
    *  @return {number} - OUT_OF_RANGE ('out of range'): if position param is greater than total height.
    */
   _getItemIdFromPosition(positionTop: number): string {
-    const data = this.viewModel.getDataList;
+    const data = this.viewModel.getDataOnList;
     const itemCache = this.viewModel.getItemCache;
     if (!!data.length) {
       if (positionTop >= this.estimateTotalHeight) {

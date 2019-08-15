@@ -3,7 +3,6 @@ import './scss/Demo.scss';
 import Masonry from '../View/Masonry.js';
 import MasonryViewModel from '../ViewModel/MasonryViewModel';
 import Message from './Message/Message';
-import DataViewModel from '../ViewModel/DataViewModel';
 import ItemCache from '../utils/ItemCache';
 import generation from './utils/Generation';
 import GConst from './utils/values';
@@ -49,12 +48,12 @@ class Demo extends React.Component {
     this.itemCache = new ItemCache(150);
 
     this.viewModel = new MasonryViewModel({
-      dataViewModel: new DataViewModel(this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER)),
+      dataOnList: this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER),
       node: this.masonry,
       itemCache: this.itemCache,
     });
 
-    //this.dataViewModel.addEventListener('onDataChanged', this.viewModel.onDataChanged);
+    //this.dataOnList.addEventListener('onDataChanged', this.viewModel.onDataChanged);
     this.viewModel.addEventListener('addItem', this.addItemToDataTotal);
     this.viewModel.addEventListener('removeItem', this.removeItemFromDataTotal);
     this.viewModel.addEventListener('loadTop', this.enableLoadMoreTop);
@@ -67,7 +66,7 @@ class Demo extends React.Component {
    Handle Changes
    ======================================================================== */
   handleChangeIndex(e) {
-    if (this._isInRange(e.target.value, 0, this.viewModel.getDataList.length)) {
+    if (this._isInRange(e.target.value, 0, this.viewModel.getDataOnList.length)) {
       this.setState({indexToAddMore: e.target.value});
     }
     else {
@@ -103,7 +102,7 @@ class Demo extends React.Component {
         newArrItemId.push(item.itemId);
       });
       const oldArrItemId = [];
-      this.viewModel.getDataList.forEach(item => {
+      this.viewModel.getDataOnList.forEach(item => {
         oldArrItemId.push(item.itemId);
       });
       this.viewModel.updateData(newData);
@@ -184,7 +183,7 @@ class Demo extends React.Component {
   onAddItem = () => {
     const {indexToAddMore} = this.state;
     let item = generation.generateItems(1)[0];
-    if (this._isInRange(indexToAddMore, 0, this.viewModel.getDataList.length)) {
+    if (this._isInRange(indexToAddMore, 0, this.viewModel.getDataOnList.length)) {
       this.viewModel.onAddItem(indexToAddMore, item);
     }
   };
@@ -196,7 +195,7 @@ class Demo extends React.Component {
 
   onAddItemBottom = () => {
     let item = generation.generateItems(1)[0];
-    this.viewModel.onAddItem(this.viewModel.getDataList.length, item);
+    this.viewModel.onAddItem(this.viewModel.getDataOnList.length, item);
   };
 
   addItemToDataTotal = (item, beforeItemId, afterItemId) => {
@@ -217,7 +216,7 @@ class Demo extends React.Component {
         this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, 1);
       }
       else {
-        this.dataTotal.splice(this.dataTotalMap.get(afterItemId) - 2, 1);
+        this.dataTotal.splice(this.dataTotalMap.get(afterItemId) - 1, 1);
       }
       this.updateDataIndexMap();
       this.dataTotalMap.delete(itemId);
@@ -637,7 +636,7 @@ class Demo extends React.Component {
             onClick={() => {
               console.log('total data: ', this.dataTotal);
               console.log('total data map: ', this.dataTotalMap);
-              console.log('data on VM: ', this.viewModel.getDataList);
+              console.log('data on VM: ', this.viewModel.getDataOnList);
               console.log('items map: ', this.viewModel.itemCache.getItemsMap);
               console.log('index map: ', this.viewModel.itemCache.getIndexMap);
             }}>
