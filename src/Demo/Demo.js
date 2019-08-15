@@ -201,9 +201,10 @@ class Demo extends React.Component {
 
   addItemToDataTotal = (item, beforeItemId, afterItemId) => {
     if (Array.isArray(this.dataTotal)) {
-      if(beforeItemId !== null) {
+      if (beforeItemId !== null) {
         this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, 0, item);
-      } else {
+      }
+      else {
         this.dataTotal.splice(this.dataTotalMap.get(afterItemId), 0, item);
       }
       this.updateDataIndexMap();
@@ -212,9 +213,10 @@ class Demo extends React.Component {
 
   removeItemFromDataTotal = (itemId, beforeItemId, afterItemId) => {
     if (Array.isArray(this.dataTotal)) {
-      if(beforeItemId !== null) {
+      if (beforeItemId !== null) {
         this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, 1);
-      } else {
+      }
+      else {
         this.dataTotal.splice(this.dataTotalMap.get(afterItemId) - 2, 1);
       }
       this.updateDataIndexMap();
@@ -640,6 +642,28 @@ class Demo extends React.Component {
               console.log('index map: ', this.viewModel.itemCache.getIndexMap);
             }}>
             Log data
+          </button>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+          marginTop: GConst.Spacing['0.5'],
+        }}>
+          <button
+            style={{
+              minWidth: '370px',
+              width: '100%',
+              minHeight: '40px',
+              height: 'auto',
+              maxHeight: '40px',
+              margin: GConst.Spacing[0],
+              fontSize: GConst.Font.Size.Medium,
+            }}
+            onClick={() => {
+              console.clear();
+            }}>
+            Clear log
           </button>
         </div>
       </div>
