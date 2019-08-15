@@ -237,6 +237,8 @@ class Masonry extends React.Component<Props> {
   }
 
   onRemoveItem(itemId: string) {
+    const {height} = this.props;
+    const {scrollTop} = this.state;
     const itemCache = this.viewModel.getItemCache;
     const itemIndex = itemCache.getIndex(itemId);
 
@@ -257,6 +259,22 @@ class Masonry extends React.Component<Props> {
       stuntman.setAttribute('style', `height: ${itemHeight}px; width:100%; clear:both; position: relative`);
 
       parent.insertBefore(stuntman, el);
+
+      if (this.estimateTotalHeight > height &&
+        scrollTop >= itemHeight &&
+        this.estimateTotalHeight - itemHeight > height &&
+        scrollTop >= this.estimateTotalHeight - height - itemHeight) {
+        const topEl = document.createElement('DIV');
+        topEl.setAttribute('style', `height: 0px; width:100%; clear:both; position: relative`);
+        topEl.style.setProperty('--itemHeight', itemHeight + 'px');
+        parent.prepend(topEl);
+        const fakeAnimName = 'makeBigger';
+        this.appendStyle(topEl, fakeAnimName);
+        const fakeAnim = document.querySelector(`.${fakeAnimName}`);
+        fakeAnim.addEventListener('animationend', () => {
+          parent.removeChild(topEl);
+        });
+      }
 
       this.appendStyle(el, removalAnim);
       const removeAnim = document.querySelector(`.${removalAnim}`);
@@ -539,7 +557,7 @@ class Masonry extends React.Component<Props> {
     if (this.needScrollBottom) {
       this.needScrollBottom = false;
       if (scrollTop >= this.estimateTotalHeight - this.newLastItemHeight - height - NEED_TO_SCROLL_BOTTOM_POS) {
-       //TODO: conflict with "resize" after add bottom
+        //TODO: conflict with "resize" after add bottom
         this.scrollToBottomAtCurrentUI();
       }
     }
