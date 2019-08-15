@@ -451,9 +451,7 @@ class Masonry extends React.Component<Props> {
                backgroundColor: 'cornflowerblue',
                boxSizing: 'border-box',
                overflowX: 'hidden',
-               overflowY: this.estimateTotalHeight < height ?
-                 'hidden' :
-                 'auto',
+               overflowY: 'scroll',
                width: 'auto',
                minWidth: minWidth,
                height: height,
