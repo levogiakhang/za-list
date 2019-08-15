@@ -1,0 +1,13 @@
+@keyframes makeBigger {
+  from {
+    height: 0;
+  }
+
+  to {
+    height: var(--itemHeight);
+  }
+}
+
+.makeBigger {
+  animation: makeBigger 0.3s ease;
+}
