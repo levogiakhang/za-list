@@ -524,7 +524,7 @@ class Demo extends React.Component {
               onClick={() => {
                 this.viewModel.scrollToTop();
               }}>
-              Scroll To Top
+              Scroll To Top UI
             </button>
           </div>
 
@@ -546,9 +546,38 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.scrollToBottom();
+                this.viewModel.scrollToBottomAtCurrentUI();
               }}>
-              Scroll To Bottom
+              Scroll To Bottom UI
+            </button>
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          marginTop: GConst.Spacing['0.75'],
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '100%',
+          }}>
+            <button
+              className={'other-hover'}
+              style={{
+                minWidth: '370px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={() => {
+                this.viewModel.scrollToTop();
+              }}>
+              Scroll To Bottom (Last Item)
             </button>
           </div>
         </div>
