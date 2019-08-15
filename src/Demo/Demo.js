@@ -603,9 +603,10 @@ class Demo extends React.Component {
               fontSize: GConst.Font.Size.Medium,
             }}
             onClick={() => {
-              console.log(this.dataViewModel.getDataList);
-              console.log(this.viewModel.itemCache.getItemsMap);
-              console.log(this.viewModel.itemCache.getIndexMap);
+              console.log('total data: ', this.dataTotal);
+              console.log('data on VM: ', this.dataViewModel.getDataList);
+              console.log('items map: ', this.viewModel.itemCache.getItemsMap);
+              console.log('index map: ', this.viewModel.itemCache.getIndexMap);
             }}>
             Log data
           </button>
