@@ -6,7 +6,6 @@ import Message from './Message/Message';
 import DataViewModel from '../ViewModel/DataViewModel';
 import ItemCache from '../utils/ItemCache';
 import generation from './utils/Generation';
-import { randomInclusive } from './utils/math';
 import GConst from './utils/values';
 
 const DATA_TOTAL_NUMBER = 100;
@@ -30,7 +29,6 @@ class Demo extends React.Component {
       this.dataTotalMap.set(item.itemId, this.dataTotal.indexOf(item));
     });
 
-    this.dataViewModel = new DataViewModel(this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER));
 
     this.handleChangeIndex = this.handleChangeIndex.bind(this);
     this.handleChangeItemIdToScroll = this.handleChangeItemIdToScroll.bind(this);
@@ -51,7 +49,7 @@ class Demo extends React.Component {
     this.itemCache = new ItemCache(150);
 
     this.viewModel = new MasonryViewModel({
-      dataViewModel: this.dataViewModel,
+      dataViewModel: new DataViewModel(this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER)),
       node: this.masonry,
       itemCache: this.itemCache,
     });
@@ -67,7 +65,7 @@ class Demo extends React.Component {
    Handle Changes
    ======================================================================== */
   handleChangeIndex(e) {
-    if (this._isInRange(e.target.value, 0, this.dataViewModel.getDataList.length)) {
+    if (this._isInRange(e.target.value, 0, this.viewModel.getDataList.length)) {
       this.setState({indexToAddMore: e.target.value});
     }
     else {
@@ -184,7 +182,7 @@ class Demo extends React.Component {
   onAddItem = () => {
     const {indexToAddMore} = this.state;
     let item = generation.generateItems(1)[0];
-    if (this._isInRange(indexToAddMore, 0, this.dataViewModel.getDataList.length)) {
+    if (this._isInRange(indexToAddMore, 0, this.viewModel.getDataList.length)) {
       this.viewModel.onAddItem(indexToAddMore, item);
     }
   };
@@ -196,7 +194,7 @@ class Demo extends React.Component {
 
   onAddItemBottom = () => {
     let item = generation.generateItems(1)[0];
-    this.viewModel.onAddItem(this.dataViewModel.getDataList.length, item);
+    this.viewModel.onAddItem(this.viewModel.getDataList.length, item);
   };
 
 
@@ -604,7 +602,7 @@ class Demo extends React.Component {
             }}
             onClick={() => {
               console.log('total data: ', this.dataTotal);
-              console.log('data on VM: ', this.dataViewModel.getDataList);
+              console.log('data on VM: ', this.viewModel.getDataList);
               console.log('items map: ', this.viewModel.itemCache.getItemsMap);
               console.log('index map: ', this.viewModel.itemCache.getIndexMap);
             }}>
