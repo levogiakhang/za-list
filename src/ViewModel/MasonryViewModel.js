@@ -18,7 +18,7 @@ class MasonryViewModel {
 
     this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
     this.scrollToTop = this.scrollToTop.bind(this);
-    this.scrollToBottom = this.scrollToBottom.bind(this);
+    this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
     this.onRemoveItem = this.onRemoveItem.bind(this);
     this.onAddItem = this.onAddItem.bind(this);
     this.onUpdateItem = this.onUpdateItem.bind(this);
@@ -114,10 +114,10 @@ class MasonryViewModel {
     }
   }
 
-  scrollToBottom() {
+  scrollToBottomAtCurrentUI() {
     if (this.masonry &&
       this.masonry.current) {
-      this.masonry.current.scrollToBottom();
+      this.masonry.current.scrollToBottomAtCurrentUI();
     }
   }
 

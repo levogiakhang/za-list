@@ -125,7 +125,7 @@ class Masonry extends React.Component<Props> {
     this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
     //this._updateMapOnAddData = this._updateMapOnAddData.bind(this);
     this.scrollToTop = this.scrollToTop.bind(this);
-    this.scrollToBottom = this.scrollToBottom.bind(this);
+    this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
     this._addStaticItemToChildren = this._addStaticItemToChildren.bind(this);
     this.initialize();
   }
@@ -401,7 +401,7 @@ class Masonry extends React.Component<Props> {
     this._scrollToOffset(0);
   };
 
-  scrollToBottom() {
+  scrollToBottomAtCurrentUI() {
     this.preventLoadBottom = true;
     this._scrollToOffset(this.estimateTotalHeight);
   };
@@ -555,7 +555,7 @@ class Masonry extends React.Component<Props> {
       this.needScrollBottom = false;
       if (scrollTop >= this.estimateTotalHeight - this.newLastItemHeight - height - NEED_TO_SCROLL_BOTTOM_POS) {
        //TODO: conflict with "resize" after add bottom
-        this._scrollToOffset(this.estimateTotalHeight);
+        this.scrollToBottomAtCurrentUI();
       }
     }
 
