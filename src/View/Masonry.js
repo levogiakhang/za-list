@@ -728,19 +728,6 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  // //TODO: add data at?
-  // _updateMapOnAddData() {
-  //   const data = this.viewModel.getDataList;
-  //   const itemCache = this.viewModel.getItemCache;
-  //
-  //   if (this.oldData.oldLength < data.length) {
-  //     itemCache.updateIndexMap(0, data);
-  //     itemCache.updateItemsMap(0, data);
-  //     this._updateItemsPosition();
-  //     this._scrollToItem(this.firstItemInViewport.itemId, this.firstItemInViewport.disparity)
-  //   }
-  // }
-
   _addStaticItemToChildren(index, item) {
     const {isVirtualized, cellRenderer} = this.props;
     const defaultHeight = this.viewModel.getItemCache.getDefaultHeight;
