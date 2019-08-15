@@ -59,6 +59,8 @@ class Masonry extends React.Component<Props> {
     super(props);
     this.viewModel = props.viewModel;
 
+    this.timeOutId = undefined;
+
     /* Scroll to bottom when the first loading */
     this.isFirstLoadingDone = false;
     this.isLoadingTop = false;
@@ -260,25 +262,8 @@ class Masonry extends React.Component<Props> {
 
       parent.insertBefore(stuntman, el);
 
-      if (this.estimateTotalHeight > height &&
-        scrollTop >= itemHeight &&
-        this.estimateTotalHeight - itemHeight > height &&
-        scrollTop >= this.estimateTotalHeight - height - itemHeight) {
-        const topEl = document.createElement('DIV');
-        topEl.setAttribute('style', `height: 0px; width:100%; clear:both; position: relative`);
-        topEl.style.setProperty('--itemHeight', itemHeight + 'px');
-        parent.prepend(topEl);
-        const fakeAnimName = 'makeBigger';
-        this.appendStyle(topEl, fakeAnimName);
-        const fakeAnim = document.querySelector(`.${fakeAnimName}`);
-        fakeAnim.addEventListener('animationend', () => {
-          parent.removeChild(topEl);
-        });
-      }
-
       this.appendStyle(el, removalAnim);
-      const removeAnim = document.querySelector(`.${removalAnim}`);
-      removeAnim.addEventListener('animationend', () => {
+      el.addEventListener('animationend', () => {
         // clear real el from dataOnList, itemCache
         this.viewModel._deleteItem(itemId);
         this._updateOldData();
@@ -289,14 +274,32 @@ class Masonry extends React.Component<Props> {
         this.setState(this.state);
       });
 
-      const zoomInAnimName = 'makeInvisible';
+      if (this.estimateTotalHeight > height &&
+        scrollTop >= itemHeight &&
+        this.estimateTotalHeight - itemHeight > height &&
+        scrollTop >= this.estimateTotalHeight - height - itemHeight) {
+
+        const topEl = document.createElement('DIV');
+        topEl.setAttribute('style', `height: 0px; width:100%; clear:both; position: relative`);
+        topEl.style.setProperty('--itemHeight', itemHeight + 'px');
+        parent.prepend(topEl);
+
+        this.appendStyle(topEl, 'makeBigger');
+        topEl.addEventListener('animationend', () => {
+          parent.removeChild(topEl);
+        });
+      }
+      else if (this.estimateTotalHeight - itemHeight < height) {
+        this._scrollTopWithAnim();
+      }
+
       stuntman.style.setProperty('--itemHeight', itemHeight + 'px');
-      this.appendStyle(stuntman, zoomInAnimName);
-      const zoomInAnim = document.querySelector(`.${zoomInAnimName}`);
-      zoomInAnim.addEventListener('animationend', () => {
+      this.appendStyle(stuntman, 'makeInvisible');
+      stuntman.addEventListener('animationend', () => {
         // remove from UI
         parent.removeChild(stuntman);
       });
+
     }
   }
 
@@ -338,19 +341,10 @@ class Masonry extends React.Component<Props> {
     }
 
     if (scrollTop < this.state.scrollTop) {
-      this._scrollToItemWithAnimUp(scrollTop,
-        {
-          itemId: itemId,
-          animationName: scrollToAnim,
-        },
-      );
+      this._scrollToItemWithAnimUp(scrollTop, itemId, scrollToAnim);
     }
     else {
-      this._scrollToItemWithAnimDown(scrollTop, {
-          itemId: itemId,
-          animationName: scrollToAnim,
-        },
-      );
+      this._scrollToItemWithAnimDown(scrollTop, itemId, scrollToAnim);
     }
   }
 
@@ -669,18 +663,34 @@ class Masonry extends React.Component<Props> {
     return true;
   };
 
-  _scrollToItemWithAnimUp(
-    offset: number,
-    {itemId, animationName},
+  _scrollTopWithAnim(
     stepInPixel: number = 30,
     msDelayInEachStep: number = 16.66) {
+    this.timeOutId = setInterval(() => {
+      this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
+      if (this.state.scrollTop <= 0) {
+        clearInterval(this.timeOutId);
+        console.log('stuck');
+        this._scrollToOffset(0);
+      }
+    }, msDelayInEachStep);
+  }
 
+  _scrollToItemWithAnimUp(
+    offset: number,
+    itemId: string,
+    animationName: string,
+    stepInPixel: number = 30,
+    msDelayInEachStep: number = 16.66) {
     let intervalId = setInterval(() => {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
       if (this.state.scrollTop <= offset) {
         clearInterval(this.state.intervalId);
+        console.log('up');
         this._scrollToOffset(offset);
-        this.addAnimWhenScrollToSpecialItem(itemId, animationName);
+        if (itemId) {
+          this.addAnimWhenScrollToSpecialItem(itemId, animationName);
+        }
       }
     }, msDelayInEachStep);
 
@@ -689,7 +699,8 @@ class Masonry extends React.Component<Props> {
 
   _scrollToItemWithAnimDown(
     offset: number,
-    {itemId, animationName},
+    itemId: string,
+    animationName: string,
     stepInPixel: number = 30,
     msDelayInEachStep: number = 16.66) {
 
@@ -698,7 +709,9 @@ class Masonry extends React.Component<Props> {
       if (this.state.scrollTop >= offset) {
         clearInterval(this.state.intervalId);
         this._scrollToOffset(offset);
-        this.addAnimWhenScrollToSpecialItem(itemId, animationName);
+        if (itemId) {
+          this.addAnimWhenScrollToSpecialItem(itemId, animationName);
+        }
       }
     }, msDelayInEachStep);
 
