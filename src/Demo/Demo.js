@@ -24,7 +24,6 @@ class Demo extends React.Component {
     this.loadTopCount = 5;
     this.loadBottomCount = 5;
 
-    this.itemCount = DATA_TOTAL_NUMBER;
     this.dataTotal = this._fakeDataList();
     this.dataTotalMap = new Map();
     this.dataTotal.forEach((item) => {
@@ -63,6 +62,27 @@ class Demo extends React.Component {
     this.viewModel.addEventListener('lookUpItemToScroll', this.lookUpItem);
   };
 
+
+  /* ========================================================================
+   Handle Changes
+   ======================================================================== */
+  handleChangeIndex(e) {
+    if (this._isInRange(e.target.value, 0, this.dataViewModel.getDataList.length)) {
+      this.setState({indexToAddMore: e.target.value});
+    }
+    else {
+      alert('OUT OF RANGE');
+    }
+  };
+
+  handleChangeItemIdToScroll(e) {
+    this.setState({itemIdToScroll: e.target.value});
+  }
+
+
+  /* ========================================================================
+   Events Listener Callback
+   ======================================================================== */
   enableLoadMoreTop() {
     this.viewModel.onLoadMoreTop(this.loadMoreTop);
   }
@@ -91,6 +111,10 @@ class Demo extends React.Component {
     }
   }
 
+
+  /* ========================================================================
+   Get & Check
+   ======================================================================== */
   _getDiff = (a, b) => {
     return a.filter(function (i) {
       return b.indexOf(i) < 0;
@@ -125,20 +149,16 @@ class Demo extends React.Component {
     return results;
   };
 
+  _isInRange = function (index: number, startIndex: number, endIndex: number): boolean {
+    return index >= startIndex && index <= endIndex;
+  };
+
+
+  /* ========================================================================
+   Create Data & Items
+   ======================================================================== */
   _fakeDataList = () => {
-    let _fakeDataList = [];
-    for (let i = 0; i < DATA_TOTAL_NUMBER; i++) {
-      const msgType = randomInclusive(1, 3);
-      let item = undefined;
-      if (msgType === GConst.MessageTypes.Message) {
-        item = generation.generateItem(msgType, randomInclusive(0, 1) === 0);
-      }
-      else {
-        item = generation.generateItem(msgType, randomInclusive(0, 1) === 0, 174, 368);
-      }
-      _fakeDataList.push(item);
-    }
-    return _fakeDataList;
+    return generation.generateItems(DATA_TOTAL_NUMBER);
   };
 
   loadMoreTop() {
@@ -163,46 +183,26 @@ class Demo extends React.Component {
 
   onAddItem = () => {
     const {indexToAddMore} = this.state;
-    const msgType = randomInclusive(1, 3);
-    let item = undefined;
-    if (msgType === GConst.MessageTypes.Message) {
-      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0);
-    }
-    else {
-      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0, 174, 368);
-    }
-    this.itemCount++;
+    let item = generation.generateItems(1)[0];
     if (this._isInRange(indexToAddMore, 0, this.dataViewModel.getDataList.length)) {
       this.viewModel.onAddItem(indexToAddMore, item);
     }
   };
 
   onAddItemTop = () => {
-    const msgType = randomInclusive(1, 3);
-    let item = undefined;
-    if (msgType === GConst.MessageTypes.Message) {
-      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0);
-    }
-    else {
-      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0, 174, 368);
-    }
-    this.itemCount++;
+    let item = generation.generateItems(1)[0];
     this.viewModel.onAddItem(0, item);
   };
 
   onAddItemBottom = () => {
-    const msgType = randomInclusive(1, 3);
-    let item = undefined;
-    if (msgType === GConst.MessageTypes.Message) {
-      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0);
-    }
-    else {
-      item = generation.generateItem(msgType, randomInclusive(0, 1) === 0, 174, 368);
-    }
-    this.itemCount++;
+    let item = generation.generateItems(1)[0];
     this.viewModel.onAddItem(this.dataViewModel.getDataList.length, item);
   };
 
+
+  /* ========================================================================
+   Graphics User Interface
+   ======================================================================== */
   static cellRender({item, index, removeCallback}) {
     return (
       <Message itemId={item.itemId}
@@ -219,33 +219,16 @@ class Demo extends React.Component {
     );
   }
 
-  handleChangeIndex(e) {
-    if (this._isInRange(e.target.value, 0, this.dataViewModel.getDataList.length)) {
-      this.setState({indexToAddMore: e.target.value});
-    }
-    else {
-      alert('OUT OF RANGE');
-    }
-  };
-
-  handleChangeItemIdToScroll(e) {
-    this.setState({itemIdToScroll: e.target.value});
-  }
-
-  _isInRange = function (index: number, startIndex: number, endIndex: number): boolean {
-    return index >= startIndex && index <= endIndex;
-  };
-
   _renderHeader = () => {
     return (
       <div
         style={{
           display: 'flex',
           justifyContent: 'center',
-          marginBottom: GConst.Spacing['0.5']
+          marginBottom: GConst.Spacing['0.5'],
         }}>
         <h1 style={{
-          margin: GConst.Spacing['1']
+          margin: GConst.Spacing['1'],
         }}>React List Demo</h1>
       </div>
     );
@@ -575,7 +558,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.scrollToTop();
+                this.viewModel.scrollToBottomAtCurrentUI();
               }}>
               Scroll To Bottom (Last Item)
             </button>
@@ -611,7 +594,7 @@ class Demo extends React.Component {
         }}>
           <button
             style={{
-              minWidth: '100px',
+              minWidth: '370px',
               width: '100%',
               minHeight: '40px',
               height: 'auto',
