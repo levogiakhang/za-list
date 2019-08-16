@@ -8,7 +8,7 @@ import generation from './utils/Generation';
 import GConst from './utils/values';
 
 const DATA_TOTAL_NUMBER = 100;
-const DATA_UI_NUMBER = 20;
+const DATA_UI_NUMBER = 10;
 
 class Demo extends React.Component {
   constructor(props) {
@@ -97,16 +97,8 @@ class Demo extends React.Component {
     else {
       const itemIndex = this.dataTotalMap.get(itemId);
       const newData = this._getDataFromDataTotal(itemIndex - DATA_UI_NUMBER / 2, itemIndex + DATA_UI_NUMBER / 2 - 1, DATA_TOTAL_NUMBER);
-      const newArrItemId = [];
-      newData.forEach(item => {
-        newArrItemId.push(item.itemId);
-      });
-      const oldArrItemId = [];
-      this.viewModel.getDataOnList.forEach(item => {
-        oldArrItemId.push(item.itemId);
-      });
       this.viewModel.updateData(newData);
-      this.viewModel.pendingScrollToSpecialItem(this._getDiff(newArrItemId, oldArrItemId).length, itemId);
+      this.viewModel.pendingScrollToSpecialItem(this.viewModel.getNumUnrenderedItems, itemId);
     }
   }
 
@@ -639,6 +631,7 @@ class Demo extends React.Component {
               console.log('data on VM: ', this.viewModel.getDataOnList);
               console.log('items map: ', this.viewModel.itemCache.getItemsMap);
               console.log('index map: ', this.viewModel.itemCache.getIndexMap);
+              console.log('entries map: ', this.viewModel.itemCache.getItemsMap.keys());
             }}>
             Log data
           </button>
