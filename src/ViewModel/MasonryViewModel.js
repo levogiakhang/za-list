@@ -28,7 +28,7 @@ class MasonryViewModel {
     this.storageEvent = {};
 
     this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
-    this.scrollToTop = this.scrollToTop.bind(this);
+    this.scrollToTopAtCurrentUI = this.scrollToTopAtCurrentUI.bind(this);
     this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
     this.onRemoveItem = this.onRemoveItem.bind(this);
     this.onAddItem = this.onAddItem.bind(this);
