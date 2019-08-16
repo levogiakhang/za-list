@@ -156,10 +156,10 @@ class MasonryViewModel {
     }
   }
 
-  scrollToTop() {
+  scrollToTopAtCurrentUI() {
     if (this.masonry &&
       this.masonry.current) {
-      this.masonry.current.scrollToTop();
+      this.masonry.current.scrollToTopAtCurrentUI();
     }
   }
 
