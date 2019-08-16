@@ -132,6 +132,8 @@ class Masonry extends React.Component<Props> {
     //this._updateMapOnAddData = this._updateMapOnAddData.bind(this);
     this.scrollToTopAtCurrentUI = this.scrollToTopAtCurrentUI.bind(this);
     this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
+    this.scrollToTop = this.scrollToTop.bind(this);
+    this.scrollToBottom = this.scrollToBottom.bind(this);
     this._addStaticItemToChildren = this._addStaticItemToChildren.bind(this);
     this.initialize();
   }
@@ -429,6 +431,14 @@ class Masonry extends React.Component<Props> {
     this.preventLoadBottom = true;
     this._scrollToOffset(this.estimateTotalHeight);
   };
+
+  scrollToTop() {
+
+  }
+
+  scrollToBottom() {
+
+  }
 
   reRender() {
     this.setState(this.state);

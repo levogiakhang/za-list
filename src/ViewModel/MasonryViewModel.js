@@ -30,6 +30,8 @@ class MasonryViewModel {
     this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
     this.scrollToTopAtCurrentUI = this.scrollToTopAtCurrentUI.bind(this);
     this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
+    this.scrollToTop = this.scrollToTop.bind(this);
+    this.scrollToBottom = this.scrollToBottom.bind(this);
     this.onRemoveItem = this.onRemoveItem.bind(this);
     this.onAddItem = this.onAddItem.bind(this);
     this.onUpdateItem = this.onUpdateItem.bind(this);
@@ -76,7 +78,7 @@ class MasonryViewModel {
     if (this.dataOnList) {
       this.dataOnList = [];
     }
-    if(this.dataMap) {
+    if (this.dataMap) {
       this.dataMap.clear();
     }
   }
@@ -167,6 +169,36 @@ class MasonryViewModel {
     if (this.masonry &&
       this.masonry.current) {
       this.masonry.current.scrollToBottomAtCurrentUI();
+    }
+  }
+
+  scrollToTop() {
+    const firstItem = this.storageEvent['getFirstItem'][0]();
+
+    if (!this.hasItem(firstItem)) {
+      // Send a notification to outside.
+      this.storageEvent['lookUpItemToScrollTop'][0]();
+    }
+    else {
+      if (this.masonry &&
+        this.masonry.current) {
+        this.masonry.current.scrollToTopAtCurrentUI();
+      }
+    }
+  }
+
+  scrollToBottom() {
+    const lastItem = this.storageEvent['getLastItem'][0]();
+
+    if (!this.hasItem(lastItem)) {
+      // Send a notification to outside.
+      this.storageEvent['lookUpItemToScrollBottom'][0]();
+    }
+    else {
+      if (this.masonry &&
+        this.masonry.current) {
+        this.masonry.current.scrollToBottomAtCurrentUI();
+      }
     }
   }
 

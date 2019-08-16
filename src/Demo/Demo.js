@@ -36,6 +36,10 @@ class Demo extends React.Component {
     this.enableLoadMoreTop = this.enableLoadMoreTop.bind(this);
     this.enableLoadMoreBottom = this.enableLoadMoreBottom.bind(this);
     this.lookUpItem = this.lookUpItem.bind(this);
+    this.lookUpItemToScrollTop = this.lookUpItemToScrollTop.bind(this);
+    this.lookUpItemToScrollBottom = this.lookUpItemToScrollBottom.bind(this);
+    this.getFirstItem = this.getFirstItem.bind(this);
+    this.getLastItem = this.getLastItem.bind(this);
   }
 
   componentDidMount(): void {
@@ -59,6 +63,10 @@ class Demo extends React.Component {
     this.viewModel.addEventListener('loadTop', this.enableLoadMoreTop);
     this.viewModel.addEventListener('loadBottom', this.enableLoadMoreBottom);
     this.viewModel.addEventListener('lookUpItemToScroll', this.lookUpItem);
+    this.viewModel.addEventListener('lookUpItemToScrollTop', this.lookUpItemToScrollTop);
+    this.viewModel.addEventListener('lookUpItemToScrollBottom', this.lookUpItemToScrollBottom);
+    this.viewModel.addEventListener('getFirstItem', this.getFirstItem);
+    this.viewModel.addEventListener('getLastItem', this.getLastItem);
   };
 
 
@@ -100,6 +108,26 @@ class Demo extends React.Component {
       this.viewModel.updateData(newData);
       this.viewModel.pendingScrollToSpecialItem(this.viewModel.getNumUnrenderedItems, itemId);
     }
+  }
+
+  lookUpItemToScrollTop() {
+    const newData = this._getDataFromDataTotal(0, DATA_UI_NUMBER, this.dataTotal.length);
+    this.viewModel.updateData(newData);
+    // pending load and scroll top
+  }
+
+  lookUpItemToScrollBottom() {
+    const newData = this._getDataFromDataTotal(this.dataTotal.length - DATA_UI_NUMBER, this.dataTotal.length - 1, this.dataTotal.length);
+    this.viewModel.updateData(newData);
+    // pending load and scroll top
+  }
+
+  getFirstItem() {
+    return this.dataTotal[0].itemId;
+  }
+
+  getLastItem() {
+    return this.dataTotal[this.dataTotal.length - 1].itemId;
   }
 
 
@@ -567,21 +595,45 @@ class Demo extends React.Component {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            width: '100%',
+            width: '50%',
           }}>
             <button
               className={'other-hover'}
               style={{
-                minWidth: '370px',
+                minWidth: '100px',
                 width: '100%',
-                minHeight: '40px',
+                minHeight: '50px',
                 height: 'auto',
-                maxHeight: '40px',
+                maxHeight: '50px',
                 margin: GConst.Spacing[0],
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.scrollToBottomAtCurrentUI();
+                this.viewModel.scrollToTop();
+              }}>
+              Scroll To Top (First Item)
+            </button>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              className={'other-hover'}
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '50px',
+                height: 'auto',
+                maxHeight: '50px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={() => {
+                this.viewModel.scrollToBottom();
               }}>
               Scroll To Bottom (Last Item)
             </button>
