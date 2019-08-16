@@ -96,7 +96,7 @@ class Demo extends React.Component {
     }
     else {
       const itemIndex = this.dataTotalMap.get(itemId);
-      const newData = this._getDataFromDataTotal(itemIndex - DATA_UI_NUMBER / 2, itemIndex + DATA_UI_NUMBER / 2 - 1, DATA_TOTAL_NUMBER);
+      const newData = this._getDataFromDataTotal(itemIndex - DATA_UI_NUMBER / 2, itemIndex + DATA_UI_NUMBER / 2 - 1, this.dataTotal.length);
       this.viewModel.updateData(newData);
       this.viewModel.pendingScrollToSpecialItem(this.viewModel.getNumUnrenderedItems, itemId);
     }
