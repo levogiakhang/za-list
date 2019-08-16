@@ -626,12 +626,17 @@ class Demo extends React.Component {
               fontSize: GConst.Font.Size.Medium,
             }}
             onClick={() => {
+              console.log('=====================================================================================');
               console.log('total data: ', this.dataTotal);
               console.log('total data map: ', this.dataTotalMap);
-              console.log('data on VM: ', this.viewModel.getDataOnList);
+              console.log(`\n`);
+              console.log('data on List: ', this.viewModel.getDataOnList);
+              console.log('data map: ', this.viewModel.dataMap);
               console.log('items map: ', this.viewModel.itemCache.getItemsMap);
               console.log('index map: ', this.viewModel.itemCache.getIndexMap);
-              console.log('entries map: ', this.viewModel.itemCache.getItemsMap.keys());
+              console.log('=====================================================================================');
+              console.log(`\n`);
+              console.log(`\n`);
             }}>
             Log data
           </button>
