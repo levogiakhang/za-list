@@ -20,6 +20,10 @@ class MasonryViewModel {
     // Reflection `itemId` -> `item` - For purpose quick look-up
     this.dataMap = new Map();
 
+    this.oldItemIds = [];
+
+    this.numUnrenderedItems = 0;
+
     // stores storageEvent handler
     this.storageEvent = {};
 
@@ -29,6 +33,7 @@ class MasonryViewModel {
     this.onRemoveItem = this.onRemoveItem.bind(this);
     this.onAddItem = this.onAddItem.bind(this);
     this.onUpdateItem = this.onUpdateItem.bind(this);
+    this.resetNumUnrenderedItems = this.resetNumUnrenderedItems.bind(this);
 
     this.initialize();
   }
@@ -40,6 +45,7 @@ class MasonryViewModel {
   initialize() {
     if (Array.isArray(this.dataOnList)) {
       this.dataOnList.forEach((item) => {
+        this.oldItemIds.push(item.itemId);
         this.dataMap.set(item.itemId, item);
         this.itemCache.updateItemOnMap(
           item.itemId,
@@ -55,18 +61,25 @@ class MasonryViewModel {
     }
   }
 
-  clear() {
+  clearAll() {
+    this.clearItemCache();
+    this.clearData();
+  }
+
+  clearItemCache() {
     if (this.itemCache) {
       this.itemCache.clear();
     }
-    if (this.dataMap) {
-      this.dataMap.clear();
-    }
+  }
+
+  clearData() {
     if (this.dataOnList) {
       this.dataOnList = [];
     }
+    if(this.dataMap) {
+      this.dataMap.clear();
+    }
   }
-
 
   /* ========================================================================
    Events listener
@@ -219,6 +232,7 @@ class MasonryViewModel {
     ) {
       this.dataOnList.splice(index, 0, item);
       this.dataMap.set(item.itemId, item);
+      this.oldItemIds.splice(index, 0, item.itemId);
     }
 
     // Insert item on itemCache
@@ -259,6 +273,7 @@ class MasonryViewModel {
         this.dataMap.delete(this.dataOnList[i].itemId);
       }
       this.dataOnList.splice(itemIndex, deleteCount);
+      this.oldItemIds.splice(itemIndex, deleteCount);
     }
 
     // Delete item in itemCache
@@ -300,10 +315,53 @@ class MasonryViewModel {
     }
   }
 
+  updateCache() {
+    if (Array.isArray(this.dataOnList)) {
+      const newItemIds = [];
+
+      this.dataOnList.forEach((item) => {
+        newItemIds.push(item.itemId);
+        this.dataMap.set(item.itemId, item);
+        if (this.itemCache.hasItem(item.itemId)) {
+          this.itemCache.updateItemOnMap(
+            item.itemId,
+            this.dataOnList.indexOf(item),
+            this.itemCache.getHeight(item.itemId),
+            0,
+            true);
+        }
+        else {
+          this.numUnrenderedItems++;
+          this.itemCache.updateItemOnMap(
+            item.itemId,
+            this.dataOnList.indexOf(item),
+            this.itemCache.defaultHeight,
+            0,
+            false);
+        }
+      });
+      this.itemCache.getIndexMap.clear();
+      this.itemCache.updateIndexMap(0, this.dataOnList);
+
+      // Remove redundant items in cache;
+      for (let i = 0; i <= this.oldItemIds.length - 1; i++) {
+        if (!newItemIds.includes(this.oldItemIds[i])) {
+          this.itemCache.getItemsMap.delete(this.oldItemIds[i]);
+        }
+      }
+
+      this._updateItemsPositionFromSpecifiedItem(newItemIds[0]);
+      this.oldItemIds = JSON.parse(JSON.stringify(newItemIds));
+    }
+    else {
+      console.error('The initialized dataOnList is NOT an array');
+    }
+  }
+
   updateData(data) {
-    this.clear();
+    this.clearData();
     this.dataOnList = data;
-    this.initialize();
+    this.updateCache();
 
     if (this.masonry &&
       this.masonry.current) {
@@ -372,6 +430,9 @@ class MasonryViewModel {
     };
   }
 
+  resetNumUnrenderedItems() {
+    this.numUnrenderedItems = 0;
+  }
 
   /* ========================================================================
    Get - Set
@@ -386,6 +447,10 @@ class MasonryViewModel {
       return this.masonry.current.props.id;
     }
     return null;
+  }
+
+  get getNumUnrenderedItems() {
+    return this.numUnrenderedItems;
   }
 
   get getDataOnList() {

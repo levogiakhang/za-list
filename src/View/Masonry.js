@@ -79,6 +79,8 @@ class Masonry extends React.Component<Props> {
     this.isScrollBack = false;
     this.loadDone = false;
     this.initItemCount = 0;
+
+    this.needScrollToSpecialItem = false;
     this.scrollToSpecialItemCount = 0;
     this.numOfNewLoading = 0;
     this.itemIdToScroll = '';
@@ -198,8 +200,6 @@ class Masonry extends React.Component<Props> {
       }
 
       this._updateItemsOnChangedHeight(itemId, newHeight, true);
-      this._updateEstimatedHeight(newHeight - oldHeight);
-
 
       if (this.initItemCount < this.viewModel.getDataOnList.length - 1) {
         this.initItemCount++;
@@ -212,10 +212,26 @@ class Masonry extends React.Component<Props> {
         this.scrollToSpecialItemCount++;
       }
       else {
-        this.scrollToSpecialItemCount = 0;
-        this.numOfNewLoading = 0;
-        //this.scrollToSpecialItem(this.itemIdToScroll);
+        if(this.isFirstLoadingDone) {
+          this.scrollToSpecialItemCount = 0;
+          this.numOfNewLoading = 0;
+          this.needScrollToSpecialItem = true;
+          this.viewModel.resetNumUnrenderedItems();
+        }
       }
+
+      if(!this.needScrollToSpecialItem) {
+        this._updateEstimatedHeight(newHeight - oldHeight);
+      } else {
+        this.estimateTotalHeight = (function () {
+          let totalHeight = 0;
+          for (let key of this.viewModel.itemCache.getItemsMap.keys()) {
+               totalHeight += this.viewModel.itemCache.getHeight(key);
+            }
+          return totalHeight;
+        }).call(this);
+      }
+
       this.setState(this.state); // instead of this.forceUpdate();
     }
   }
@@ -556,6 +572,11 @@ class Masonry extends React.Component<Props> {
       }
     }
 
+    if(this.needScrollToSpecialItem) {
+      this.needScrollToSpecialItem = false;
+      this.scrollToSpecialItem(this.itemIdToScroll);
+    }
+
     if (this.oldData.oldLength !== data.length && !this.isLoadingTop) {
       this._updateOldData();
     }
@@ -670,7 +691,6 @@ class Masonry extends React.Component<Props> {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
       if (this.state.scrollTop <= 0) {
         clearInterval(this.timeOutId);
-        console.log('stuck');
         this._scrollToOffset(0);
       }
     }, msDelayInEachStep);
@@ -686,7 +706,6 @@ class Masonry extends React.Component<Props> {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
       if (this.state.scrollTop <= offset) {
         clearInterval(this.state.intervalId);
-        console.log('up');
         this._scrollToOffset(offset);
         if (itemId) {
           this.addAnimWhenScrollToSpecialItem(itemId, animationName);
