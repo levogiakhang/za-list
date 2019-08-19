@@ -49,7 +49,6 @@ class MasonryViewModel {
   initialize() {
     if (Array.isArray(this.dataOnList)) {
       this.dataOnList.forEach((item) => {
-        this.oldItemIds.push(item.itemId);
         this.dataMap.set(item.itemId, item);
         this.itemCache.updateItemOnMap(
           item.itemId,
@@ -133,7 +132,7 @@ class MasonryViewModel {
       this.masonry &&
       this.masonry.current &&
       isFunction(fn)) {
-      const lastItemId = this.dataOnList[this.dataOnList.length-1].itemId;
+      const lastItemId = this.dataOnList[this.dataOnList.length - 1].itemId;
       fn(lastItemId);
     }
   };
@@ -200,10 +199,8 @@ class MasonryViewModel {
     }
   }
 
-  scrollToTop() {
-    const firstItem = this.storageEvent['getFirstItem'][0]();
-
-    if (!this.hasItem(firstItem)) {
+  scrollToTop(firstItemId) {
+    if (!this.hasItem(firstItemId)) {
       // Send a notification to outside.
       this.storageEvent['lookUpItemToScrollTop'][0]();
     }
@@ -215,10 +212,8 @@ class MasonryViewModel {
     }
   }
 
-  scrollToBottom() {
-    const lastItem = this.storageEvent['getLastItem'][0]();
-
-    if (!this.hasItem(lastItem)) {
+  scrollToBottom(lastItemId) {
+    if (!this.hasItem(lastItemId)) {
       // Send a notification to outside.
       this.storageEvent['lookUpItemToScrollBottom'][0]();
     }
@@ -294,7 +289,6 @@ class MasonryViewModel {
     ) {
       this.dataOnList.splice(index, 0, item);
       this.dataMap.set(item.itemId, item);
-      this.oldItemIds.splice(index, 0, item.itemId);
     }
 
     // Insert item on itemCache
@@ -315,31 +309,30 @@ class MasonryViewModel {
   }
 
   insertItemWhenLoadMore(index: number, item: Object) {
-      const newItemPos = parseInt(index) === 0 ?
-        0 :
-        this.itemCache.getPosition(this.dataOnList[index - 1].itemId) + this.itemCache.getHeight(this.dataOnList[index - 1].itemId);
+    const newItemPos = parseInt(index) === 0 ?
+      0 :
+      this.itemCache.getPosition(this.dataOnList[index - 1].itemId) + this.itemCache.getHeight(this.dataOnList[index - 1].itemId);
 
-      // Insert item on Data on list
-      if (
-        Array.isArray(this.dataOnList) &&
-        this.isValidIndex(index) &&
-        item &&
-        !this.isIdAlready(item.itemId)
-      ) {
-        this.dataOnList.splice(index, 0, item);
-        this.dataMap.set(item.itemId, item);
-        this.oldItemIds.splice(index, 0, item.itemId);
-      }
+    // Insert item on Data on list
+    if (
+      Array.isArray(this.dataOnList) &&
+      this.isValidIndex(index) &&
+      item &&
+      !this.isIdAlready(item.itemId)
+    ) {
+      this.dataOnList.splice(index, 0, item);
+      this.dataMap.set(item.itemId, item);
+    }
 
-      // Insert item on itemCache
-      this.itemCache.updateIndexMap(index - 1, this.dataOnList);
-      this.itemCache.updateItemOnMap(
-        item.itemId,
-        this.dataOnList.indexOf(item),
-        this.itemCache.defaultHeight,
-        newItemPos,
-        false);
-      this.itemCache.updateItemsMap(index - 1, this.dataOnList.length);
+    // Insert item on itemCache
+    this.itemCache.updateIndexMap(index - 1, this.dataOnList);
+    this.itemCache.updateItemOnMap(
+      item.itemId,
+      this.dataOnList.indexOf(item),
+      this.itemCache.defaultHeight,
+      newItemPos,
+      false);
+    this.itemCache.updateItemsMap(index - 1, this.dataOnList.length);
   }
 
   _deleteItem(itemId: string, deleteCount: number = 1) {
@@ -363,7 +356,6 @@ class MasonryViewModel {
         this.dataMap.delete(this.dataOnList[i].itemId);
       }
       this.dataOnList.splice(itemIndex, deleteCount);
-      this.oldItemIds.splice(itemIndex, deleteCount);
     }
 
     // Delete item in itemCache
@@ -439,9 +431,7 @@ class MasonryViewModel {
           this.itemCache.getItemsMap.delete(this.oldItemIds[i]);
         }
       }
-
       this._updateItemsPositionFromSpecifiedItem(newItemIds[0]);
-      this.oldItemIds = JSON.parse(JSON.stringify(newItemIds));
     }
     else {
       console.error('The initialized dataOnList is NOT an array');
@@ -449,6 +439,7 @@ class MasonryViewModel {
   }
 
   updateData(data) {
+    this._updateOldDataIds();
     this.clearData();
     this.dataOnList = data;
     this.updateCache();
@@ -460,6 +451,12 @@ class MasonryViewModel {
     }
   }
 
+  _updateOldDataIds = () => {
+    this.oldItemIds = [];
+    for (let key of this.dataMap.keys()) {
+      this.oldItemIds.push(key);
+    }
+  };
 
   /* ========================================================================
    Add | Remove Style
@@ -529,6 +526,10 @@ class MasonryViewModel {
    ======================================================================== */
 
   // region GET-SET
+  get getOldDataIds() {
+    return this.oldItemIds;
+  }
+
   get getRefId() {
     if (
       this.masonry &&
