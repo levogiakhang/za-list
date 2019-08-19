@@ -38,8 +38,6 @@ class Demo extends React.Component {
     this.lookUpItem = this.lookUpItem.bind(this);
     this.lookUpItemToScrollTop = this.lookUpItemToScrollTop.bind(this);
     this.lookUpItemToScrollBottom = this.lookUpItemToScrollBottom.bind(this);
-    this.getFirstItem = this.getFirstItem.bind(this);
-    this.getLastItem = this.getLastItem.bind(this);
   }
 
   componentDidMount(): void {
@@ -52,7 +50,7 @@ class Demo extends React.Component {
     this.itemCache = new ItemCache(150);
 
     this.viewModel = new MasonryViewModel({
-      dataOnList: this._getDataFromDataTotal(40, 50, DATA_TOTAL_NUMBER),
+      dataOnList: this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER),
       node: this.masonry,
       itemCache: this.itemCache,
     });
@@ -65,8 +63,6 @@ class Demo extends React.Component {
     this.viewModel.addEventListener('lookUpItemToScroll', this.lookUpItem);
     this.viewModel.addEventListener('lookUpItemToScrollTop', this.lookUpItemToScrollTop);
     this.viewModel.addEventListener('lookUpItemToScrollBottom', this.lookUpItemToScrollBottom);
-    this.viewModel.addEventListener('getFirstItem', this.getFirstItem);
-    this.viewModel.addEventListener('getLastItem', this.getLastItem);
   };
 
 
@@ -117,17 +113,10 @@ class Demo extends React.Component {
   }
 
   lookUpItemToScrollBottom() {
-    const newData = this._getDataFromDataTotal(this.dataTotal.length - DATA_UI_NUMBER, this.dataTotal.length - 1, this.dataTotal.length);
+    const newData = this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, this.dataTotal.length);
     this.viewModel.updateData(newData);
+    this.viewModel.scrollToBottomAtCurrentUI()
     // pending load and scroll top
-  }
-
-  getFirstItem() {
-    return this.dataTotal[0].itemId;
-  }
-
-  getLastItem() {
-    return this.dataTotal[this.dataTotal.length - 1].itemId;
   }
 
 
@@ -554,7 +543,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.scrollToTop();
+                this.viewModel.scrollToTopAtCurrentUI();
               }}>
               Scroll To Top UI
             </button>
@@ -607,7 +596,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.scrollToTop();
+                this.viewModel.scrollToTop(this.dataTotal[0].itemId);
               }}>
               Scroll To Top (First Item)
             </button>
@@ -631,7 +620,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.scrollToBottom();
+                this.viewModel.scrollToBottom(this.dataTotal[this.dataTotal.length - 1].itemId);
               }}>
               Scroll To Bottom (Last Item)
             </button>
@@ -680,6 +669,7 @@ class Demo extends React.Component {
               console.log('total data: ', this.dataTotal);
               console.log('total data map: ', this.dataTotalMap);
               console.log(`\n`);
+              console.log('old data: ', this.viewModel.getOldDataIds);
               console.log('data on List: ', this.viewModel.getDataOnList);
               console.log('data map: ', this.viewModel.dataMap);
               console.log('items map: ', this.viewModel.itemCache.getItemsMap);
