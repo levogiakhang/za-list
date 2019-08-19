@@ -134,12 +134,6 @@ class Demo extends React.Component {
   /* ========================================================================
    Get & Check
    ======================================================================== */
-  _getDiff = (a, b) => {
-    return a.filter(function (i) {
-      return b.indexOf(i) < 0;
-    });
-  };
-
   _getDataFromDataTotal = (startIndex: number, endIndex: number, dataLength: number) => {
     let start = startIndex;
     let end = endIndex;
