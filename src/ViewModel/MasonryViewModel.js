@@ -399,17 +399,14 @@ class MasonryViewModel {
 
   updateCache() {
     if (Array.isArray(this.dataOnList)) {
-      const newItemIds = [];
-
       this.dataOnList.forEach((item) => {
-        newItemIds.push(item.itemId);
         this.dataMap.set(item.itemId, item);
         if (this.itemCache.hasItem(item.itemId)) {
           this.itemCache.updateItemOnMap(
             item.itemId,
             this.dataOnList.indexOf(item),
             this.itemCache.getHeight(item.itemId),
-            0,
+            this.itemCache.getPosition(item.itemId),
             true);
         }
         else {
@@ -427,11 +424,12 @@ class MasonryViewModel {
 
       // Remove redundant items in cache;
       for (let i = 0; i <= this.oldItemIds.length - 1; i++) {
-        if (!newItemIds.includes(this.oldItemIds[i])) {
+        if (!this.dataMap.has(this.oldItemIds[i])) {
           this.itemCache.getItemsMap.delete(this.oldItemIds[i]);
         }
       }
-      this._updateItemsPositionFromSpecifiedItem(newItemIds[0]);
+
+      this._updateItemsPositionFromSpecifiedItem(this.itemCache.getIndexMap.get(0));
     }
     else {
       console.error('The initialized dataOnList is NOT an array');
