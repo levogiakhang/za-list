@@ -52,7 +52,7 @@ class Demo extends React.Component {
     this.itemCache = new ItemCache(150);
 
     this.viewModel = new MasonryViewModel({
-      dataOnList: this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER),
+      dataOnList: this._getDataFromDataTotal(40, 50, DATA_TOTAL_NUMBER),
       node: this.masonry,
       itemCache: this.itemCache,
     });
@@ -174,23 +174,27 @@ class Demo extends React.Component {
     return generation.generateItems(DATA_TOTAL_NUMBER);
   };
 
-  loadMoreTop() {
-    if (this.loadTopCount > 0) {
-      const res = generation.generateItems(10);
-      for (let i = 0; i < res.length; i++) {
-        this.viewModel.addTop(res[i]);
-      }
-      this.loadTopCount--;
+  loadMoreTop(firstItemIdInCurrentUI) {
+    const index = this.dataTotalMap.get(firstItemIdInCurrentUI);
+    if (!index || index < 0 || index >= this.dataTotal.length) {
+      return;
+    }
+
+    const res = this._getDataFromDataTotal(index - 10, index - 1).reverse();
+    for (let i = 0; i < res.length; i++) {
+      this.viewModel.loadTop(res[i]);
     }
   }
 
-  loadMoreBottom() {
-    if (this.loadBottomCount > 0) {
-      const res = generation.generateItems(10, false);
-      for (let i = 0; i < res.length; i++) {
-        this.viewModel.addBottom(res[i]);
-      }
-      this.loadBottomCount--;
+  loadMoreBottom(lastItemIdInCurrentUI) {
+    const index = this.dataTotalMap.get(lastItemIdInCurrentUI);
+    if (!index || index < 0 || index >= this.dataTotal.length) {
+      return;
+    }
+
+    const res = this._getDataFromDataTotal(index + 1, index + 10);
+    for (let i = 0; i < res.length; i++) {
+      this.viewModel.loadBottom(res[i]);
     }
   }
 

@@ -36,6 +36,8 @@ class MasonryViewModel {
     this.onAddItem = this.onAddItem.bind(this);
     this.onUpdateItem = this.onUpdateItem.bind(this);
     this.resetNumUnrenderedItems = this.resetNumUnrenderedItems.bind(this);
+    this.loadTop = this.loadTop.bind(this);
+    this.loadBottom = this.loadBottom.bind(this);
 
     this.initialize();
   }
@@ -120,8 +122,9 @@ class MasonryViewModel {
       this.masonry &&
       this.masonry.current &&
       isFunction(fn)) {
+      const firstItemId = this.dataOnList[0].itemId;
       this.masonry.current.onLoadMoreTop();
-      fn();
+      fn(firstItemId);
     }
   };
 
@@ -130,9 +133,34 @@ class MasonryViewModel {
       this.masonry &&
       this.masonry.current &&
       isFunction(fn)) {
-      fn();
+      const lastItemId = this.dataOnList[this.dataOnList.length-1].itemId;
+      fn(lastItemId);
     }
   };
+
+  loadTop(item) {
+    if (
+      this.masonry &&
+      this.masonry.current &&
+      item &&
+      !this.isIdAlready(item.itemId)
+    ) {
+      this.masonry.current.onLoadMore(0, item);
+      this.masonry.current.reRender();
+    }
+  }
+
+  loadBottom(item) {
+    if (
+      this.masonry &&
+      this.masonry.current &&
+      item &&
+      !this.isIdAlready(item.itemId)
+    ) {
+      this.masonry.current.onLoadMore(this.dataOnList.length, item);
+      this.masonry.current.reRender();
+    }
+  }
 
 
   /* ========================================================================
@@ -220,6 +248,7 @@ class MasonryViewModel {
     if (
       this.masonry &&
       this.masonry.current &&
+      item &&
       !this.isIdAlready(item.itemId)
     ) {
       this.masonry.current.onAddItem(index, item);
@@ -260,6 +289,7 @@ class MasonryViewModel {
     if (
       Array.isArray(this.dataOnList) &&
       this.isValidIndex(index) &&
+      item &&
       !this.isIdAlready(item.itemId)
     ) {
       this.dataOnList.splice(index, 0, item);
@@ -282,6 +312,34 @@ class MasonryViewModel {
 
     // notify to outside to add new item.
     this.storageEvent['addItem'][0](item, beforeItemId, afterItemId);
+  }
+
+  insertItemWhenLoadMore(index: number, item: Object) {
+      const newItemPos = parseInt(index) === 0 ?
+        0 :
+        this.itemCache.getPosition(this.dataOnList[index - 1].itemId) + this.itemCache.getHeight(this.dataOnList[index - 1].itemId);
+
+      // Insert item on Data on list
+      if (
+        Array.isArray(this.dataOnList) &&
+        this.isValidIndex(index) &&
+        item &&
+        !this.isIdAlready(item.itemId)
+      ) {
+        this.dataOnList.splice(index, 0, item);
+        this.dataMap.set(item.itemId, item);
+        this.oldItemIds.splice(index, 0, item.itemId);
+      }
+
+      // Insert item on itemCache
+      this.itemCache.updateIndexMap(index - 1, this.dataOnList);
+      this.itemCache.updateItemOnMap(
+        item.itemId,
+        this.dataOnList.indexOf(item),
+        this.itemCache.defaultHeight,
+        newItemPos,
+        false);
+      this.itemCache.updateItemsMap(index - 1, this.dataOnList.length);
   }
 
   _deleteItem(itemId: string, deleteCount: number = 1) {

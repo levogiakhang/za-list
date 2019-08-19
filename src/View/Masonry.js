@@ -330,6 +330,26 @@ class Masonry extends React.Component<Props> {
     }
   }
 
+  onLoadMore(index, item) {
+    this.isAddMore = true;
+
+    this._removeStyleOfSpecialItem();
+
+    if (parseInt(index) === 0) {
+      this.isAddFirst = true;
+    }
+    if (parseInt(index) === this.viewModel.getDataOnList.length) {
+      this.isAddLast = true;
+    }
+    this.firstItemInViewportBeforeAddMore = {
+      itemId: this.curItemInViewPort,
+      disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort),
+    };
+    this.viewModel.insertItemWhenLoadMore(index, item);
+    this._addStaticItemToChildren(index, item);
+    this._updateEstimatedHeight(this.viewModel.itemCache.defaultHeight);
+  }
+
   scrollToSpecialItem(itemId: string) {
     const {
       height,
@@ -467,7 +487,7 @@ class Masonry extends React.Component<Props> {
       !this.isLoadingTop &&
       !this.preventLoadTop
     ) {
-      //this.viewModel.enableLoadMoreTop();
+      this.viewModel.enableLoadMoreTop();
     }
 
     // trigger load more bottom
@@ -477,7 +497,7 @@ class Masonry extends React.Component<Props> {
       this.isFirstLoadingDone &&
       !this.preventLoadBottom
     ) {
-      //this.viewModel.enableLoadMoreBottom();
+      this.viewModel.enableLoadMoreBottom();
     }
 
     if (this.isDataChange) {
