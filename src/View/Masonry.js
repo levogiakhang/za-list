@@ -263,7 +263,6 @@ class Masonry extends React.Component<Props> {
 
   onAddItem(index, item) {
     this.isAddMore = true;
-    console.log('add', item.itemId);
 
     this._removeStyleOfSpecialItem();
 

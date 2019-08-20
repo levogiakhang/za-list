@@ -96,7 +96,6 @@ class MasonryViewModel {
   }
 
   enableLoadMoreTop() {
-    console.log('T');
     if (Array.isArray(this.storageEvent['loadTop'])) {
       this.storageEvent['loadTop'].forEach((eventCallback) => {
         eventCallback();
@@ -105,7 +104,6 @@ class MasonryViewModel {
   }
 
   enableLoadMoreBottom() {
-    console.log('B');
     if (Array.isArray(this.storageEvent['loadBottom'])) {
       this.storageEvent['loadBottom'].forEach((eventCallback) => {
         eventCallback();
