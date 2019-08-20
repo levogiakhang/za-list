@@ -248,7 +248,6 @@ class Masonry extends React.Component<Props> {
           this.scrollToSpecialItemCount = 0;
           this.numOfNewLoading = 0;
           if (this.isScrollToSpecialItem) {
-            this.isScrollToSpecialItem = false;
             this.needScrollToSpecialItem = true;
           }
           this.isLoadDone = true;
@@ -350,6 +349,10 @@ class Masonry extends React.Component<Props> {
 
   onLoadMore(index, item) {
     this.numOfNewLoading++;
+
+    // Conflict with trigger load more when scroll to first | last item on UI
+    clearInterval(this.scrUpTimeOutId);
+    clearInterval(this.scrDownTimeOutId);
 
     this._removeStyleOfSpecialItem();
     this.viewModel.insertItemWhenLoadMore(index, item);
@@ -594,10 +597,12 @@ class Masonry extends React.Component<Props> {
         );
       }
       else {
-        this._scrollToItem(
-          this.firstItemInViewportBeforeLoadTop.itemId,
-          this.firstItemInViewportBeforeLoadTop.disparity,
-        );
+        if (!this.isScrollToSpecialItem) {
+          this._scrollToItem(
+            this.firstItemInViewportBeforeLoadTop.itemId,
+            this.firstItemInViewportBeforeLoadTop.disparity,
+          );
+        }
       }
       this.needScrollBack = false;
     }
@@ -662,7 +667,7 @@ class Masonry extends React.Component<Props> {
     stepInPixel: number = 30,
     msDelayInEachStep: number = 16.66) {
 
-    this.scrUpTimeOutId = setInterval(() => {
+    this.scrUpTimeOutId = window.setInterval(() => {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
       if (this.state.scrollTop <= offset) {
         clearInterval(this.scrUpTimeOutId);
@@ -682,7 +687,7 @@ class Masonry extends React.Component<Props> {
     stepInPixel: number = 30,
     msDelayInEachStep: number = 16.66) {
 
-    this.scrDownTimeOutId = setInterval(() => {
+    this.scrDownTimeOutId = window.setInterval(() => {
       this.masonry.scrollTo(0, this.state.scrollTop + stepInPixel);
       if (this.state.scrollTop >= offset) {
         clearInterval(this.scrDownTimeOutId);

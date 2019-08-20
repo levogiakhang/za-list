@@ -6,6 +6,7 @@ import Message from './Message/Message';
 import ItemCache from '../utils/ItemCache';
 import generation from './utils/Generation';
 import GConst from './utils/values';
+import throttle from '../vendors/throttle';
 
 const DATA_TOTAL_NUMBER = 100;
 const DATA_UI_NUMBER = 10;
@@ -87,11 +88,11 @@ class Demo extends React.Component {
    Events Listener Callback
    ======================================================================== */
   enableLoadMoreTop() {
-    this.viewModel.onLoadMoreTop(this.loadMoreTop);
+    this.viewModel.onLoadMoreTop(throttle(this.loadMoreTop, 1000));
   }
 
   enableLoadMoreBottom() {
-    this.viewModel.onLoadMoreBottom(this.loadMoreBottom);
+    this.viewModel.onLoadMoreBottom(throttle(this.loadMoreBottom, 1000));
   }
 
   lookUpItem(itemId: string) {
