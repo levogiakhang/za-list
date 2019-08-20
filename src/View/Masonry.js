@@ -62,7 +62,6 @@ class Masonry extends React.Component<Props> {
     this.scrTopTimeOutId = undefined;
     this.scrUpTimeOutId = undefined;
     this.scrDownTimeOutId = undefined;
-    this.isScrWithAnim = false; // Prevent scroll to first item in viewport and active load more top trigger
 
     /* Scroll to bottom when the first loading */
     this.isFirstLoadingDone = false;
@@ -74,6 +73,7 @@ class Masonry extends React.Component<Props> {
     this.curItemInViewPort = undefined;
     this.firstItemInViewportBeforeAddMore = {};
 
+    this.isAddMore = true;
     this.isAddFirst = false;
     this.needScrollTop = false;
     this.isAddLast = false;
@@ -127,7 +127,6 @@ class Masonry extends React.Component<Props> {
     this.onChildrenChangeHeight = this.onChildrenChangeHeight.bind(this);
     this.onRemoveItem = this.onRemoveItem.bind(this);
     this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
-    //this._updateMapOnAddData = this._updateMapOnAddData.bind(this);
     this.scrollToTopAtCurrentUI = this.scrollToTopAtCurrentUI.bind(this);
     this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
     this.scrollToTop = this.scrollToTop.bind(this);
@@ -194,7 +193,6 @@ class Masonry extends React.Component<Props> {
     }).call(this);
     this.oldEstimateTotalHeight = this.estimateTotalHeight;
 
-    this.isScrollToSpecialItem = true;
     this.setState(this.state);
   }
 
@@ -264,6 +262,7 @@ class Masonry extends React.Component<Props> {
   }
 
   onAddItem(index, item) {
+    this.isAddMore = true;
     console.log('add', item.itemId);
 
     this._removeStyleOfSpecialItem();
@@ -354,19 +353,15 @@ class Masonry extends React.Component<Props> {
     this.numOfNewLoading++;
 
     this._removeStyleOfSpecialItem();
-
-    this.firstItemInViewportBeforeAddMore = {
-      itemId: this.curItemInViewPort,
-      disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort),
-    };
     this.viewModel.insertItemWhenLoadMore(index, item);
     this._addStaticItemToChildren(index, item);
     this._updateEstimatedHeight(this.viewModel.itemCache.defaultHeight);
   }
 
   zoomToItem(itemId: string) {
+    this.itemIdToScroll = itemId;
     this.isScrollToSpecialItem = true;
-    this.scrollToSpecialItem(itemId);
+    this.scrollToSpecialItem(this.itemIdToScroll);
   }
 
   scrollToSpecialItem(itemId: string) {
@@ -592,10 +587,19 @@ class Masonry extends React.Component<Props> {
 
     // Check scroll to old position when load more top.
     if (this.needScrollBack) {
+      if (this.isAddMore) {
+        this.isAddMore = false;
+        this._scrollToItem(
+          this.firstItemInViewportBeforeAddMore.itemId,
+          this.firstItemInViewportBeforeAddMore.disparity,
+        );
+      }
+      else {
         this._scrollToItem(
           this.firstItemInViewportBeforeLoadTop.itemId,
           this.firstItemInViewportBeforeLoadTop.disparity,
         );
+      }
       this.needScrollBack = false;
     }
 
@@ -634,97 +638,9 @@ class Masonry extends React.Component<Props> {
 
   pendingScrollToSpecialItem(numOfItems, itemId) {
     this.numOfNewLoading = numOfItems;
+    this.isScrollToSpecialItem = true;
     this.itemIdToScroll = itemId;
   }
-
-  isEqual(arr, other) {
-    // Get the arr type
-    let type = Object.prototype.toString.call(arr);
-
-    // If the two objects are not the same type, return false
-    if (type !== Object.prototype.toString.call(other)) {
-      return false;
-    }
-
-    // If items are not an object or array, return false
-    if ([
-      '[object Array]',
-      '[object Object]',
-    ].indexOf(type) < 0) {
-      return false;
-    }
-
-    // Compare the length of the length of the two items
-    let arrLength = type === '[object Array]' ?
-      arr.length :
-      Object.keys(arr).length;
-    let otherLength = type === '[object Array]' ?
-      other.length :
-      Object.keys(other).length;
-    if (arrLength !== otherLength) {
-      return false;
-    }
-
-    // Compare two items
-    let compare = function (item1, item2) {
-      // Get the object type
-      let itemType = Object.prototype.toString.call(item1);
-
-      // If an object or array, compare recursively
-      if ([
-        '[object Array]',
-        '[object Object]',
-      ].indexOf(itemType) >= 0) {
-        if (item1 !== item2) {
-          return false;
-        }
-      }
-
-      // Otherwise, do a simple comparison
-      else {
-
-        // If the two items are not the same type, return false
-        if (itemType !== Object.prototype.toString.call(item2)) {
-          return false;
-        }
-
-        // Else if it's a function, convert to a string and compare
-        // Otherwise, just compare
-        if (itemType === '[object Function]') {
-          if (item1.toString() !== item2.toString()) {
-            return false;
-          }
-        }
-        else {
-          if (item1 !== item2) {
-            return false;
-          }
-        }
-
-      }
-    };
-
-    // Compare properties
-    if (type === '[object Array]') {
-      for (let i = 0; i < arrLength; i++) {
-        if (compare(arr[i], other[i]) === false) {
-          return false;
-        }
-      }
-    }
-    else {
-      for (let key in arr) {
-        if (arr.hasOwnProperty(key)) {
-          if (compare(arr[key], other[key]) === false) {
-            return false;
-          }
-        }
-      }
-    }
-
-    // If nothing failed, return true
-    return true;
-  };
 
   _scrollTopWithAnim(
     stepInPixel: number = 30,
@@ -734,15 +650,10 @@ class Masonry extends React.Component<Props> {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
       if (this.state.scrollTop <= 0) {
         clearInterval(this.scrTopTimeOutId);
-        this.needScrollToSpecialItem = false;
+        this.isScrollToSpecialItem = false;
         this._scrollToOffset(0);
       }
     }, msDelayInEachStep);
-
-    setTimeout(() => {
-      clearInterval(this.scrTopTimeOutId);
-      this.needScrollToSpecialItem = false;
-    }, 3000);
   }
 
   _scrollToItemWithAnimUp(
@@ -752,24 +663,17 @@ class Masonry extends React.Component<Props> {
     stepInPixel: number = 30,
     msDelayInEachStep: number = 16.66) {
 
-    this.isScrWithAnim = true;
     this.scrUpTimeOutId = setInterval(() => {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
       if (this.state.scrollTop <= offset) {
         clearInterval(this.scrUpTimeOutId);
-        this.needScrollToSpecialItem = false;
-        this.isScrWithAnim = false;
+        this.isScrollToSpecialItem = false;
         this._scrollToOffset(offset);
         if (itemId) {
           this.addAnimWhenScrollToSpecialItem(itemId, animationName);
         }
       }
     }, msDelayInEachStep);
-
-    setTimeout(() => {
-      clearInterval(this.scrUpTimeOutId);
-      this.needScrollToSpecialItem = false;
-    }, 3000);
   }
 
   _scrollToItemWithAnimDown(
@@ -779,24 +683,17 @@ class Masonry extends React.Component<Props> {
     stepInPixel: number = 30,
     msDelayInEachStep: number = 16.66) {
 
-    this.isScrWithAnim = true;
     this.scrDownTimeOutId = setInterval(() => {
       this.masonry.scrollTo(0, this.state.scrollTop + stepInPixel);
       if (this.state.scrollTop >= offset) {
         clearInterval(this.scrDownTimeOutId);
-        this.needScrollToSpecialItem = false;
-        this.isScrWithAnim = false;
+        this.isScrollToSpecialItem = false;
         this._scrollToOffset(offset);
         if (itemId) {
           this.addAnimWhenScrollToSpecialItem(itemId, animationName);
         }
       }
     }, msDelayInEachStep);
-
-    setTimeout(() => {
-      clearInterval(this.scrDownTimeOutId);
-      this.needScrollToSpecialItem = false;
-    }, 3000);
   }
 
   /*
@@ -903,27 +800,6 @@ class Masonry extends React.Component<Props> {
       if (!!data[data.length - 1]) {
         this.oldData.lastItem = data[data.length - 1].itemId;
       }
-    }
-  }
-
-  /**
-   *  Update all items' position
-   */
-  _updateItemsPosition() {
-    const data = this.viewModel.getDataOnList;
-    const itemCache = this.viewModel.getItemCache;
-
-    if (Array.isArray(data)) {
-      let currentPosition = 0;
-      data.forEach((item) => {
-        itemCache.updateItemOnMap(
-          item.itemId,
-          data.indexOf(item),
-          itemCache.getHeight(item.itemId),
-          currentPosition,
-          itemCache.isRendered(item.itemId));
-        currentPosition += itemCache.getHeight(item.itemId);
-      });
     }
   }
 

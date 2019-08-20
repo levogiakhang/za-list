@@ -47,7 +47,7 @@ class Demo extends React.Component {
 
   initList() {
     this.masonry = React.createRef();
-    this.itemCache = new ItemCache(150);
+    this.itemCache = new ItemCache(200);
 
     this.viewModel = new MasonryViewModel({
       dataOnList: this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER),
@@ -100,9 +100,10 @@ class Demo extends React.Component {
     }
     else {
       const itemIndex = this.dataTotalMap.get(itemId);
+      // console.log('lookUpItem: ', itemIndex);
       const newData = this._getDataFromDataTotal(itemIndex - DATA_UI_NUMBER / 2, itemIndex + DATA_UI_NUMBER / 2 - 1, this.dataTotal.length);
       this.viewModel.updateData(newData);
-      this.viewModel.pendingScrollToSpecialItem(this.viewModel.getNumUnrenderedItems, itemId);
+      this.viewModel.pendingScrollToSpecialItem(itemId);
     }
   }
 
@@ -672,6 +673,7 @@ class Demo extends React.Component {
               console.log('old data: ', this.viewModel.getOldDataIds);
               console.log('data on List: ', this.viewModel.getDataOnList);
               console.log('data map: ', this.viewModel.dataMap);
+              console.log('scr: ', this.viewModel.masonry.current.state.scrollTop);
               console.log('items map: ', this.viewModel.itemCache.getItemsMap);
               console.log('index map: ', this.viewModel.itemCache.getIndexMap);
               console.log('=====================================================================================');
