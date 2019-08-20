@@ -22,7 +22,7 @@ class MasonryViewModel {
 
     this.oldItemIds = [];
 
-    this.numUnrenderedItems = 0;
+    this.numItemsNeedRender = 0;
 
     // stores storageEvent handler
     this.storageEvent = {};
@@ -35,7 +35,6 @@ class MasonryViewModel {
     this.onRemoveItem = this.onRemoveItem.bind(this);
     this.onAddItem = this.onAddItem.bind(this);
     this.onUpdateItem = this.onUpdateItem.bind(this);
-    this.resetNumUnrenderedItems = this.resetNumUnrenderedItems.bind(this);
     this.loadTop = this.loadTop.bind(this);
     this.loadBottom = this.loadBottom.bind(this);
 
@@ -97,6 +96,7 @@ class MasonryViewModel {
   }
 
   enableLoadMoreTop() {
+    console.log('T');
     if (Array.isArray(this.storageEvent['loadTop'])) {
       this.storageEvent['loadTop'].forEach((eventCallback) => {
         eventCallback();
@@ -105,6 +105,7 @@ class MasonryViewModel {
   }
 
   enableLoadMoreBottom() {
+    console.log('B');
     if (Array.isArray(this.storageEvent['loadBottom'])) {
       this.storageEvent['loadBottom'].forEach((eventCallback) => {
         eventCallback();
@@ -173,15 +174,15 @@ class MasonryViewModel {
         this.storageEvent['lookUpItemToScroll'][0](itemId);
       }
       else {
-        this.masonry.current.scrollToSpecialItem(itemId);
+        this.masonry.current.zoomToItem(itemId);
       }
     }
   }
 
-  pendingScrollToSpecialItem(numOfItems: number, itemId: string) {
+  pendingScrollToSpecialItem(itemId: string) {
     if (this.masonry &&
       this.masonry.current) {
-      this.masonry.current.pendingScrollToSpecialItem(numOfItems, itemId);
+      this.masonry.current.pendingScrollToSpecialItem(this.numItemsNeedRender, itemId);
     }
   }
 
@@ -401,22 +402,26 @@ class MasonryViewModel {
     if (Array.isArray(this.dataOnList)) {
       this.dataOnList.forEach((item) => {
         this.dataMap.set(item.itemId, item);
+
         if (this.itemCache.hasItem(item.itemId)) {
           this.itemCache.updateItemOnMap(
             item.itemId,
             this.dataOnList.indexOf(item),
             this.itemCache.getHeight(item.itemId),
-            this.itemCache.getPosition(item.itemId),
+            0,
             true);
         }
         else {
-          this.numUnrenderedItems++;
           this.itemCache.updateItemOnMap(
             item.itemId,
             this.dataOnList.indexOf(item),
             this.itemCache.defaultHeight,
             0,
             false);
+        }
+
+        if (!this.oldItemIds.includes(item.itemId)) {
+          this.numItemsNeedRender++;
         }
       });
       this.itemCache.getIndexMap.clear();
@@ -429,7 +434,7 @@ class MasonryViewModel {
         }
       }
 
-      this._updateItemsPositionFromSpecifiedItem(this.itemCache.getIndexMap.get(0));
+      this._updateItemsPositionFromSpecifiedItem(this.dataOnList[0].itemId);
     }
     else {
       console.error('The initialized dataOnList is NOT an array');
@@ -440,12 +445,12 @@ class MasonryViewModel {
     this._updateOldDataIds();
     this.clearData();
     this.dataOnList = data;
+    this.numItemsNeedRender = 0;
     this.updateCache();
 
     if (this.masonry &&
       this.masonry.current) {
-      this.masonry.current.initialize();
-      this.masonry.current.reRender();
+      this.masonry.current.updateUIWhenScrollToItem();
     }
   }
 
@@ -515,9 +520,6 @@ class MasonryViewModel {
     };
   }
 
-  resetNumUnrenderedItems() {
-    this.numUnrenderedItems = 0;
-  }
 
   /* ========================================================================
    Get - Set
@@ -538,8 +540,8 @@ class MasonryViewModel {
     return null;
   }
 
-  get getNumUnrenderedItems() {
-    return this.numUnrenderedItems;
+  get getNumItemsNeedRender() {
+    return this.numItemsNeedRender;
   }
 
   get getDataOnList() {
