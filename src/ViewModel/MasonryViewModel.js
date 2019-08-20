@@ -167,7 +167,8 @@ class MasonryViewModel {
   scrollToSpecialItem(itemId) {
     if (this.masonry &&
       this.masonry.current) {
-      if (!this.hasItem(itemId)) {
+      if (!this.hasItem(itemId) ||
+        this.itemCache.getIndex(itemId) === 0) {
         // Send a notification to outside.
         this.storageEvent['lookUpItemToScroll'][0](itemId);
       }
