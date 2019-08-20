@@ -393,16 +393,6 @@ class Masonry extends React.Component<Props> {
       scrollTop = itemPos + itemHeight - height;
     }
 
-    const diff = this.state.scrollTop - scrollTop;
-    const distance = 200;
-
-    if (diff >= distance) {
-      this._scrollToOffset(scrollTop + distance);
-    }
-    else if (diff <= -distance) {
-      this._scrollToOffset(scrollTop - distance);
-    }
-
     if (scrollTop < this.state.scrollTop) {
       this._scrollToItemWithAnimUp(scrollTop, itemId, scrollToAnim);
     }
@@ -664,8 +654,10 @@ class Masonry extends React.Component<Props> {
     offset: number,
     itemId: string,
     animationName: string,
-    stepInPixel: number = 30,
+    stepInPixel: number = 70,
     msDelayInEachStep: number = 16.66) {
+
+    this.jumpBeforeScroll(offset);
 
     this.scrUpTimeOutId = window.setInterval(() => {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
@@ -684,8 +676,10 @@ class Masonry extends React.Component<Props> {
     offset: number,
     itemId: string,
     animationName: string,
-    stepInPixel: number = 30,
+    stepInPixel: number = 70,
     msDelayInEachStep: number = 16.66) {
+
+    this.jumpBeforeScroll(offset);
 
     this.scrDownTimeOutId = window.setInterval(() => {
       this.masonry.scrollTo(0, this.state.scrollTop + stepInPixel);
@@ -698,6 +692,17 @@ class Masonry extends React.Component<Props> {
         }
       }
     }, msDelayInEachStep);
+  }
+
+  jumpBeforeScroll(offset: number, distance: number = 200) {
+    const stateScrTop = this.state.scrollTop;
+
+    if (stateScrTop >= offset + distance) {
+      this._scrollToOffset(offset + distance);
+    }
+    else if (stateScrTop <= offset - distance) {
+      this._scrollToOffset(offset - distance);
+    }
   }
 
   /*
