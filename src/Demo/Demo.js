@@ -8,8 +8,12 @@ import generation from './utils/Generation';
 import GConst from './utils/values';
 import throttle from '../vendors/throttle';
 
-const DATA_TOTAL_NUMBER = 100;
+const DATA_TOTAL_NUMBER = 10;
 const DATA_UI_NUMBER = 10;
+
+const lv1 = 'background-color: #3F51B5; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1.1rem; font-weight: 700l; font-style: italic';
+const lv2 = 'background-color: Maroon; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1rem; font-weight: 700';
+const lv3 = 'background: Gainsboro; color: navy; padding: 0 5px; border-radius: 5px; line-height: 20px; font-size: 0.9rem; font-weight: 700';
 
 class Demo extends React.Component {
   constructor(props) {
@@ -668,15 +672,25 @@ class Demo extends React.Component {
             }}
             onClick={() => {
               console.log('=====================================================================================');
-              console.log('total data: ', this.dataTotal);
-              console.log('total data map: ', this.dataTotalMap);
+              console.groupCollapsed('%cData Total', `${lv1}`);
+              console.log('%cTotal data', `${lv3}`, this.dataTotal);
+              console.log('%cTotal data map', `${lv3}`, this.dataTotalMap);
+              console.groupEnd();
               console.log(`\n`);
-              console.log('old data: ', this.viewModel.getOldDataIds);
-              console.log('data on List: ', this.viewModel.getDataOnList);
-              console.log('data map: ', this.viewModel.dataMap);
-              console.log('scr: ', this.viewModel.masonry.current.state.scrollTop);
-              console.log('items map: ', this.viewModel.itemCache.getItemsMap);
-              console.log('index map: ', this.viewModel.itemCache.getIndexMap);
+              console.group('%cData On List', `${lv1}`);
+              console.group('%cData', `${lv2}`);
+              console.log('%cOld data', `${lv3}`, this.viewModel.getOldDataIds);
+              console.log('%cData on List', `${lv3}`, this.viewModel.getDataOnList);
+              console.log('%cData map', `${lv3}`, this.viewModel.dataMap);
+              console.groupEnd();
+              console.group('%cCache', `${lv2}`);
+              console.group('%cCurrent scrollTop',  `${lv3}`);
+              console.log(`%c${this.viewModel.masonry.current.state.scrollTop}`, 'color: DarkSlateGray; font-size: 1.3rem; font-weight: 700');
+              console.groupEnd();
+              console.log('%cItems map:', `${lv3}`, this.viewModel.itemCache.getItemsMap);
+              console.log('%cIndex map:', `${lv3}`, this.viewModel.itemCache.getIndexMap);
+              console.groupEnd();
+              console.groupEnd();
               console.log('=====================================================================================');
               console.log(`\n`);
               console.log(`\n`);
