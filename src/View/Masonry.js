@@ -84,6 +84,7 @@ class Masonry extends React.Component<Props> {
     this.loadDone = false;
     this.initItemCount = 0;
 
+    this.isActiveAnimWhenScrollToItem = undefined;
     this.isScrollToSpecialItem = false;
     this.needScrollToSpecialItem = false;
     this.scrollToSpecialItemCount = 0;
@@ -379,8 +380,8 @@ class Masonry extends React.Component<Props> {
     this._updateEstimatedHeight(this.viewModel.itemCache.defaultHeight);
   }
 
-  zoomToItem(itemId: string) {
-    if (itemId === this.itemIdToScroll && this.isStableAfterScrollToSpecialItem) {
+  zoomToItem(itemId: string, withAnim: boolean = true) {
+    if (itemId === this.itemIdToScroll && this.isStableAfterScrollToSpecialItem && withAnim) {
       // Re-active animation without scroll.
       this.isScrollToSpecialItem = false;
       if (itemId && this.props.scrollToAnim) {
@@ -394,11 +395,11 @@ class Masonry extends React.Component<Props> {
     else {
       this.itemIdToScroll = itemId;
       this.isScrollToSpecialItem = true;
-      this.scrollToSpecialItem(this.itemIdToScroll);
+      this.scrollToSpecialItem(this.itemIdToScroll, withAnim);
     }
   }
 
-  scrollToSpecialItem(itemId: string) {
+  scrollToSpecialItem(itemId: string, withAnim: boolean = true) {
     const {
       height,
       isItemScrollToInBottom,
@@ -425,11 +426,16 @@ class Masonry extends React.Component<Props> {
       scrollTop = itemPos + itemHeight - height;
     }
 
-    if (scrollTop < this.state.scrollTop) {
-      this._scrollToItemWithAnimUp(scrollTop, itemId, scrollToAnim);
+    if(withAnim) {
+      if (scrollTop < this.state.scrollTop) {
+        this._scrollToItemWithAnimUp(scrollTop, itemId, scrollToAnim);
+      }
+      else {
+        this._scrollToItemWithAnimDown(scrollTop, itemId, scrollToAnim);
+      }
     }
     else {
-      this._scrollToItemWithAnimDown(scrollTop, itemId, scrollToAnim);
+      this._scrollToOffset(scrollTop);
     }
   }
 
@@ -544,7 +550,8 @@ class Masonry extends React.Component<Props> {
       <Scrollbars
         key="scroller"
         ref={this._scrollBar}
-        {...rest}>
+        {...rest}
+        thumbMinSize={2000}>
         <div
           className={'masonry-parent'}
           ref={this.parentRef}>
@@ -674,7 +681,7 @@ class Masonry extends React.Component<Props> {
 
     if (this.needScrollToSpecialItem) {
       this.needScrollToSpecialItem = false;
-      this.scrollToSpecialItem(this.itemIdToScroll);
+      this.scrollToSpecialItem(this.itemIdToScroll, this.isActiveAnimWhenScrollToItem);
     }
 
     if (this.oldData.oldLength !== data.length && !this.isLoadingTop) {
@@ -690,13 +697,17 @@ class Masonry extends React.Component<Props> {
     };
   }
 
-  pendingScrollToSpecialItem(numOfItems, itemId) {
+  pendingScrollToSpecialItem(numOfItems: number, itemId: string, withAnim: boolean = true) {
     if (numOfItems === 0) {
-      this.zoomToItem(itemId);
+      this.zoomToItem(itemId, withAnim);
     }
+
     this.numOfNewLoading = numOfItems;
     this.isScrollToSpecialItem = true;
     this.itemIdToScroll = itemId;
+    this.isActiveAnimWhenScrollToItem = withAnim;
+
+
   }
 
   _scrollTopWithAnim(

@@ -180,10 +180,10 @@ class MasonryViewModel {
     }
   }
 
-  pendingScrollToSpecialItem(itemId: string) {
+  pendingScrollToSpecialItem(itemId: string, withAnim: boolean = true) {
     if (this.masonry &&
       this.masonry.current) {
-      this.masonry.current.pendingScrollToSpecialItem(this.numItemsNeedRender, itemId);
+      this.masonry.current.pendingScrollToSpecialItem(this.numItemsNeedRender, itemId, withAnim);
     }
   }
 

@@ -105,7 +105,6 @@ class Demo extends React.Component {
     }
     else {
       const itemIndex = this.dataTotalMap.get(itemId);
-      // console.log('lookUpItem: ', itemIndex);
       const newData = this._getDataFromDataTotal(itemIndex - DATA_UI_NUMBER / 2, itemIndex + DATA_UI_NUMBER / 2 - 1, this.dataTotal.length);
       this.viewModel.updateData(newData);
       this.viewModel.pendingScrollToSpecialItem(itemId);
@@ -115,13 +114,14 @@ class Demo extends React.Component {
   lookUpItemToScrollTop() {
     const newData = this._getDataFromDataTotal(0, DATA_UI_NUMBER, this.dataTotal.length);
     this.viewModel.updateData(newData);
+    this.viewModel.pendingScrollToSpecialItem(this.dataTotal[0].itemId, false);
     // pending load and scroll top
   }
 
   lookUpItemToScrollBottom() {
     const newData = this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, this.dataTotal.length);
     this.viewModel.updateData(newData);
-    this.viewModel.scrollToBottomAtCurrentUI()
+    this.viewModel.pendingScrollToSpecialItem(this.dataTotal[DATA_TOTAL_NUMBER - 1].itemId, false);
     // pending load and scroll top
   }
 
@@ -602,7 +602,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.mScrollToTop(this.dataTotal[0].itemId);
+                this.viewModel.scrollToTop(this.dataTotal[0].itemId);
               }}>
               Scroll To Top (First Item)
             </button>
@@ -626,7 +626,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.mScrollToBottom(this.dataTotal[this.dataTotal.length - 1].itemId);
+                this.viewModel.scrollToBottom(this.dataTotal[this.dataTotal.length - 1].itemId);
               }}>
               Scroll To Bottom (Last Item)
             </button>
@@ -740,7 +740,8 @@ class Demo extends React.Component {
                scrollToAnim={'highlighted zoomScaling'}
                additionAnim={'zoomIn'}
                removalAnim={'zoomOut'}
-               timingResetAnimation={300}/>
+               timingResetAnimation={300}
+               noHScroll/>
     );
   };
 
