@@ -37,6 +37,7 @@ class MasonryViewModel {
     this.onUpdateItem = this.onUpdateItem.bind(this);
     this.loadTop = this.loadTop.bind(this);
     this.loadBottom = this.loadBottom.bind(this);
+    this.scrollTo = this.scrollTo.bind(this);
 
     this.initialize();
   }
@@ -227,6 +228,15 @@ class MasonryViewModel {
     }
   }
 
+  scrollTo(index: number) {
+    if (
+      this.isValidIndex(index) &&
+      this.masonry &&
+      this.masonry.current
+    ) {
+      this.masonry.current.scrollTo(index);
+    }
+  }
 
   /* ========================================================================
    [Public API] - Interact with list

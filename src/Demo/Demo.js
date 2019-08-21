@@ -8,7 +8,7 @@ import generation from './utils/Generation';
 import GConst from './utils/values';
 import throttle from '../vendors/throttle';
 
-const DATA_TOTAL_NUMBER = 10;
+const DATA_TOTAL_NUMBER = 100;
 const DATA_UI_NUMBER = 10;
 
 const lv1 = 'background-color: #3F51B5; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1.1rem; font-weight: 700l; font-style: italic';
@@ -22,6 +22,7 @@ class Demo extends React.Component {
       isLoading: true,
       indexToAddMore: 0,
       itemIdToScroll: 0,
+      indexToScroll: 0,
     };
 
     this.loadTopCount = 5;
@@ -36,6 +37,7 @@ class Demo extends React.Component {
 
     this.handleChangeIndex = this.handleChangeIndex.bind(this);
     this.handleChangeItemIdToScroll = this.handleChangeItemIdToScroll.bind(this);
+    this.handleChangeIndexToScroll = this.handleChangeIndexToScroll.bind(this);
     this.loadMoreTop = this.loadMoreTop.bind(this);
     this.loadMoreBottom = this.loadMoreBottom.bind(this);
     this.enableLoadMoreTop = this.enableLoadMoreTop.bind(this);
@@ -85,6 +87,15 @@ class Demo extends React.Component {
 
   handleChangeItemIdToScroll(e) {
     this.setState({itemIdToScroll: e.target.value});
+  }
+
+  handleChangeIndexToScroll(e) {
+    if (this._isInRange(e.target.value, 0, this.viewModel.getDataOnList.length - 1)) {
+      this.setState({indexToScroll: e.target.value});
+    }
+    else {
+      alert('OUT OF RANGE');
+    }
   }
 
 
@@ -435,7 +446,7 @@ class Demo extends React.Component {
   };
 
   _renderScrollControl = () => {
-    const {itemIdToScroll} = this.state;
+    const {itemIdToScroll, indexToScroll} = this.state;
     return (
       <div className={'card'}
            style={{
@@ -517,6 +528,74 @@ class Demo extends React.Component {
               }}>
                 <p
                   style={{margin: 0}}>(ID)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+          marginTop: GConst.Spacing['0.75'],
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              className={'other-hover'}
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={() => {
+                this.viewModel.scrollTo(indexToScroll);
+              }}>
+              Scroll to index:
+            </button>
+          </div>
+          <div style={{
+            display: 'flex',
+            width: '50%',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <div style={{
+              display: 'flex',
+              maxWidth: '180px',
+              alignItems: 'center',
+            }}>
+              <input style={{
+                minWidth: '100px',
+                width: '50%',
+                minHeight: '34px',
+                height: 'auto',
+                maxHeight: '34px',
+                borderRadius: '5px',
+                outline: 'none',
+                fontSize: '1rem',
+                textAlign: 'center',
+                paddingLeft: GConst.Spacing['0.5'],
+              }}
+                     type={'number'}
+                     placeholder={`Index to Scroll`}
+                     value={indexToScroll}
+                     onChange={this.handleChangeIndexToScroll}/>
+
+              <div style={{
+                display: 'flex',
+                width: '100%',
+                justifyContent: 'center',
+              }}>
+                <p
+                  style={{margin: 0}}>(Index)</p>
               </div>
             </div>
           </div>
@@ -684,7 +763,7 @@ class Demo extends React.Component {
               console.log('%cData map', `${lv3}`, this.viewModel.dataMap);
               console.groupEnd();
               console.group('%cCache', `${lv2}`);
-              console.group('%cCurrent scrollTop',  `${lv3}`);
+              console.group('%cCurrent scrollTop', `${lv3}`);
               console.log(`%c${this.viewModel.masonry.current.state.scrollTop}`, 'color: DarkSlateGray; font-size: 1.3rem; font-weight: 700');
               console.groupEnd();
               console.log('%cItems map:', `${lv3}`, this.viewModel.itemCache.getItemsMap);

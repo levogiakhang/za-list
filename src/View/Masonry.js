@@ -135,6 +135,7 @@ class Masonry extends React.Component<Props> {
     this.mScrollToBottom = this.mScrollToBottom.bind(this);
     this._addStaticItemToChildren = this._addStaticItemToChildren.bind(this);
     this.zoomToItem = this.zoomToItem.bind(this);
+    this.scrollTo = this.scrollTo.bind(this);
 
     //region ScrollBar
     this._scrollBar = undefined;
@@ -426,7 +427,7 @@ class Masonry extends React.Component<Props> {
       scrollTop = itemPos + itemHeight - height;
     }
 
-    if(withAnim) {
+    if (withAnim) {
       if (scrollTop < this.state.scrollTop) {
         this._scrollToItemWithAnimUp(scrollTop, itemId, scrollToAnim);
       }
@@ -436,6 +437,13 @@ class Masonry extends React.Component<Props> {
     }
     else {
       this._scrollToOffset(scrollTop);
+    }
+  }
+
+  scrollTo(index: number) {
+    const itemId = this.viewModel.getItemCache.getItemId(parseInt(index));
+    if (itemId !== NOT_FOUND) {
+      this.zoomToItem(itemId);
     }
   }
 
