@@ -13,6 +13,7 @@ import debounce from '../vendors/debounce.js';
 import hasWhiteSpace from '../utils/hasWhiteSpace';
 import removeClass from '../utils/removeClass';
 import addClass from '../utils/addClass';
+import { Scrollbars } from 'react-custom-scrollbars';
 
 type Props = {
   className?: string,
@@ -133,6 +134,24 @@ class Masonry extends React.Component<Props> {
     this.scrollToBottom = this.scrollToBottom.bind(this);
     this._addStaticItemToChildren = this._addStaticItemToChildren.bind(this);
     this.zoomToItem = this.zoomToItem.bind(this);
+
+    //region ScrollBar
+    this._scrollBar = undefined;
+    this.scrollTop = this.scrollTop.bind(this);
+    this.scrollLeft = this.scrollLeft.bind(this);
+    this.scrollToTop = this.scrollToTop.bind(this);
+    this.scrollToBottom = this.scrollToBottom.bind(this);
+    this.scrollToLeft = this.scrollToLeft.bind(this);
+    this.scrollToRight = this.scrollToRight.bind(this);
+    this.getScrollLeft = this.getScrollLeft.bind(this);
+    this.getScrollTop = this.getScrollTop.bind(this);
+    this.getScrollWidth = this.getScrollWidth.bind(this);
+    this.getScrollHeight = this.getScrollHeight.bind(this);
+    this.getClientWidth = this.getClientWidth.bind(this);
+    this.getClientHeight = this.getClientHeight.bind(this);
+    this.getValues = this.getValues.bind(this);
+    //endregion
+
     this.initialize();
   }
 
@@ -500,45 +519,73 @@ class Masonry extends React.Component<Props> {
 
     this.curItemInViewPort = this._getItemIdFromPosition(scrollTop);
 
+    const {v2, noHScroll, noVScroll, compositeScroll, ...rest} = this.props;
+    if (noHScroll) {
+      rest.renderTrackHorizontal = renderNoScroll;
+    }
+    if (noVScroll) {
+      rest.renderTrackVertical = renderNoScroll;
+    }
+    else {
+      rest.renderTrackVertical = v2 === true ?
+        renderTrackVerticalVer2 :
+        renderTrackVertical;
+    }
+
+    if (compositeScroll) {
+      rest.renderView = props => {
+        let {style, ...rest} = props;
+        style.willChange = 'transform';
+        return <div {...rest} style={style}/>;
+      };
+    }
+
     return (
-      <div className={'masonry-parent'}
-           ref={this.parentRef}>
-        <div className={className}
-             id={id}
-             onScroll={this._onScroll}
-             style={{
-               backgroundColor: 'cornflowerblue',
-               boxSizing: 'border-box',
-               overflowX: 'hidden',
-               overflowY: 'scroll',
-               width: 'auto',
-               minWidth: minWidth,
-               height: height,
-               minHeight: minHeight,
-               position: 'relative',
-               ...style,
-             }}>
+      <Scrollbars
+        key="scroller"
+        ref={this._scrollBar}
+        {...rest}>
+        <div
+          className={'masonry-parent'}
+          ref={this.parentRef}>
           <div
-            className={`${innerScrollClassName ?
-              innerScrollClassName :
-              'innerScrollContainer'}`}
+            className={className}
+            id={id}
+            onScroll={this._onScroll}
             style={{
-              width: '100%',
-              height: this.estimateTotalHeight,
-              maxWidth: '100%',
-              maxHeight: this.estimateTotalHeight,
-              overflow: 'hidden',
+              backgroundColor: 'cornflowerblue',
+              boxSizing: 'border-box',
+              overflowX: 'hidden',
+              overflowY: 'scroll',
+              width: 'auto',
+              minWidth: minWidth,
+              height: height,
+              minHeight: minHeight,
               position: 'relative',
-              willChange: 'transform',
-              pointerEvents: isScrolling ?
-                'none' :
-                '', // property defines whether or not an element reacts to pointer events.
-              ...innerScrollStyle,
+              ...style,
             }}>
-            {this.children}
+            <div
+              className={`${innerScrollClassName ?
+                innerScrollClassName :
+                'innerScrollContainer'}`}
+              style={{
+                width: '100%',
+                height: this.estimateTotalHeight,
+                maxWidth: '100%',
+                maxHeight: this.estimateTotalHeight,
+                overflow: 'hidden',
+                position: 'relative',
+                willChange: 'transform',
+                pointerEvents: isScrolling ?
+                  'none' :
+                  '', // property defines whether or not an element reacts to pointer events.
+                ...innerScrollStyle,
+              }}>
+              {this.children}
+            </div>
           </div>
         </div>
-      </div>
+      </Scrollbars>
     );
   }
 
@@ -644,7 +691,7 @@ class Masonry extends React.Component<Props> {
   }
 
   pendingScrollToSpecialItem(numOfItems, itemId) {
-    if(numOfItems === 0 ) {
+    if (numOfItems === 0) {
       this.zoomToItem(itemId);
     }
     this.numOfNewLoading = numOfItems;
@@ -867,6 +914,128 @@ class Masonry extends React.Component<Props> {
       this._scrollToOffset(itemCache.getPosition(itemId) + disparity);
     }
   }
+
+
+  /* ========================================================================
+   [Public API] - Scroll Bar
+   ======================================================================== */
+  scrollTop(top = 0) {
+    if (
+      this._scrollBar &&
+      isFunction(this._scrollBar.scrollTop) &&
+      top >= 0
+    ) {
+      this._scrollBar.scrollTop(top);
+    }
+  }
+
+  scrollLeft(left = 0) {
+    if (
+      this._scrollBar &&
+      isFunction(this._scrollBar.scrollLeft) &&
+      left >= 0
+    ) {
+      this._scrollBar.scrollLeft(left);
+    }
+  }
+
+  scrollToTop() {
+    if (this._scrollBar && isFunction(this._scrollBar.scrollToTop)) {
+      this._scrollBar.scrollToTop();
+    }
+  }
+
+  scrollToBottom() {
+    if (this._scrollBar && isFunction(this._scrollBar.scrollToBottom)) {
+      this._scrollBar.scrollToBottom();
+    }
+  }
+
+  scrollToLeft() {
+    if (this._scrollBar && isFunction(this._scrollBar.scrollToLeft)) {
+      this._scrollBar.scrollToLeft();
+    }
+  }
+
+  scrollToRight() {
+    if (this._scrollBar && isFunction(this._scrollBar.scrollToRight)) {
+      this._scrollBar.scrollToRight();
+    }
+  }
+
+  getScrollLeft() {
+    if (this._scrollBar && isFunction(this._scrollBar.getScrollLeft)) {
+      this._scrollBar.getScrollLeft();
+    }
+  }
+
+  getScrollTop() {
+    if (this._scrollBar && isFunction(this._scrollBar.getScrollTop)) {
+      this._scrollBar.getScrollTop();
+    }
+  }
+
+  getScrollWidth() {
+    if (this._scrollBar && isFunction(this._scrollBar.getScrollWidth)) {
+      this._scrollBar.getScrollWidth();
+    }
+  }
+
+  getScrollHeight() {
+    if (this._scrollBar && isFunction(this._scrollBar.getScrollHeight)) {
+      this._scrollBar.getScrollHeight();
+    }
+  }
+
+  getClientWidth() {
+    if (this._scrollBar && isFunction(this._scrollBar.getClientWidth)) {
+      this._scrollBar.getClientWidth();
+    }
+  }
+
+  getClientHeight() {
+    if (this._scrollBar && isFunction(this._scrollBar.getClientHeight)) {
+      this._scrollBar.getClientHeight();
+    }
+  }
+
+  getValues() {
+    if (this._scrollBar && isFunction(this._scrollBar.getValues)) {
+      this._scrollBar.getValues();
+    }
+  }
+}
+
+export function renderTrackVertical({style, ...props}) {
+  const finalStyle = {
+    ...style,
+    right: 2,
+    bottom: 2,
+    top: 2,
+    width: 8,
+    borderRadius: 3,
+  };
+  return <div style={finalStyle} {...props} />;
+}
+
+export function renderTrackVerticalVer2({style, ...props}) {
+  const finalStyle = {
+    ...style,
+    right: 10,
+    bottom: 2,
+    top: 2,
+    width: 8,
+    borderRadius: 3,
+  };
+  return <div style={finalStyle} {...props} />;
+}
+
+export function renderNoScroll({style, ...props}) {
+  const finalStyle = {
+    ...style,
+    width: 0,
+  };
+  return <div style={finalStyle} {...props} />;
 }
 
 export default Masonry;
