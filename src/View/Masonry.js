@@ -131,11 +131,10 @@ class Masonry extends React.Component<Props> {
     this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
     this.scrollToTopAtCurrentUI = this.scrollToTopAtCurrentUI.bind(this);
     this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
-    this.mScrollToTop = this.mScrollToTop.bind(this);
-    this.mScrollToBottom = this.mScrollToBottom.bind(this);
     this._addStaticItemToChildren = this._addStaticItemToChildren.bind(this);
     this.zoomToItem = this.zoomToItem.bind(this);
     this.scrollTo = this.scrollTo.bind(this);
+    this._removeScrollBackItemTrigger = this._removeScrollBackItemTrigger.bind(this);
 
     //region ScrollBar
     this._scrollBar = undefined;
@@ -384,13 +383,14 @@ class Masonry extends React.Component<Props> {
   zoomToItem(itemId: string, withAnim: boolean = true) {
     if (itemId === this.itemIdToScroll && this.isStableAfterScrollToSpecialItem && withAnim) {
       // Re-active animation without scroll.
-      this.isScrollToSpecialItem = false;
       if (itemId && this.props.scrollToAnim) {
+        // TODO: Raf
         const curEl = this.getElementFromId(itemId);
         const newEl = curEl.cloneNode(true);
         const parentNode = curEl.parentNode;
         parentNode.replaceChild(newEl, curEl);
         parentNode.replaceChild(curEl, newEl);
+        this._removeScrollBackItemTrigger();
       }
     }
     else {
@@ -436,7 +436,7 @@ class Masonry extends React.Component<Props> {
       }
     }
     else {
-      this.isScrollToSpecialItem = false;
+      this._removeScrollBackItemTrigger();
       this._scrollToOffset(scrollTop);
     }
   }
@@ -497,23 +497,15 @@ class Masonry extends React.Component<Props> {
 
   scrollToTopAtCurrentUI() {
     this.preventLoadTop = true;
-    this.isScrollToSpecialItem = false;
+    this._removeScrollBackItemTrigger();
     this._scrollToOffset(0);
   };
 
   scrollToBottomAtCurrentUI() {
     this.preventLoadBottom = true;
-    this.isScrollToSpecialItem = false;
+    this._removeScrollBackItemTrigger();
     this._scrollToOffset(this.estimateTotalHeight);
   };
-
-  mScrollToTop() {
-
-  }
-
-  mScrollToBottom() {
-
-  }
 
   reRender() {
     this.setState(this.state);
@@ -727,7 +719,7 @@ class Masonry extends React.Component<Props> {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
       if (this.state.scrollTop <= 0) {
         clearInterval(this.scrTopTimeOutId);
-        this.isScrollToSpecialItem = false;
+        this._removeScrollBackItemTrigger();
         this._scrollToOffset(0);
       }
     }, msDelayInEachStep);
@@ -746,7 +738,7 @@ class Masonry extends React.Component<Props> {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
       if (this.state.scrollTop <= offset) {
         clearInterval(this.scrUpTimeOutId);
-        this.isScrollToSpecialItem = false;
+        this._removeScrollBackItemTrigger();
         this._scrollToOffset(offset);
         if (itemId) {
           this.addAnimWhenScrollToSpecialItem(itemId, animationName);
@@ -768,7 +760,7 @@ class Masonry extends React.Component<Props> {
       this.masonry.scrollTo(0, this.state.scrollTop + stepInPixel);
       if (this.state.scrollTop >= offset) {
         clearInterval(this.scrDownTimeOutId);
-        this.isScrollToSpecialItem = false;
+        this._removeScrollBackItemTrigger();
         this._scrollToOffset(offset);
         if (itemId) {
           this.addAnimWhenScrollToSpecialItem(itemId, animationName);
@@ -839,6 +831,7 @@ class Masonry extends React.Component<Props> {
     const {height} = this.props;
 
     this._removeStyleOfSpecialItem();
+    //this._removeScrollBackItemTrigger();
 
     const eventScrollTop = this.masonry.scrollTop;
     const scrollTop = Math.min(
@@ -935,6 +928,9 @@ class Masonry extends React.Component<Props> {
     }
   }
 
+  _removeScrollBackItemTrigger() {
+    this.isScrollToSpecialItem = false;
+  }
 
   /* ========================================================================
    [Public API] - Scroll Bar
