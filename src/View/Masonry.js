@@ -436,6 +436,7 @@ class Masonry extends React.Component<Props> {
       }
     }
     else {
+      this.isScrollToSpecialItem = false;
       this._scrollToOffset(scrollTop);
     }
   }
@@ -496,11 +497,13 @@ class Masonry extends React.Component<Props> {
 
   scrollToTopAtCurrentUI() {
     this.preventLoadTop = true;
+    this.isScrollToSpecialItem = false;
     this._scrollToOffset(0);
   };
 
   scrollToBottomAtCurrentUI() {
     this.preventLoadBottom = true;
+    this.isScrollToSpecialItem = false;
     this._scrollToOffset(this.estimateTotalHeight);
   };
 
@@ -714,8 +717,6 @@ class Masonry extends React.Component<Props> {
     this.isScrollToSpecialItem = true;
     this.itemIdToScroll = itemId;
     this.isActiveAnimWhenScrollToItem = withAnim;
-
-
   }
 
   _scrollTopWithAnim(
