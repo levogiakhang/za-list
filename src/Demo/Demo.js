@@ -602,7 +602,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.scrollToTop(this.dataTotal[0].itemId);
+                this.viewModel.mScrollToTop(this.dataTotal[0].itemId);
               }}>
               Scroll To Top (First Item)
             </button>
@@ -626,7 +626,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.scrollToBottom(this.dataTotal[this.dataTotal.length - 1].itemId);
+                this.viewModel.mScrollToBottom(this.dataTotal[this.dataTotal.length - 1].itemId);
               }}>
               Scroll To Bottom (Last Item)
             </button>

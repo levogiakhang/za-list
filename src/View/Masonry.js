@@ -130,8 +130,8 @@ class Masonry extends React.Component<Props> {
     this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
     this.scrollToTopAtCurrentUI = this.scrollToTopAtCurrentUI.bind(this);
     this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
-    this.scrollToTop = this.scrollToTop.bind(this);
-    this.scrollToBottom = this.scrollToBottom.bind(this);
+    this.mScrollToTop = this.mScrollToTop.bind(this);
+    this.mScrollToBottom = this.mScrollToBottom.bind(this);
     this._addStaticItemToChildren = this._addStaticItemToChildren.bind(this);
     this.zoomToItem = this.zoomToItem.bind(this);
 
@@ -490,11 +490,11 @@ class Masonry extends React.Component<Props> {
     this._scrollToOffset(this.estimateTotalHeight);
   };
 
-  scrollToTop() {
+  mScrollToTop() {
 
   }
 
-  scrollToBottom() {
+  mScrollToBottom() {
 
   }
 
