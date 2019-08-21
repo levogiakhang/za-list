@@ -123,16 +123,16 @@ class Demo extends React.Component {
   }
 
   lookUpItemToScrollTop() {
-    const newData = this._getDataFromDataTotal(0, DATA_UI_NUMBER, this.dataTotal.length);
+    const newData = this._getDataFromDataTotal(0, DATA_UI_NUMBER - 1, this.dataTotal.length);
     this.viewModel.updateData(newData);
     this.viewModel.pendingScrollToSpecialItem(this.dataTotal[0].itemId, false);
     // pending load and scroll top
   }
 
   lookUpItemToScrollBottom() {
-    const newData = this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, this.dataTotal.length);
+    const newData = this._getDataFromDataTotal(this.dataTotal.length - DATA_UI_NUMBER, this.dataTotal.length - 1, this.dataTotal.length);
     this.viewModel.updateData(newData);
-    this.viewModel.pendingScrollToSpecialItem(this.dataTotal[DATA_TOTAL_NUMBER - 1].itemId, false);
+    this.viewModel.pendingScrollToSpecialItem(this.dataTotal[this.dataTotal.length - 1].itemId, false);
     // pending load and scroll top
   }
 
