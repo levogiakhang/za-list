@@ -5,6 +5,7 @@
   "dependencies": {
     "node-sass": "^4.12.0",
     "react": "^16.8.6",
+    "react-custom-scrollbars": "^4.2.1",
     "react-dom": "^16.8.6",
     "react-scripts": "3.0.1",
     "resize-observer-polyfill": "^1.5.1"
