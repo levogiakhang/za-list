@@ -131,8 +131,10 @@ class MasonryViewModel {
       this.masonry &&
       this.masonry.current &&
       isFunction(fn)) {
-      const lastItemId = this.dataOnList[this.dataOnList.length - 1].itemId;
-      fn(lastItemId);
+      if (this.dataOnList.length > 0) {
+        const lastItemId = this.dataOnList[this.dataOnList.length - 1].itemId;
+        fn(lastItemId);
+      }
     }
   };
 
