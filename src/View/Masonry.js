@@ -361,9 +361,22 @@ class Masonry extends React.Component<Props> {
   }
 
   zoomToItem(itemId: string) {
-    this.itemIdToScroll = itemId;
-    this.isScrollToSpecialItem = true;
-    this.scrollToSpecialItem(this.itemIdToScroll);
+    if (itemId === this.itemIdToScroll && this.isStableAfterScrollToSpecialItem) {
+      // Re-active animation without scroll.
+      this.isScrollToSpecialItem = false;
+      if (itemId && this.props.scrollToAnim) {
+        const curEl = this.getElementFromId(itemId);
+        const newEl = curEl.cloneNode(true);
+        const parentNode = curEl.parentNode;
+        parentNode.replaceChild(newEl, curEl);
+        parentNode.replaceChild(curEl, newEl);
+      }
+    }
+    else {
+      this.itemIdToScroll = itemId;
+      this.isScrollToSpecialItem = true;
+      this.scrollToSpecialItem(this.itemIdToScroll);
+    }
   }
 
   scrollToSpecialItem(itemId: string) {
