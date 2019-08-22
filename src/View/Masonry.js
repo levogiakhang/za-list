@@ -423,6 +423,10 @@ class Masonry extends React.Component<Props> {
   }
 
   zoomToItem(itemId: string, withAnim: boolean = true) {
+    // Conflict with trigger load more when scroll to first | last item on UI
+    clearInterval(this.scrTopTimeOutId);
+    clearInterval(this.scrUpTimeOutId);
+    clearInterval(this.scrDownTimeOutId);
     if (itemId === this.itemIdToScroll && this.isStableAfterScrollToSpecialItem && withAnim) {
       // Re-active animation without scroll.
       if (itemId && this.props.scrollToAnim) {
@@ -448,6 +452,10 @@ class Masonry extends React.Component<Props> {
       isItemScrollToInBottom,
       scrollToAnim,
     } = this.props;
+
+    clearInterval(this.scrTopTimeOutId);
+    clearInterval(this.scrUpTimeOutId);
+    clearInterval(this.scrDownTimeOutId);
 
     const itemCache = this.viewModel.getItemCache;
 
@@ -491,6 +499,8 @@ class Masonry extends React.Component<Props> {
   scrollTo(index: number) {
     const itemId = this.viewModel.getItemCache.getItemId(parseInt(index));
     if (itemId !== NOT_FOUND) {
+      this._removeScrollBackItemTrigger();
+      this._removeStyleOfSpecialItem();
       this.zoomToItem(itemId);
     }
   }
@@ -600,8 +610,11 @@ class Masonry extends React.Component<Props> {
       <Scrollbars
         key="scroller"
         ref={c => this._scrollBar = c}
-        {...rest}
-        thumbMinSize={2000}>
+        thumbMinSize={2000}
+        autoHide
+        autoHideTimeout={1000}
+        autoHideDuration={200}
+        {...rest}>
         <div
           className={'masonry-parent'}
           ref={this.parentRef}>
@@ -886,6 +899,7 @@ class Masonry extends React.Component<Props> {
   }
 
   _onScroll() {
+    console.log('onScr');
     const {height} = this.props;
 
     this._removeStyleOfSpecialItem();
