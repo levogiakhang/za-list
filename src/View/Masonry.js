@@ -337,18 +337,21 @@ class Masonry extends React.Component<Props> {
         this._updateOldData();
 
         // Check in case be loaded more
-        if(oldChildrenLength !== this.children.length) {
+        if (oldChildrenLength !== this.children.length) {
           // remove from UI
           this.children.splice(itemIndex + this.loadMoreTopCount, 1);
-        } else {
+        }
+        else {
           // remove from UI
           this.children.splice(itemIndex, 1);
         }
 
+        this.isLoadMore = false;
         this.loadMoreTopCount = 0;
         this._updateEstimatedHeight(-itemHeight);
         this.setState(this.state);
       });
+
 
       el.addEventListener('onanimationcancel', () => {
         // clear real el from dataOnList, itemCache
@@ -356,18 +359,21 @@ class Masonry extends React.Component<Props> {
         this._updateOldData();
 
         // Check in case be loaded more
-        if(oldChildrenLength !== this.children.length) {
+        if (oldChildrenLength !== this.children.length) {
           // remove from UI
           this.children.splice(itemIndex + this.loadMoreTopCount, 1);
-        } else {
+        }
+        else {
           // remove from UI
           this.children.splice(itemIndex, 1);
         }
 
+        this.isLoadMore = false;
         this.loadMoreTopCount = 0;
         this._updateEstimatedHeight(-itemHeight);
         this.setState(this.state);
       });
+
 
       if (this.estimateTotalHeight > height &&
         scrollTop >= itemHeight &&
@@ -685,10 +691,11 @@ class Masonry extends React.Component<Props> {
 
     if (this.needScrollTopWithAnim) {
       if (
-        //!this.isLoadMore &&
-        !this.needScrollBack) {
+        !this.isLoadMore &&
+        !this.needScrollBack
+      ) {
         this.needScrollTopWithAnim = false;
-        //this._scrollTopWithAnim();
+        this._scrollTopWithAnim();
       }
     }
 
@@ -702,6 +709,7 @@ class Masonry extends React.Component<Props> {
         );
       }
       else {
+        clearInterval(this.scrTopTimeOutId);
         if (!this.isScrollToSpecialItem) {
           this._scrollToItem(
             this.firstItemInViewportBeforeLoadTop.itemId,
