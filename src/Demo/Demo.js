@@ -214,12 +214,12 @@ class Demo extends React.Component {
 
   onAddItemTop = () => {
     let item = generation.generateItems(1)[0];
-    this.viewModel.onAddItem(0, item);
+    this.viewModel.addTop(item);
   };
 
   onAddItemBottom = () => {
     let item = generation.generateItems(1)[0];
-    this.viewModel.onAddItem(this.viewModel.getDataOnList.length, item);
+    this.viewModel.addBottom(item);
   };
 
   addItemToDataTotal = (item, beforeItemId, afterItemId) => {
