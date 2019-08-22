@@ -470,7 +470,12 @@ class Masonry extends React.Component<Props> {
     }
 
     if (withAnim) {
-      if (scrollTop < this.state.scrollTop) {
+      if (this.estimateTotalHeight < height) {
+        this._removeStyleOfSpecialItem();
+        this._removeScrollBackItemTrigger();
+        this.addAnimWhenScrollToSpecialItem(itemId, scrollToAnim);
+      }
+      else if (scrollTop < this.state.scrollTop) {
         this._scrollToItemWithAnimUp(scrollTop, itemId, scrollToAnim);
       }
       else {
