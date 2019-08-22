@@ -8,7 +8,7 @@ import generation from './utils/Generation';
 import GConst from './utils/values';
 import throttle from '../vendors/throttle';
 
-const DATA_TOTAL_NUMBER = 100;
+const DATA_TOTAL_NUMBER = 60;
 const DATA_UI_NUMBER = 10;
 
 const lv1 = 'background-color: #3F51B5; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1.1rem; font-weight: 700l; font-style: italic';
@@ -819,7 +819,7 @@ class Demo extends React.Component {
                scrollToAnim={'highlighted zoomScaling'}
                additionAnim={'zoomIn'}
                removalAnim={'zoomOut'}
-               timingResetAnimation={300}
+               timingResetAnimation={200}
                noHScroll/>
     );
   };
