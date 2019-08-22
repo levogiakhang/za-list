@@ -799,6 +799,28 @@ class Demo extends React.Component {
             Clear log
           </button>
         </div>
+
+        <div style={{
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+          marginTop: GConst.Spacing['0.5'],
+        }}>
+          <button
+            style={{
+              minWidth: '370px',
+              width: '100%',
+              minHeight: '40px',
+              height: 'auto',
+              maxHeight: '40px',
+              margin: GConst.Spacing[0],
+              fontSize: GConst.Font.Size.Medium,
+            }}
+            onClick={() => {
+              console.log(this.viewModel.masonry.current.getValues());
+            }}>
+            Log scroll bar values
+          </button>
+        </div>
       </div>
     );
   };
