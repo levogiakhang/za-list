@@ -599,7 +599,7 @@ class Masonry extends React.Component<Props> {
     return (
       <Scrollbars
         key="scroller"
-        ref={this._scrollBar}
+        ref={c => this._scrollBar = c}
         {...rest}
         thumbMinSize={2000}>
         <div
@@ -1039,43 +1039,43 @@ class Masonry extends React.Component<Props> {
 
   getScrollLeft() {
     if (this._scrollBar && isFunction(this._scrollBar.getScrollLeft)) {
-      this._scrollBar.getScrollLeft();
+      return this._scrollBar.getScrollLeft();
     }
   }
 
   getScrollTop() {
     if (this._scrollBar && isFunction(this._scrollBar.getScrollTop)) {
-      this._scrollBar.getScrollTop();
+      return this._scrollBar.getScrollTop();
     }
   }
 
   getScrollWidth() {
     if (this._scrollBar && isFunction(this._scrollBar.getScrollWidth)) {
-      this._scrollBar.getScrollWidth();
+      return this._scrollBar.getScrollWidth();
     }
   }
 
   getScrollHeight() {
     if (this._scrollBar && isFunction(this._scrollBar.getScrollHeight)) {
-      this._scrollBar.getScrollHeight();
+      return this._scrollBar.getScrollHeight();
     }
   }
 
   getClientWidth() {
     if (this._scrollBar && isFunction(this._scrollBar.getClientWidth)) {
-      this._scrollBar.getClientWidth();
+      return this._scrollBar.getClientWidth();
     }
   }
 
   getClientHeight() {
     if (this._scrollBar && isFunction(this._scrollBar.getClientHeight)) {
-      this._scrollBar.getClientHeight();
+      return this._scrollBar.getClientHeight();
     }
   }
 
   getValues() {
     if (this._scrollBar && isFunction(this._scrollBar.getValues)) {
-      this._scrollBar.getValues();
+      return this._scrollBar.getValues();
     }
   }
 }
