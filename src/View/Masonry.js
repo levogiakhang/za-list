@@ -74,6 +74,9 @@ class Masonry extends React.Component<Props> {
     this.curItemInViewPort = undefined;
     this.firstItemInViewportBeforeAddMore = {};
 
+    this.isLoadMore = false;
+    this.loadMoreTopCount = 0; // resolves remove incorrect item when removal animation end.
+    this.needScrollTopWithAnim = false; // turn on this flag when remove an item in case after remove, list's height is greater than total items' height
     this.isAddMore = true;
     this.isAddFirst = false;
     this.needScrollTop = false;
@@ -326,14 +329,42 @@ class Masonry extends React.Component<Props> {
 
       parent.insertBefore(stuntman, el);
 
+      const oldChildrenLength = this.children.length;
       this.appendStyle(el, removalAnim);
       el.addEventListener('animationend', () => {
         // clear real el from dataOnList, itemCache
         this.viewModel._deleteItem(itemId);
         this._updateOldData();
 
-        // remove from UI
-        this.children.splice(itemIndex, 1);
+        // Check in case be loaded more
+        if(oldChildrenLength !== this.children.length) {
+          // remove from UI
+          this.children.splice(itemIndex + this.loadMoreTopCount, 1);
+        } else {
+          // remove from UI
+          this.children.splice(itemIndex, 1);
+        }
+
+        this.loadMoreTopCount = 0;
+        this._updateEstimatedHeight(-itemHeight);
+        this.setState(this.state);
+      });
+
+      el.addEventListener('onanimationcancel', () => {
+        // clear real el from dataOnList, itemCache
+        this.viewModel._deleteItem(itemId);
+        this._updateOldData();
+
+        // Check in case be loaded more
+        if(oldChildrenLength !== this.children.length) {
+          // remove from UI
+          this.children.splice(itemIndex + this.loadMoreTopCount, 1);
+        } else {
+          // remove from UI
+          this.children.splice(itemIndex, 1);
+        }
+
+        this.loadMoreTopCount = 0;
         this._updateEstimatedHeight(-itemHeight);
         this.setState(this.state);
       });
@@ -354,7 +385,7 @@ class Masonry extends React.Component<Props> {
         });
       }
       else if (this.estimateTotalHeight - itemHeight < height) {
-        this._scrollTopWithAnim();
+        this.needScrollTopWithAnim = true;
       }
 
       stuntman.style.setProperty('--itemHeight', itemHeight + 'px');
@@ -369,6 +400,11 @@ class Masonry extends React.Component<Props> {
 
   onLoadMore(index, item) {
     this.numOfNewLoading++;
+    this.isLoadMore = true;
+
+    if (parseInt(index) === 0) {
+      this.loadMoreTopCount++;
+    }
 
     // Conflict with trigger load more when scroll to first | last item on UI
     clearInterval(this.scrUpTimeOutId);
@@ -645,6 +681,15 @@ class Masonry extends React.Component<Props> {
     // Notify if viewport is not full.
     if (this.isFirstLoadingDone && this.estimateTotalHeight < height) {
       //this.viewModel.enableLoadMoreTop();
+    }
+
+    if (this.needScrollTopWithAnim) {
+      if (
+        //!this.isLoadMore &&
+        !this.needScrollBack) {
+        this.needScrollTopWithAnim = false;
+        //this._scrollTopWithAnim();
+      }
     }
 
     // Check scroll to old position when load more top.
