@@ -770,10 +770,11 @@ class Masonry extends React.Component<Props> {
   pendingScrollToSpecialItem(numOfItems: number, itemId: string, withAnim: boolean = true) {
     if (numOfItems === 0) {
       this.zoomToItem(itemId, withAnim);
+    } else {
+      this.isScrollToSpecialItem = true;
     }
 
     this.numOfNewLoading = numOfItems;
-    this.isScrollToSpecialItem = true;
     this.itemIdToScroll = itemId;
     this.isActiveAnimWhenScrollToItem = withAnim;
   }
