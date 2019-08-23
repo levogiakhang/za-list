@@ -138,6 +138,7 @@ class Masonry extends React.Component<Props> {
     this.zoomToItem = this.zoomToItem.bind(this);
     this.scrollTo = this.scrollTo.bind(this);
     this._removeScrollBackItemTrigger = this._removeScrollBackItemTrigger.bind(this);
+    this._clearIntervalId = this._clearIntervalId.bind(this);
 
     //region ScrollBar
     this._scrollBar = undefined;
@@ -413,8 +414,7 @@ class Masonry extends React.Component<Props> {
     }
 
     // Conflict with trigger load more when scroll to first | last item on UI
-    clearInterval(this.scrUpTimeOutId);
-    clearInterval(this.scrDownTimeOutId);
+    this._clearIntervalId();
 
     this._removeStyleOfSpecialItem();
     this.viewModel.insertItemWhenLoadMore(index, item);
@@ -423,10 +423,8 @@ class Masonry extends React.Component<Props> {
   }
 
   zoomToItem(itemId: string, withAnim: boolean = true) {
-    // Conflict with trigger load more when scroll to first | last item on UI
-    clearInterval(this.scrTopTimeOutId);
-    clearInterval(this.scrUpTimeOutId);
-    clearInterval(this.scrDownTimeOutId);
+    this._clearIntervalId();
+
     if (itemId === this.itemIdToScroll && this.isStableAfterScrollToSpecialItem && withAnim) {
       // Re-active animation without scroll.
       if (itemId && this.props.scrollToAnim) {
@@ -453,9 +451,7 @@ class Masonry extends React.Component<Props> {
       scrollToAnim,
     } = this.props;
 
-    clearInterval(this.scrTopTimeOutId);
-    clearInterval(this.scrUpTimeOutId);
-    clearInterval(this.scrDownTimeOutId);
+    this._clearIntervalId();
 
     const itemCache = this.viewModel.getItemCache;
 
@@ -780,6 +776,12 @@ class Masonry extends React.Component<Props> {
     this.isScrollToSpecialItem = true;
     this.itemIdToScroll = itemId;
     this.isActiveAnimWhenScrollToItem = withAnim;
+  }
+
+  _clearIntervalId() {
+    clearInterval(this.scrTopTimeOutId);
+    clearInterval(this.scrUpTimeOutId);
+    clearInterval(this.scrDownTimeOutId);
   }
 
   _scrollTopWithAnim(
