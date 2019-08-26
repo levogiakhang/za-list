@@ -2,6 +2,8 @@ import {
   NOT_FOUND,
 } from '../utils/value';
 import isFunction from '../vendors/isFunction';
+import ItemCache from '../utils/ItemCache';
+import isObject from '../vendors/isObject';
 
 type EventTypes =
   'addItem' |
@@ -11,11 +13,14 @@ type EventTypes =
   'lookUpItemToScroll';
 type Callback = (params: any) => any;
 
+const ITEM_DEFAULT_HEIGHT = 200;
+
 class MasonryViewModel {
-  constructor({dataOnList, node, itemCache}) {
+  constructor({dataOnList, node, defaultHeight}) {
     this.dataOnList = dataOnList;
     this.masonry = node;
-    this.itemCache = itemCache;
+
+    this.itemCache = new ItemCache(MasonryViewModel.getCorrectDefaultHeight(defaultHeight));
 
     // Reflection `itemId` -> `item` - For purpose quick look-up
     this.dataMap = new Map();
@@ -532,6 +537,24 @@ class MasonryViewModel {
     };
   }
 
+  static getCorrectDefaultHeight(defaultHeight) {
+    let _defaultHeight = undefined;
+
+    if (typeof defaultHeight === 'number') {
+      _defaultHeight = defaultHeight;
+    }
+    else if (typeof defaultHeight === 'string') {
+      _defaultHeight = parseInt(defaultHeight);
+      if (isNaN(_defaultHeight)) {
+        _defaultHeight = ITEM_DEFAULT_HEIGHT;
+      }
+    }
+    else {
+      _defaultHeight = ITEM_DEFAULT_HEIGHT;
+    }
+
+    return _defaultHeight;
+  }
 
   /* ========================================================================
    Get - Set

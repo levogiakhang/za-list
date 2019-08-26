@@ -3,7 +3,6 @@ import './scss/Demo.scss';
 import Masonry from '../View/Masonry.js';
 import MasonryViewModel from '../ViewModel/MasonryViewModel';
 import Message from './Message/Message';
-import ItemCache from '../utils/ItemCache';
 import generation from './utils/Generation';
 import GConst from './utils/values';
 import throttle from '../vendors/throttle';
@@ -54,12 +53,10 @@ class Demo extends React.Component {
 
   initList() {
     this.masonry = React.createRef();
-    this.itemCache = new ItemCache(200);
 
     this.viewModel = new MasonryViewModel({
       dataOnList: this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER),
       node: this.masonry,
-      itemCache: this.itemCache,
     });
 
     //this.dataOnList.addEventListener('onDataChanged', this.viewModel.onDataChanged);
