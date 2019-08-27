@@ -200,7 +200,6 @@ function createMasonryViewModel({data, defaultHeight}) {
       const firstItemId = data[0].itemId;
       if (isFunction(storageEvents['viewOnLoadMoreTop'][0])) {
         storageEvents['viewOnLoadMoreTop'][0]();
-        //this.masonry.current.onLoadMoreTop();
       }
       onLoadMoreTopCallback(firstItemId);
     }
@@ -223,8 +222,6 @@ function createMasonryViewModel({data, defaultHeight}) {
       ) {
         storageEvents['viewOnLoadMore'][0](0, item);
         storageEvents['viewReRender'][0]();
-        //this.masonry.current.onLoadMore(0, item);
-        //this.masonry.current.reRender();
       }
     }
   }
@@ -237,8 +234,6 @@ function createMasonryViewModel({data, defaultHeight}) {
       ) {
         storageEvents['viewOnLoadMore'][0](data.length, item);
         storageEvents['viewReRender'][0]();
-        //this.masonry.current.onLoadMore(data.length, item);
-        //this.masonry.current.reRender();
       }
     }
   }
@@ -258,7 +253,6 @@ function createMasonryViewModel({data, defaultHeight}) {
     else {
       if (isFunction(storageEvents['viewZoomToItem'][0])) {
         storageEvents['viewZoomToItem'][0](itemId);
-        //this.masonry.current.zoomToItem(itemId);
       }
     }
   }
@@ -266,21 +260,18 @@ function createMasonryViewModel({data, defaultHeight}) {
   function pendingScrollToSpecialItem(itemId: string, withAnim: boolean = true) {
     if (isFunction(storageEvents['viewPendingScrollToSpecialItem'][0])) {
       storageEvents['viewPendingScrollToSpecialItem'][0](numOfNewItems, itemId, withAnim);
-      //this.masonry.current.pendingScrollToSpecialItem(this.numItemsNeedRender, itemId, withAnim);
     }
   }
 
   function scrollToTopAtCurrentUI() {
     if (isFunction(storageEvents['viewScrollToTopAtCurrentUI'][0])) {
       storageEvents['viewScrollToTopAtCurrentUI'][0]();
-      //this.masonry.current.scrollToTopAtCurrentUI();
     }
   }
 
   function scrollToBottomAtCurrentUI() {
     if (isFunction(storageEvents['viewScrollToBottomAtCurrentUI'][0])) {
       storageEvents['viewScrollToBottomAtCurrentUI'][0]();
-      //this.masonry.current.scrollToBottomAtCurrentUI();
     }
   }
 
@@ -295,7 +286,6 @@ function createMasonryViewModel({data, defaultHeight}) {
     else {
       if (isFunction(storageEvents['viewScrollToTopAtCurrentUI'][0])) {
         storageEvents['viewScrollToTopAtCurrentUI'][0]();
-        //this.masonry.current.scrollToTopAtCurrentUI();
       }
     }
   }
@@ -310,7 +300,6 @@ function createMasonryViewModel({data, defaultHeight}) {
     else {
       if (isFunction(storageEvents['viewScrollToBottomAtCurrentUI'][0])) {
         storageEvents['viewScrollToBottomAtCurrentUI'][0]();
-        //this.masonry.current.scrollToBottomAtCurrentUI();
       }
     }
   }
@@ -321,7 +310,6 @@ function createMasonryViewModel({data, defaultHeight}) {
       isFunction(storageEvents['viewScrollTo'][0])
     ) {
       storageEvents['viewScrollTo'][0](index);
-      //this.masonry.current.scrollTo(index);
     }
   }
 
@@ -338,8 +326,6 @@ function createMasonryViewModel({data, defaultHeight}) {
     ) {
       storageEvents['viewOnAddItem'][0](index, item);
       storageEvents['viewReRender'][0]();
-      //this.masonry.current.onAddItem(index, item);
-      //this.masonry.current.reRender();
     }
   }
 
@@ -364,7 +350,6 @@ function createMasonryViewModel({data, defaultHeight}) {
         data[itemIndex] = item;
         if (isFunction(storageEvents['viewReRender'][0])) {
           storageEvents['viewReRender'][0]();
-          //this.masonry.current.reRender();
         }
       }
     }
