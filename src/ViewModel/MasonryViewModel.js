@@ -338,6 +338,7 @@ function createMasonryViewModel({data, defaultHeight}) {
 
   function onRemoveItem(itemId: string) {
     if (
+      _hasAlreadyId(itemId) &&
       isFunction(storageEvents['viewOnRemoveItem'][0]) &&
       isFunction(storageEvents['viewReRender'][0])
     ) {
