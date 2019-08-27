@@ -144,6 +144,7 @@ class Masonry extends React.Component<Props> {
     this.updateUIWhenScrollToItem = this.updateUIWhenScrollToItem.bind(this);
     this.onAddItem = this.onAddItem.bind(this);
 
+    this._removeStyleOfSpecialItem = this._removeStyleOfSpecialItem.bind(this);
     this._removeScrollBackItemTrigger = this._removeScrollBackItemTrigger.bind(this);
     this._clearIntervalId = this._clearIntervalId.bind(this);
 
@@ -190,7 +191,9 @@ class Masonry extends React.Component<Props> {
   componentDidMount() {
     const {height} = this.props;
     this.masonry = this.parentRef.current.firstChild;
+
     window.addEventListener('resize', debounce(this._onResize, DEBOUNCING_TIMER));
+    window.addEventListener('mousedown', this._removeStyleOfSpecialItem);
 
     this.viewModel.addEventListener('viewOnLoadMoreTop', this.onLoadMoreTop);
     this.viewModel.addEventListener('viewOnLoadMore', this.onLoadMore);
