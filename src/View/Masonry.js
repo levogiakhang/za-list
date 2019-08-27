@@ -330,11 +330,13 @@ class Masonry extends React.Component<Props> {
     if (parseInt(index) === this.viewModel.getData().length) {
       this.isAddLast = true;
     }
+
+    // Usage to scroll back, prevent flick view
     this.firstItemInViewportBeforeAddMore = {
       itemId: this.curItemInViewPort,
       disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
     };
-    this.viewModel.insertItem(index, item);
+
     this._addStaticItemToChildren(index, item);
     this._updateEstimatedHeight(this.viewModel.getCache().defaultHeight);
   }
@@ -453,7 +455,6 @@ class Masonry extends React.Component<Props> {
     this._clearIntervalId();
 
     this._removeStyleOfSpecialItem();
-    this.viewModel.insertItemWhenLoadMore(index, item);
     this._addStaticItemToChildren(index, item);
     this._updateEstimatedHeight(this.viewModel.getCache().getDefaultHeight);
   }

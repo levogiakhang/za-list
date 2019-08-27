@@ -220,6 +220,7 @@ function createMasonryViewModel({data, defaultHeight}) {
         isFunction(storageEvents['viewOnLoadMore'][0]) &&
         isFunction(storageEvents['viewReRender'][0])
       ) {
+        insertItemWhenLoadMore(0, item);
         storageEvents['viewOnLoadMore'][0](0, item);
         storageEvents['viewReRender'][0]();
       }
@@ -232,6 +233,7 @@ function createMasonryViewModel({data, defaultHeight}) {
         isFunction(storageEvents['viewOnLoadMore'][0]) &&
         isFunction(storageEvents['viewReRender'][0])
       ) {
+        insertItemWhenLoadMore(data.length, item);
         storageEvents['viewOnLoadMore'][0](data.length, item);
         storageEvents['viewReRender'][0]();
       }
@@ -324,6 +326,7 @@ function createMasonryViewModel({data, defaultHeight}) {
       item &&
       !_hasAlreadyId(item.itemId)
     ) {
+      insertItem(index, item);
       storageEvents['viewOnAddItem'][0](index, item);
       storageEvents['viewReRender'][0]();
     }
