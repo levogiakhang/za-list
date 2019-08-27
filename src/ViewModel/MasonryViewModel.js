@@ -341,7 +341,17 @@ function createMasonryViewModel({data, defaultHeight}) {
       isFunction(storageEvents['viewOnRemoveItem'][0]) &&
       isFunction(storageEvents['viewReRender'][0])
     ) {
-      storageEvents['viewOnRemoveItem'][0](itemId);
+      const iIndex = __itemCache__.getIndex(itemId);
+      const iHeight = __itemCache__.getHeight(itemId);
+      const iPosition = __itemCache__.getPosition(itemId);
+      deleteItem(itemId);
+
+      storageEvents['viewOnRemoveItem'][0]({
+        itemId,
+        iIndex,
+        iHeight,
+        iPosition
+      });
       storageEvents['viewReRender'][0]();
     }
   }

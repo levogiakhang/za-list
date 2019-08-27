@@ -341,11 +341,10 @@ class Masonry extends React.Component<Props> {
     this._updateEstimatedHeight(this.viewModel.getCache().defaultHeight);
   }
 
-  onRemoveItem(itemId: string) {
+  onRemoveItem({itemId, iIndex, iHeight, iPosition}) {
     const {height} = this.props;
     const {scrollTop} = this.state;
-    const itemCache = this.viewModel.getCache();
-    const itemIndex = itemCache.getIndex(itemId);
+    const itemIndex = iIndex;
 
     const {scrollToAnim, removalAnim} = this.props;
 
@@ -353,11 +352,11 @@ class Masonry extends React.Component<Props> {
 
     console.log(itemId);
     if (itemIndex !== NOT_FOUND) {
-      const itemHeight = itemCache.getHeight(itemId);
+      const itemHeight = iHeight;
 
       const el = document.getElementById(itemId);
       el.style.position = 'absolute';
-      el.style.top = itemCache.getPosition(itemId) + 'px';
+      el.style.top = iPosition + 'px';
       this.removeStyle(el, scrollToAnim);
 
       const parent = el.parentElement;
@@ -371,30 +370,30 @@ class Masonry extends React.Component<Props> {
       const oldChildrenLength = this.children.length;
       this.appendStyle(el, removalAnim);
       el.addEventListener('animationend', () => {
-        // clear real el from dataOnList, itemCache
-        this.viewModel._deleteItem(itemId);
+        this._updateEstimatedHeight(-itemHeight);
         this._updateOldData();
+
+        console.log(oldChildrenLength);
 
         // Check in case be loaded more
         if (oldChildrenLength !== this.children.length) {
-          // remove from UI
+          console.log('el - diff', itemId, itemIndex);
           this.children.splice(itemIndex + this.loadMoreTopCount, 1);
         }
         else {
-          // remove from UI
+          console.log('el - non', itemId, itemIndex);
           this.children.splice(itemIndex, 1);
         }
 
         this.isLoadMore = false;
         this.loadMoreTopCount = 0;
-        this._updateEstimatedHeight(-itemHeight);
         this.setState(this.state);
       });
 
 
       el.addEventListener('onanimationcancel', () => {
-        // clear real el from dataOnList, itemCache
-        this.viewModel._deleteItem(itemId);
+        console.log('el - cancel');
+        this._updateEstimatedHeight(-itemHeight);
         this._updateOldData();
 
         // Check in case be loaded more
@@ -409,7 +408,6 @@ class Masonry extends React.Component<Props> {
 
         this.isLoadMore = false;
         this.loadMoreTopCount = 0;
-        this._updateEstimatedHeight(-itemHeight);
         this.setState(this.state);
       });
 
@@ -439,7 +437,10 @@ class Masonry extends React.Component<Props> {
         // remove from UI
         parent.removeChild(stuntman);
       });
-
+      stuntman.addEventListener('onanimationcancel', () => {
+        // remove from UI
+        parent.removeChild(stuntman);
+      });
     }
   }
 
