@@ -77,7 +77,7 @@ class Masonry extends React.Component<Props> {
     this.isLoadMore = false;
     this.loadMoreTopCount = 0; // resolves remove incorrect item when removal animation end.
     this.needScrollTopWithAnim = false; // turn on this flag when remove an item in case after remove, list's height is greater than total items' height
-    this.isAddMore = true;
+    this.isAddMore = false;
     this.isAddFirst = false;
     this.needScrollTop = false;
     this.isAddLast = false;
@@ -130,13 +130,20 @@ class Masonry extends React.Component<Props> {
     this._onScroll = this._onScroll.bind(this);
     this._onResize = this._onResize.bind(this);
     this.onChildrenChangeHeight = this.onChildrenChangeHeight.bind(this);
-    this.onRemoveItem = this.onRemoveItem.bind(this);
     this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
+    this._addStaticItemToChildren = this._addStaticItemToChildren.bind(this);
+    this.onLoadMoreTop = this.onLoadMoreTop.bind(this);
+    this.onLoadMore = this.onLoadMore.bind(this);
+    this.reRender = this.reRender.bind(this);
+    this.zoomToItem = this.zoomToItem.bind(this);
+    this.pendingScrollToSpecialItem = this.pendingScrollToSpecialItem.bind(this);
     this.scrollToTopAtCurrentUI = this.scrollToTopAtCurrentUI.bind(this);
     this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
-    this._addStaticItemToChildren = this._addStaticItemToChildren.bind(this);
-    this.zoomToItem = this.zoomToItem.bind(this);
     this.scrollTo = this.scrollTo.bind(this);
+    this.onRemoveItem = this.onRemoveItem.bind(this);
+    this.updateUIWhenScrollToItem = this.updateUIWhenScrollToItem.bind(this);
+    this.onAddItem = this.onAddItem.bind(this);
+
     this._removeScrollBackItemTrigger = this._removeScrollBackItemTrigger.bind(this);
     this._clearIntervalId = this._clearIntervalId.bind(this);
 
@@ -161,7 +168,7 @@ class Masonry extends React.Component<Props> {
   }
 
   initialize() {
-    const data = this.viewModel.getDataOnList;
+    const data = this.viewModel.getData();
     this.children = [];
     this._updateOldData();
 
@@ -184,6 +191,19 @@ class Masonry extends React.Component<Props> {
     const {height} = this.props;
     this.masonry = this.parentRef.current.firstChild;
     window.addEventListener('resize', debounce(this._onResize, DEBOUNCING_TIMER));
+
+    this.viewModel.addEventListener('viewOnLoadMoreTop', this.onLoadMoreTop);
+    this.viewModel.addEventListener('viewOnLoadMore', this.onLoadMore);
+    this.viewModel.addEventListener('viewReRender', this.reRender);
+    this.viewModel.addEventListener('viewZoomToItem', this.zoomToItem);
+    this.viewModel.addEventListener('viewPendingScrollToSpecialItem', this.pendingScrollToSpecialItem);
+    this.viewModel.addEventListener('viewScrollToTopAtCurrentUI', this.scrollToTopAtCurrentUI);
+    this.viewModel.addEventListener('viewScrollToBottomAtCurrentUI', this.scrollToBottomAtCurrentUI);
+    this.viewModel.addEventListener('viewScrollTo', this.scrollTo);
+    this.viewModel.addEventListener('viewOnRemoveItem', this.onRemoveItem);
+    this.viewModel.addEventListener('viewUpdateUIWhenScrollToItem', this.updateUIWhenScrollToItem);
+    this.viewModel.addEventListener('viewOnAddItem', this.onAddItem);
+
     if (this.parentRef !== undefined) {
       this.btnScrollBottomPos.top = this.parentRef.current.offsetTop + height - 50;
     }
@@ -191,10 +211,22 @@ class Masonry extends React.Component<Props> {
 
   componentWillUnmount() {
     window.removeEventListener('resize', this._onResize);
+
+    this.viewModel.removeEventListener('viewOnLoadMoreTop', this.onLoadMoreTop);
+    this.viewModel.removeEventListener('viewOnLoadMore', this.onLoadMore);
+    this.viewModel.removeEventListener('viewReRender', this.reRender);
+    this.viewModel.removeEventListener('viewZoomToItem', this.zoomToItem);
+    this.viewModel.removeEventListener('viewPendingScrollToSpecialItem', this.pendingScrollToSpecialItem);
+    this.viewModel.removeEventListener('viewScrollToTopAtCurrentUI', this.scrollToTopAtCurrentUI);
+    this.viewModel.removeEventListener('viewScrollToBottomAtCurrentUI', this.scrollToBottomAtCurrentUI);
+    this.viewModel.removeEventListener('viewScrollTo', this.scrollTo);
+    this.viewModel.removeEventListener('viewOnRemoveItem', this.onRemoveItem);
+    this.viewModel.removeEventListener('viewUpdateUIWhenScrollToItem', this.updateUIWhenScrollToItem);
+    this.viewModel.removeEventListener('viewOnAddItem', this.onAddItem);
   }
 
   updateUIWhenScrollToItem() {
-    const data = this.viewModel.getDataOnList;
+    const data = this.viewModel.getData();
     this.children = [];
     this._updateOldData();
 
@@ -210,8 +242,8 @@ class Masonry extends React.Component<Props> {
 
     this.estimateTotalHeight = (function () {
       let totalHeight = 0;
-      for (let key of this.viewModel.itemCache.getItemsMap.keys()) {
-        totalHeight += this.viewModel.itemCache.getHeight(key);
+      for (let key of this.viewModel.getCache().getItemsMap.keys()) {
+        totalHeight += this.viewModel.getCache().getHeight(key);
       }
       return totalHeight;
     }).call(this);
@@ -221,7 +253,7 @@ class Masonry extends React.Component<Props> {
   }
 
   onChildrenChangeHeight(itemId: string, oldHeight: number, newHeight: number) {
-    const itemCache = this.viewModel.getItemCache;
+    const itemCache = this.viewModel.getCache();
     if (itemCache.getHeight(itemId) !== newHeight) {
       // For load more top
       if (!itemCache.isRendered(itemId) && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldData.firstItem)) {
@@ -256,10 +288,10 @@ class Masonry extends React.Component<Props> {
 
       this._updateItemsOnChangedHeight(itemId, newHeight, true);
 
-      if (this.initItemCount < this.viewModel.getDataOnList.length - 1) {
+      if (this.initItemCount < this.viewModel.getData().length - 1) {
         this.initItemCount++;
       }
-      else if (this.initItemCount === this.viewModel.getDataOnList.length - 1) {
+      else if (this.initItemCount === this.viewModel.getData().length - 1) {
         this.loadDone = true;
       }
 
@@ -292,28 +324,29 @@ class Masonry extends React.Component<Props> {
     if (parseInt(index) === 0) {
       this.isAddFirst = true;
     }
-    if (parseInt(index) === this.viewModel.getDataOnList.length) {
+    if (parseInt(index) === this.viewModel.getData().length) {
       this.isAddLast = true;
     }
     this.firstItemInViewportBeforeAddMore = {
       itemId: this.curItemInViewPort,
-      disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort),
+      disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
     };
-    this.viewModel._insertItem(index, item);
+    this.viewModel.insertItem(index, item);
     this._addStaticItemToChildren(index, item);
-    this._updateEstimatedHeight(this.viewModel.itemCache.defaultHeight);
+    this._updateEstimatedHeight(this.viewModel.getCache().defaultHeight);
   }
 
   onRemoveItem(itemId: string) {
     const {height} = this.props;
     const {scrollTop} = this.state;
-    const itemCache = this.viewModel.getItemCache;
+    const itemCache = this.viewModel.getCache();
     const itemIndex = itemCache.getIndex(itemId);
 
     const {scrollToAnim, removalAnim} = this.props;
 
     this._removeStyleOfSpecialItem();
 
+    console.log(itemId);
     if (itemIndex !== NOT_FOUND) {
       const itemHeight = itemCache.getHeight(itemId);
 
@@ -419,7 +452,7 @@ class Masonry extends React.Component<Props> {
     this._removeStyleOfSpecialItem();
     this.viewModel.insertItemWhenLoadMore(index, item);
     this._addStaticItemToChildren(index, item);
-    this._updateEstimatedHeight(this.viewModel.itemCache.defaultHeight);
+    this._updateEstimatedHeight(this.viewModel.getCache().getDefaultHeight);
   }
 
   zoomToItem(itemId: string, withAnim: boolean = true) {
@@ -453,7 +486,7 @@ class Masonry extends React.Component<Props> {
 
     this._clearIntervalId();
 
-    const itemCache = this.viewModel.getItemCache;
+    const itemCache = this.viewModel.getCache();
 
     this.preventLoadTop = true;
     this.preventLoadBottom = true;
@@ -493,7 +526,7 @@ class Masonry extends React.Component<Props> {
   }
 
   scrollTo(index: number) {
-    const itemId = this.viewModel.getItemCache.getItemId(parseInt(index));
+    const itemId = this.viewModel.getCache().getItemId(parseInt(index));
     if (itemId !== NOT_FOUND) {
       this._removeScrollBackItemTrigger();
       this._removeStyleOfSpecialItem();
@@ -656,7 +689,7 @@ class Masonry extends React.Component<Props> {
   }
 
   componentDidUpdate() {
-    const data = this.viewModel.getDataOnList;
+    const data = this.viewModel.getData();
     const {height} = this.props;
     const {scrollTop} = this.state;
 
@@ -763,14 +796,15 @@ class Masonry extends React.Component<Props> {
     this.isLoadingTop = true;
     this.firstItemInViewportBeforeLoadTop = {
       itemId: this.curItemInViewPort,
-      disparity: this.state.scrollTop - this.viewModel.getItemCache.getPosition(this.curItemInViewPort),
+      disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
     };
   }
 
   pendingScrollToSpecialItem(numOfItems: number, itemId: string, withAnim: boolean = true) {
     if (numOfItems === 0) {
       this.zoomToItem(itemId, withAnim);
-    } else {
+    }
+    else {
       this.isScrollToSpecialItem = true;
     }
 
@@ -866,7 +900,7 @@ class Masonry extends React.Component<Props> {
 
   _addStaticItemToChildren(index, item) {
     const {isVirtualized, cellRenderer} = this.props;
-    const defaultHeight = this.viewModel.getItemCache.getDefaultHeight;
+    const defaultHeight = this.viewModel.getCache().getDefaultHeight;
 
     // const index = this.itemCache.getIndex;
     const removeCallback = this.viewModel.onRemoveItem;
@@ -936,11 +970,11 @@ class Masonry extends React.Component<Props> {
    *  Get total height in estimation.
    */
   _getEstimatedTotalHeight(): number {
-    const data = this.viewModel.getDataOnList;
+    const data = this.viewModel.getData();
     let totalHeight = 0;
 
     if (!!data.length) {
-      totalHeight = this.viewModel.getItemCache.getDefaultHeight * data.length;
+      totalHeight = this.viewModel.getCache().getDefaultHeight * data.length;
     }
     return totalHeight;
   }
@@ -951,7 +985,7 @@ class Masonry extends React.Component<Props> {
   }
 
   _updateOldData() {
-    const data = this.viewModel.getDataOnList;
+    const data = this.viewModel.getData();
     if (!!data.length) {
       this.oldData.oldLength = data.length;
       if (!!data[0]) {
@@ -967,8 +1001,8 @@ class Masonry extends React.Component<Props> {
    *  Update other items' position below the item that changed height.
    */
   _updateItemsOnChangedHeight(itemId: string, newHeight: number, isRendered: boolean = true) {
-    this.viewModel.getItemCache.updateItemHeight(itemId, newHeight, isRendered);
-    this.viewModel._updateItemsPositionFromSpecifiedItem(itemId);
+    this.viewModel.getCache().updateItemHeight(itemId, newHeight, isRendered);
+    this.viewModel.updateItemsPositionFromSpecifiedItem(itemId);
   }
 
   /**
@@ -980,8 +1014,8 @@ class Masonry extends React.Component<Props> {
    *  @return {number} - OUT_OF_RANGE ('out of range'): if position param is greater than total height.
    */
   _getItemIdFromPosition(positionTop: number): string {
-    const data = this.viewModel.getDataOnList;
-    const itemCache = this.viewModel.getItemCache;
+    const data = this.viewModel.getData();
+    const itemCache = this.viewModel.getCache();
     if (!!data.length) {
       if (positionTop >= this.estimateTotalHeight) {
         return itemCache.getItemId(data.length - 1);
@@ -997,7 +1031,7 @@ class Masonry extends React.Component<Props> {
   }
 
   _scrollToItem(itemId: string, disparity = 0) {
-    const itemCache = this.viewModel.getItemCache;
+    const itemCache = this.viewModel.getCache();
     if (itemCache.hasItem(itemId)) {
       this._scrollToOffset(itemCache.getPosition(itemId) + disparity);
     }

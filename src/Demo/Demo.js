@@ -1,13 +1,13 @@
 import React from 'react';
 import './scss/Demo.scss';
 import Masonry from '../View/Masonry.js';
-import MasonryViewModel from '../ViewModel/MasonryViewModel';
 import Message from './Message/Message';
 import generation from './utils/Generation';
 import GConst from './utils/values';
 import throttle from '../vendors/throttle';
+import createMasonryViewModel from '../ViewModel/MasonryViewModel';
 
-const DATA_TOTAL_NUMBER = 60;
+const DATA_TOTAL_NUMBER = 30;
 const DATA_UI_NUMBER = 10;
 
 const lv1 = 'background-color: #3F51B5; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1.1rem; font-weight: 700l; font-style: italic';
@@ -54,16 +54,15 @@ class Demo extends React.Component {
   initList() {
     this.masonry = React.createRef();
 
-    this.viewModel = new MasonryViewModel({
-      dataOnList: this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER),
-      node: this.masonry,
+    this.viewModel = createMasonryViewModel({
+      data: this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER),
     });
 
     //this.dataOnList.addEventListener('onDataChanged', this.viewModel.onDataChanged);
     this.viewModel.addEventListener('addItem', this.addItemToDataTotal);
     this.viewModel.addEventListener('removeItem', this.removeItemFromDataTotal);
-    this.viewModel.addEventListener('loadTop', this.enableLoadMoreTop);
-    this.viewModel.addEventListener('loadBottom', this.enableLoadMoreBottom);
+    this.viewModel.addEventListener('onLoadTop', this.enableLoadMoreTop);
+    this.viewModel.addEventListener('onLoadBottom', this.enableLoadMoreBottom);
     this.viewModel.addEventListener('lookUpItemToScroll', this.lookUpItem);
     this.viewModel.addEventListener('lookUpItemToScrollTop', this.lookUpItemToScrollTop);
     this.viewModel.addEventListener('lookUpItemToScrollBottom', this.lookUpItemToScrollBottom);
@@ -204,7 +203,7 @@ class Demo extends React.Component {
   onAddItem = () => {
     const {indexToAddMore} = this.state;
     let item = generation.generateItems(1)[0];
-    if (this._isInRange(indexToAddMore, 0, this.viewModel.getDataOnList.length)) {
+    if (this._isInRange(indexToAddMore, 0, this.viewModel.getData().length)) {
       this.viewModel.onAddItem(indexToAddMore, item);
     }
   };
@@ -219,8 +218,15 @@ class Demo extends React.Component {
     this.viewModel.addBottom(item);
   };
 
-  addItemToDataTotal = (item, beforeItemId, afterItemId) => {
+  addItemToDataTotal = (item, beforeItem, afterItem) => {
     if (Array.isArray(this.dataTotal)) {
+      const beforeItemId = beforeItem ?
+        beforeItem.itemId :
+        null;
+      const afterItemId = afterItem ?
+        afterItem.itemId :
+        null;
+
       if (beforeItemId !== null) {
         this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, 0, item);
       }
@@ -231,8 +237,15 @@ class Demo extends React.Component {
     }
   };
 
-  removeItemFromDataTotal = (itemId, beforeItemId, afterItemId) => {
+  removeItemFromDataTotal = (itemId, beforeItem, afterItem) => {
     if (Array.isArray(this.dataTotal)) {
+      const beforeItemId = beforeItem ?
+        beforeItem.itemId :
+        null;
+      const afterItemId = afterItem ?
+        afterItem.itemId :
+        null;
+
       if (beforeItemId !== null) {
         this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, 1);
       }
@@ -755,16 +768,16 @@ class Demo extends React.Component {
               console.log(`\n`);
               console.group('%cData On List', `${lv1}`);
               console.group('%cData', `${lv2}`);
-              console.log('%cOld data', `${lv3}`, this.viewModel.getOldDataIds);
-              console.log('%cData on List', `${lv3}`, this.viewModel.getDataOnList);
-              console.log('%cData map', `${lv3}`, this.viewModel.dataMap);
+              console.log('%cOld data', `${lv3}`, this.viewModel.getOldItems());
+              console.log('%cData on List', `${lv3}`, this.viewModel.getData());
+              console.log('%cData map', `${lv3}`, this.viewModel.getDataMap());
               console.groupEnd();
               console.group('%cCache', `${lv2}`);
               console.group('%cCurrent scrollTop', `${lv3}`);
-              console.log(`%c${this.viewModel.masonry.current.state.scrollTop}`, 'color: DarkSlateGray; font-size: 1.3rem; font-weight: 700');
+              console.log(`%c${this.masonry.current.state.scrollTop}`, 'color: DarkSlateGray; font-size: 1.3rem; font-weight: 700');
               console.groupEnd();
-              console.log('%cItems map:', `${lv3}`, this.viewModel.itemCache.getItemsMap);
-              console.log('%cIndex map:', `${lv3}`, this.viewModel.itemCache.getIndexMap);
+              console.log('%cItems map:', `${lv3}`, this.viewModel.getCache().getItemsMap);
+              console.log('%cIndex map:', `${lv3}`, this.viewModel.getCache().getIndexMap);
               console.groupEnd();
               console.groupEnd();
               console.log('=====================================================================================');

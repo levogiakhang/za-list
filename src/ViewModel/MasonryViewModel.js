@@ -1,245 +1,325 @@
-import {
-  NOT_FOUND,
-} from '../utils/value';
-import isFunction from '../vendors/isFunction';
 import ItemCache from '../utils/ItemCache';
-import isObject from '../vendors/isObject';
+import { NOT_FOUND } from '../utils/value';
+import isFunction from '../vendors/isFunction';
 
 type EventTypes =
+// Outside events listener
   'addItem' |
   'removeItem' |
-  'loadTop' |
-  'loadBottom' |
-  'lookUpItemToScroll';
+  'onLoadTop' |
+  'onLoadBottom' |
+  'lookUpItemToScroll' |
+  // View events listener
+  'viewOnLoadMoreTop' |
+  'viewOnLoadMore' |
+  'viewReRender' |
+  'viewZoomToItem' |
+  'viewPendingScrollToSpecialItem' |
+  'viewScrollToTopAtCurrentUI' |
+  'viewScrollToBottomAtCurrentUI' |
+  'viewScrollTo' |
+  'viewOnRemoveItem' |
+  'viewUpdateUIWhenScrollToItem' |
+  'viewOnAddItem';
+
 type Callback = (params: any) => any;
 
 const ITEM_DEFAULT_HEIGHT = 200;
 
-class MasonryViewModel {
-  constructor({dataOnList, node, defaultHeight}) {
-    this.dataOnList = dataOnList;
-    this.masonry = node;
 
-    this.itemCache = new ItemCache(MasonryViewModel.getCorrectDefaultHeight(defaultHeight));
+function createMasonryViewModel({data, defaultHeight}) {
+  /* ========================================================================
+   Inner variables declaration
+   ======================================================================== */
+  // Cache items for virtualized list
+  const __itemCache__ = new ItemCache(_getCorrectDefaultHeight(defaultHeight));
 
-    // Reflection `itemId` -> `item` - For purpose quick look-up
-    this.dataMap = new Map();
+  // Reflection `itemId` -> `item` - For purpose quick look-up
+  const dataMap = new Map();
 
-    this.oldItemIds = [];
+  // List itemId of before data. Be updated when data has updated.
+  let oldItemsId = [];
+  let numOfNewItems = 0;
 
-    this.numItemsNeedRender = 0;
+  // Stores all be added events to dispatch a specialized callback
+  let storageEvents = {};
 
-    // stores storageEvent handler
-    this.storageEvent = {};
 
-    this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
-    this.scrollToTopAtCurrentUI = this.scrollToTopAtCurrentUI.bind(this);
-    this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
-    this.scrollToTop = this.scrollToTop.bind(this);
-    this.scrollToBottom = this.scrollToBottom.bind(this);
-    this.onRemoveItem = this.onRemoveItem.bind(this);
-    this.onAddItem = this.onAddItem.bind(this);
-    this.onUpdateItem = this.onUpdateItem.bind(this);
-    this.loadTop = this.loadTop.bind(this);
-    this.loadBottom = this.loadBottom.bind(this);
-    this.scrollTo = this.scrollTo.bind(this);
+  /* ========================================================================
+   Initialize
+   ======================================================================== */
+  if (Array.isArray(data)) {
+    data.forEach((item) => {
+      dataMap.set(item.itemId, item);
 
-    this.initialize();
+      __itemCache__.updateItemOnMap(
+        item.itemId,
+        data.indexOf(item),
+        __itemCache__.defaultHeight,
+        0,
+        false);
+    });
+
+    __itemCache__.updateIndexMap(0, data);
+  }
+  else {
+    console.error(new TypeError('The data params must be an array', this));
   }
 
 
   /* ========================================================================
-   Init & Clear
+   [Public API] To be called by outside
    ======================================================================== */
-  initialize() {
-    if (Array.isArray(this.dataOnList)) {
-      this.dataOnList.forEach((item) => {
-        this.dataMap.set(item.itemId, item);
-        this.itemCache.updateItemOnMap(
-          item.itemId,
-          this.dataOnList.indexOf(item),
-          this.itemCache.defaultHeight,
-          0,
-          false);
-      });
-      this.itemCache.updateIndexMap(0, this.dataOnList);
-    }
-    else {
-      console.error('The initialized dataOnList is NOT an array');
+  return Object.freeze({
+    // Event listener
+    addEventListener,
+    removeEventListener,
+
+    // Load more
+    enableLoadMoreTop,
+    enableLoadMoreBottom,
+    onLoadMoreTop,
+    onLoadMoreBottom,
+    loadTop,
+    loadBottom,
+
+    // Scroll to
+    scrollToSpecialItem,
+    pendingScrollToSpecialItem,
+    scrollToTopAtCurrentUI,
+    scrollToBottomAtCurrentUI,
+    scrollToTop,
+    scrollToBottom,
+    scrollTo,
+
+    // CRUD
+    onAddItem,
+    onRemoveItem,
+    onUpdateItem,
+    addTop,
+    addBottom,
+
+    // Interactive
+    insertItem,
+    insertItemWhenLoadMore,
+    deleteItem,
+
+    // Update
+    updateItemsPositionFromSpecifiedItem,
+    updateData,
+
+    // Get - Set
+    getData,
+    getDataMap,
+    getOldItems,
+    getCache,
+    getNumOfNewItems,
+    setNumOfNewItems,
+  });
+
+
+  /* ========================================================================
+   Clear
+   ======================================================================== */
+  function _clearAll() {
+    _clearItemCache();
+    _clearData();
+    _clearDataMap();
+  }
+
+  function _clearItemCache() {
+    if (__itemCache__) {
+      __itemCache__.clear();
     }
   }
 
-  clearAll() {
-    this.clearItemCache();
-    this.clearData();
-  }
-
-  clearItemCache() {
-    if (this.itemCache) {
-      this.itemCache.clear();
+  function _clearData() {
+    if (data) {
+      data = [];
     }
   }
 
-  clearData() {
-    if (this.dataOnList) {
-      this.dataOnList = [];
-    }
-    if (this.dataMap) {
-      this.dataMap.clear();
+  function _clearDataMap() {
+    if (dataMap) {
+      dataMap.clear();
     }
   }
+
 
   /* ========================================================================
    Events listener
    ======================================================================== */
-  addEventListener(eventName: EventTypes, callback: Callback) {
-    this.storageEvent.hasOwnProperty(eventName) ?
-      this.storageEvent[eventName].push(callback) :
-      this.storageEvent = {
-        ...this.storageEvent,
+  function addEventListener(eventName: EventTypes, callback: Callback) {
+    storageEvents.hasOwnProperty(eventName) ?
+      storageEvents[eventName].push(callback) :
+      storageEvents = {
+        ...storageEvents,
         [eventName]: [(callback)],
       };
   }
 
-  enableLoadMoreTop() {
-    if (Array.isArray(this.storageEvent['loadTop'])) {
-      this.storageEvent['loadTop'].forEach((eventCallback) => {
-        eventCallback();
-      });
-    }
-  }
-
-  enableLoadMoreBottom() {
-    if (Array.isArray(this.storageEvent['loadBottom'])) {
-      this.storageEvent['loadBottom'].forEach((eventCallback) => {
-        eventCallback();
-      });
-    }
-  }
-
-
-  /* ========================================================================
-   Load more
-   ======================================================================== */
-  onLoadMoreTop = (fn) => {
-    if (
-      this.masonry &&
-      this.masonry.current &&
-      isFunction(fn)) {
-      const firstItemId = this.dataOnList[0].itemId;
-      this.masonry.current.onLoadMoreTop();
-      fn(firstItemId);
-    }
-  };
-
-  onLoadMoreBottom = (fn) => {
-    if (
-      this.masonry &&
-      this.masonry.current &&
-      isFunction(fn)) {
-      if (this.dataOnList.length > 0) {
-        const lastItemId = this.dataOnList[this.dataOnList.length - 1].itemId;
-        fn(lastItemId);
-      }
-    }
-  };
-
-  loadTop(item) {
-    if (
-      this.masonry &&
-      this.masonry.current &&
-      item &&
-      !this.isIdAlready(item.itemId)
-    ) {
-      this.masonry.current.onLoadMore(0, item);
-      this.masonry.current.reRender();
-    }
-  }
-
-  loadBottom(item) {
-    if (
-      this.masonry &&
-      this.masonry.current &&
-      item &&
-      !this.isIdAlready(item.itemId)
-    ) {
-      this.masonry.current.onLoadMore(this.dataOnList.length, item);
-      this.masonry.current.reRender();
-    }
-  }
-
-
-  /* ========================================================================
-   [Public API] - Scroll To
-   ======================================================================== */
-  scrollToSpecialItem(itemId) {
-    if (this.masonry &&
-      this.masonry.current) {
-      if (!this.hasItem(itemId) ||
-        this.itemCache.getIndex(itemId) === 0) {
-        // Send a notification to outside.
-        this.storageEvent['lookUpItemToScroll'][0](itemId);
+  function removeEventListener(eventName: EventTypes, callback: Callback) {
+    if (storageEvents.hasOwnProperty(eventName) && Array.isArray(storageEvents[eventName])) {
+      if (storageEvents[eventName].length === 1) {
+        delete storageEvents[eventName];
       }
       else {
-        this.masonry.current.zoomToItem(itemId);
+        storageEvents[eventName].forEach((eventCallback, index) => {
+          if (eventCallback === callback) {
+            storageEvents[eventName].splice(index, 1);
+          }
+        });
       }
     }
   }
 
-  pendingScrollToSpecialItem(itemId: string, withAnim: boolean = true) {
-    if (this.masonry &&
-      this.masonry.current) {
-      this.masonry.current.pendingScrollToSpecialItem(this.numItemsNeedRender, itemId, withAnim);
+  function enableLoadMoreTop() {
+    if (Array.isArray(storageEvents['onLoadTop'])) {
+      storageEvents['onLoadTop'].forEach((eventCallback) => {
+        eventCallback();
+      });
     }
   }
 
-  scrollToTopAtCurrentUI() {
-    if (this.masonry &&
-      this.masonry.current) {
-      this.masonry.current.scrollToTopAtCurrentUI();
+  function enableLoadMoreBottom() {
+    if (Array.isArray(storageEvents['onLoadBottom'])) {
+      storageEvents['onLoadBottom'].forEach((eventCallback) => {
+        eventCallback();
+      });
     }
   }
 
-  scrollToBottomAtCurrentUI() {
-    if (this.masonry &&
-      this.masonry.current) {
-      this.masonry.current.scrollToBottomAtCurrentUI();
+
+  /* ========================================================================
+   TODO: Load more
+   ======================================================================== */
+  function onLoadMoreTop(onLoadMoreTopCallback) {
+    if (isFunction(onLoadMoreTopCallback)) {
+      const firstItemId = data[0].itemId;
+      if (isFunction(storageEvents['viewOnLoadMoreTop'][0])) {
+        storageEvents['viewOnLoadMoreTop'][0]();
+        //this.masonry.current.onLoadMoreTop();
+      }
+      onLoadMoreTopCallback(firstItemId);
     }
   }
 
-  scrollToTop(firstItemId) {
-    if (!this.hasItem(firstItemId)) {
+  function onLoadMoreBottom(onLoadMoreBottomCallback) {
+    if (isFunction(onLoadMoreBottomCallback)) {
+      if (data.length > 0) {
+        const lastItemId = data[data.length - 1].itemId;
+        onLoadMoreBottomCallback(lastItemId);
+      }
+    }
+  }
+
+  function loadTop(item) {
+    if (item && !_hasAlreadyId(item.itemId)) {
+      if (
+        isFunction(storageEvents['viewOnLoadMore'][0]) &&
+        isFunction(storageEvents['viewReRender'][0])
+      ) {
+        storageEvents['viewOnLoadMore'][0](0, item);
+        storageEvents['viewReRender'][0]();
+        //this.masonry.current.onLoadMore(0, item);
+        //this.masonry.current.reRender();
+      }
+    }
+  }
+
+  function loadBottom(item) {
+    if (item && !_hasAlreadyId(item.itemId)) {
+      if (
+        isFunction(storageEvents['viewOnLoadMore'][0]) &&
+        isFunction(storageEvents['viewReRender'][0])
+      ) {
+        storageEvents['viewOnLoadMore'][0](data.length, item);
+        storageEvents['viewReRender'][0]();
+        //this.masonry.current.onLoadMore(data.length, item);
+        //this.masonry.current.reRender();
+      }
+    }
+  }
+
+
+  /* ========================================================================
+   TODO: Scroll To
+   ======================================================================== */
+  function scrollToSpecialItem(itemId) {
+    if (!_hasItem(itemId) ||
+      __itemCache__.getIndex(itemId) === 0) {
       // Send a notification to outside.
-      this.storageEvent['lookUpItemToScrollTop'][0]();
+      if (isFunction(storageEvents['lookUpItemToScroll'][0])) {
+        storageEvents['lookUpItemToScroll'][0](itemId);
+      }
     }
     else {
-      if (this.masonry &&
-        this.masonry.current) {
-        this.masonry.current.scrollToTopAtCurrentUI();
+      if (isFunction(storageEvents['viewZoomToItem'][0])) {
+        storageEvents['viewZoomToItem'][0](itemId);
+        //this.masonry.current.zoomToItem(itemId);
       }
     }
   }
 
-  scrollToBottom(lastItemId) {
-    if (!this.hasItem(lastItemId)) {
-      // Send a notification to outside.
-      this.storageEvent['lookUpItemToScrollBottom'][0]();
-    }
-    else {
-      if (this.masonry &&
-        this.masonry.current) {
-        this.masonry.current.scrollToBottomAtCurrentUI();
-      }
+  function pendingScrollToSpecialItem(itemId: string, withAnim: boolean = true) {
+    if (isFunction(storageEvents['viewPendingScrollToSpecialItem'][0])) {
+      storageEvents['viewPendingScrollToSpecialItem'][0](numOfNewItems, itemId, withAnim);
+      //this.masonry.current.pendingScrollToSpecialItem(this.numItemsNeedRender, itemId, withAnim);
     }
   }
 
-  scrollTo(index: number) {
+  function scrollToTopAtCurrentUI() {
+    if (isFunction(storageEvents['viewScrollToTopAtCurrentUI'][0])) {
+      storageEvents['viewScrollToTopAtCurrentUI'][0]();
+      //this.masonry.current.scrollToTopAtCurrentUI();
+    }
+  }
+
+  function scrollToBottomAtCurrentUI() {
+    if (isFunction(storageEvents['viewScrollToBottomAtCurrentUI'][0])) {
+      storageEvents['viewScrollToBottomAtCurrentUI'][0]();
+      //this.masonry.current.scrollToBottomAtCurrentUI();
+    }
+  }
+
+  function scrollToTop(firstItemId) {
     if (
-      this.isValidIndex(index) &&
-      this.masonry &&
-      this.masonry.current
+      !_hasItem(firstItemId) &&
+      isFunction(storageEvents['lookUpItemToScrollTop'][0])
     ) {
-      this.masonry.current.scrollTo(index);
+      // Send a notification to outside.
+      storageEvents['lookUpItemToScrollTop'][0]();
+    }
+    else {
+      if (isFunction(storageEvents['viewScrollToTopAtCurrentUI'][0])) {
+        storageEvents['viewScrollToTopAtCurrentUI'][0]();
+        //this.masonry.current.scrollToTopAtCurrentUI();
+      }
+    }
+  }
+
+  function scrollToBottom(lastItemId) {
+    if (!_hasItem(lastItemId)) {
+      // Send a notification to outside.
+      if (isFunction(storageEvents['lookUpItemToScrollBottom'][0])) {
+        storageEvents['lookUpItemToScrollBottom'][0]();
+      }
+    }
+    else {
+      if (isFunction(storageEvents['viewScrollToBottomAtCurrentUI'][0])) {
+        storageEvents['viewScrollToBottomAtCurrentUI'][0]();
+        //this.masonry.current.scrollToBottomAtCurrentUI();
+      }
+    }
+  }
+
+  function scrollTo(index: number) {
+    if (
+      _isValidIndex(index) &&
+      isFunction(storageEvents['viewScrollTo'][0])
+    ) {
+      storageEvents['viewScrollTo'][0](index);
+      //this.masonry.current.scrollTo(index);
     }
   }
 
@@ -247,140 +327,147 @@ class MasonryViewModel {
   /* ========================================================================
    [Public API] - Interact with list
    ======================================================================== */
-  onRemoveItem(itemId) {
+  function onRemoveItem(itemId) {
     if (
-      this.masonry &&
-      this.masonry.current
+      isFunction(storageEvents['viewOnRemoveItem'][0]) &&
+      isFunction(storageEvents['viewReRender'][0])
     ) {
-      this.masonry.current.onRemoveItem(itemId);
-      this.masonry.current.reRender();
+      storageEvents['viewOnRemoveItem'][0](itemId);
+      storageEvents['viewReRender'][0]();
     }
   }
 
-  onAddItem(index, item) {
+  function onAddItem(index, item) {
     if (
-      this.masonry &&
-      this.masonry.current &&
+      isFunction(storageEvents['viewOnAddItem'][0]) &&
+      isFunction(storageEvents['viewReRender'][0]) &&
       item &&
-      !this.isIdAlready(item.itemId)
+      !_hasAlreadyId(item.itemId)
     ) {
-      this.masonry.current.onAddItem(index, item);
-      this.masonry.current.reRender();
+      storageEvents['viewOnAddItem'][0](index, item);
+      storageEvents['viewReRender'][0]();
+      //this.masonry.current.onAddItem(index, item);
+      //this.masonry.current.reRender();
     }
   }
 
-  onUpdateItem(itemId, item) {
-    if (this.masonry &&
-      this.masonry.current &&
-      this.isIdAlready(itemId)) {
-      const itemIndex = this.itemCache.getIndex(itemId);
+  function onUpdateItem(itemId, item) {
+    if (_hasAlreadyId(itemId)) {
+      const itemIndex = __itemCache__.getIndex(itemId);
       if (itemIndex !== NOT_FOUND) {
-        this.dataOnList[itemIndex] = item;
-        this.masonry.current.reRender();
+        data[itemIndex] = item;
+        if (isFunction(storageEvents['viewReRender'][0])) {
+          storageEvents['viewReRender'][0]();
+          //this.masonry.current.reRender();
+        }
       }
     }
   }
 
-  addTop(item) {
-    this.onAddItem(0, item);
+  function addTop(item) {
+    onAddItem(0, item);
   }
 
-  addBottom(item) {
-    this.onAddItem(this.dataOnList.length, item);
+  function addBottom(item) {
+    onAddItem(data.length, item);
   }
 
 
   /* ========================================================================
    Interaction with list data & cache
    ======================================================================== */
-  _insertItem(index: number, item) {
+  function insertItem(index: number, item) {
     const newItemPos = parseInt(index) === 0 ?
       0 :
-      this.itemCache.getPosition(this.dataOnList[index - 1].itemId) + this.itemCache.getHeight(this.dataOnList[index - 1].itemId);
+      __itemCache__.getPosition(data[index - 1].itemId) + __itemCache__.getHeight(data[index - 1].itemId);
 
     // Insert item on Data on list
     if (
-      Array.isArray(this.dataOnList) &&
-      this.isValidIndex(index) &&
+      Array.isArray(data) &&
+      _isValidIndex(index) &&
       item &&
-      !this.isIdAlready(item.itemId)
+      !_hasAlreadyId(item.itemId)
     ) {
-      this.dataOnList.splice(index, 0, item);
-      this.dataMap.set(item.itemId, item);
+      data.splice(index, 0, item);
+      dataMap.set(item.itemId, item);
     }
 
     // Insert item on itemCache
-    this.itemCache.updateIndexMap(index - 1, this.dataOnList);
-    this.itemCache.updateItemOnMap(
+    __itemCache__.updateIndexMap(index - 1, data);
+    __itemCache__.updateItemOnMap(
       item.itemId,
-      this.dataOnList.indexOf(item),
-      this.itemCache.defaultHeight,
+      data.indexOf(item),
+      __itemCache__.getDefaultHeight,
       newItemPos,
       false);
-    this.itemCache.updateItemsMap(index - 1, this.dataOnList.length);
+    __itemCache__.updateItemsMap(index - 1, data.length);
 
     // Get before & after itemId of newest added item.
-    const {beforeItemId, afterItemId} = this.getItemIdBeforeAndAfterByIndex(index);
+    const {beforeItem, afterItem} = _getItemBeforeAndAfterByIndex(index);
 
     // notify to outside to add new item.
-    this.storageEvent['addItem'][0](item, beforeItemId, afterItemId);
+    if (isFunction(storageEvents['addItem'][0])) {
+      storageEvents['addItem'][0](item, beforeItem, afterItem);
+    }
   }
 
-  insertItemWhenLoadMore(index: number, item: Object) {
+  function insertItemWhenLoadMore(index: number, item: Object) {
     const newItemPos = parseInt(index) === 0 ?
       0 :
-      this.itemCache.getPosition(this.dataOnList[index - 1].itemId) + this.itemCache.getHeight(this.dataOnList[index - 1].itemId);
+      __itemCache__.getPosition(data[index - 1].itemId) + __itemCache__.getHeight(data[index - 1].itemId);
 
     // Insert item on Data on list
     if (
-      Array.isArray(this.dataOnList) &&
-      this.isValidIndex(index) &&
+      Array.isArray(data) &&
+      _isValidIndex(index) &&
       item &&
-      !this.isIdAlready(item.itemId)
+      !_hasAlreadyId(item.itemId)
     ) {
-      this.dataOnList.splice(index, 0, item);
-      this.dataMap.set(item.itemId, item);
+      data.splice(index, 0, item);
+      dataMap.set(item.itemId, item);
     }
 
     // Insert item on itemCache
-    this.itemCache.updateIndexMap(index - 1, this.dataOnList);
-    this.itemCache.updateItemOnMap(
+    __itemCache__.updateIndexMap(index - 1, data);
+    __itemCache__.updateItemOnMap(
       item.itemId,
-      this.dataOnList.indexOf(item),
-      this.itemCache.defaultHeight,
+      data.indexOf(item),
+      __itemCache__.getDefaultHeight,
       newItemPos,
       false);
-    this.itemCache.updateItemsMap(index - 1, this.dataOnList.length);
+    __itemCache__.updateItemsMap(index - 1, data.length);
   }
 
-  _deleteItem(itemId: string, deleteCount: number = 1) {
-    const itemIndex = this.itemCache.getIndex(itemId);
+  function deleteItem(itemId: string, deleteCount: number = 1) {
+    const itemIndex = __itemCache__.getIndex(itemId);
 
     // Get before & after itemId of `be deleted item`.
-    const {beforeItemId, afterItemId} = this.getItemIdBeforeAndAfterByIndex(itemIndex);
+    const {beforeItem, afterItem} = _getItemBeforeAndAfterByIndex(itemIndex);
 
     // Set height of `be deleted item` equals 0
-    this.itemCache.updateItemHeight(itemId, 0);
+    __itemCache__.updateItemHeight(itemId, 0);
 
     // Update under items' position
-    this._updateItemsPositionFromSpecifiedItem(itemId);
+    updateItemsPositionFromSpecifiedItem(itemId);
 
     // Delete item on dataOnList - dataMap
     if (
-      Array.isArray(this.dataOnList) &&
-      this.isValidIndex(itemIndex)
+      Array.isArray(data) &&
+      _isValidIndex(itemIndex)
     ) {
       for (let i = itemIndex; i < itemIndex + deleteCount; i++) {
-        this.dataMap.delete(this.dataOnList[i].itemId);
+        dataMap.delete(data[i].itemId);
       }
-      this.dataOnList.splice(itemIndex, deleteCount);
+      data.splice(itemIndex, deleteCount);
     }
 
     // Delete item in itemCache
-    this.itemCache.deleteItem(itemIndex, itemId, this.dataOnList);
+    __itemCache__.deleteItem(itemIndex, itemId, data);
 
     // notify to outside to remove item.
-    this.storageEvent['removeItem'][0](itemId, beforeItemId, afterItemId);
+    if (isFunction(storageEvents['removeItem'][0])) {
+      storageEvents['removeItem'][0](itemId, beforeItem, afterItem);
+    }
   }
 
 
@@ -390,23 +477,34 @@ class MasonryViewModel {
   /**
    *  Calculate items' position from specified item to end the dataOnList list => reduces number of calculation
    */
-  _updateItemsPositionFromSpecifiedItem(itemId: string) {
-    if (!!this.dataOnList.length) {
+  function updateItemsPositionFromSpecifiedItem(itemId: string) {
+    if (!!data.length) {
       let currentItemId = itemId;
-      const currentIndex = this.itemCache.getIndex(itemId);
+      const currentIndex = __itemCache__.getIndex(itemId);
+
       if (currentIndex !== NOT_FOUND) {
-        // TODO: High cost
-        for (let i = currentIndex; i < this.dataOnList.length; i++) {
-          const currentItemPosition = this.itemCache.getPosition(currentItemId);
-          let currentItemHeight = this.itemCache.getHeight(currentItemId);
-          const followingItemId = this.itemCache.getItemId(i + 1);
-          if (followingItemId !== NOT_FOUND) {
-            this.itemCache.updateItemOnMap(
+        for (let i = currentIndex; i < data.length; i++) {
+          if (i === data.length - 1) {
+            break;
+          }
+
+          const currentItemPosition = __itemCache__.getPosition(currentItemId);
+          const currentItemHeight = __itemCache__.getHeight(currentItemId);
+          const followingItemId = __itemCache__.getItemId(i + 1);
+
+          if (currentItemPosition === NOT_FOUND) {
+            console.log(`Could not get position of: ${currentItemId}`);
+          }
+          else if (currentItemHeight === NOT_FOUND) {
+            console.log(`Could not get height of: ${currentItemId}`);
+          }
+          else if (followingItemId !== NOT_FOUND) {
+            __itemCache__.updateItemOnMap(
               followingItemId,
-              this.itemCache.getIndex(followingItemId),
-              this.itemCache.getHeight(followingItemId),
+              __itemCache__.getIndex(followingItemId),
+              __itemCache__.getHeight(followingItemId),
               currentItemPosition + currentItemHeight,
-              this.itemCache.isRendered(followingItemId),
+              __itemCache__.isRendered(followingItemId),
             );
             currentItemId = followingItemId;
           }
@@ -415,83 +513,64 @@ class MasonryViewModel {
     }
   }
 
-  updateCache() {
-    if (Array.isArray(this.dataOnList)) {
-      this.dataOnList.forEach((item) => {
-        this.dataMap.set(item.itemId, item);
+  function _updateCache() {
+    if (Array.isArray(data)) {
+      data.forEach((item) => {
+        dataMap.set(item.itemId, item);
 
-        if (this.itemCache.hasItem(item.itemId)) {
-          this.itemCache.updateItemOnMap(
+        if (__itemCache__.hasItem(item.itemId)) {
+          __itemCache__.updateItemOnMap(
             item.itemId,
-            this.dataOnList.indexOf(item),
-            this.itemCache.getHeight(item.itemId),
+            data.indexOf(item),
+            __itemCache__.getHeight(item.itemId),
             0,
             true);
         }
         else {
-          this.itemCache.updateItemOnMap(
+          __itemCache__.updateItemOnMap(
             item.itemId,
-            this.dataOnList.indexOf(item),
-            this.itemCache.defaultHeight,
+            data.indexOf(item),
+            __itemCache__.defaultHeight,
             0,
             false);
         }
 
-        if (!this.oldItemIds.includes(item.itemId)) {
-          this.numItemsNeedRender++;
+        if (!oldItemsId.includes(item.itemId)) {
+          numOfNewItems++;
         }
       });
-      this.itemCache.getIndexMap.clear();
-      this.itemCache.updateIndexMap(0, this.dataOnList);
+      __itemCache__.getIndexMap.clear();
+      __itemCache__.updateIndexMap(0, data);
 
       // Remove redundant items in cache;
-      for (let i = 0; i <= this.oldItemIds.length - 1; i++) {
-        if (!this.dataMap.has(this.oldItemIds[i])) {
-          this.itemCache.getItemsMap.delete(this.oldItemIds[i]);
+      for (let i = 0; i <= oldItemsId.length - 1; i++) {
+        if (!dataMap.has(oldItemsId[i])) {
+          __itemCache__.getItemsMap.delete(oldItemsId[i]);
         }
       }
 
-      this._updateItemsPositionFromSpecifiedItem(this.dataOnList[0].itemId);
-    }
-    else {
-      console.error('The initialized dataOnList is NOT an array');
+      updateItemsPositionFromSpecifiedItem(data[0].itemId);
     }
   }
 
-  updateData(data) {
-    this._updateOldDataIds();
-    this.clearData();
-    this.dataOnList = data;
-    this.numItemsNeedRender = 0;
-    this.updateCache();
+  function updateData(newData) {
+    _updateOldDataIds();
+    _clearData();
+    _clearDataMap();
+    data = newData;
+    numOfNewItems = 0;
+    _updateCache();
 
-    if (this.masonry &&
-      this.masonry.current) {
-      this.masonry.current.updateUIWhenScrollToItem();
+    if (isFunction(storageEvents['viewUpdateUIWhenScrollToItem'][0])) {
+      storageEvents['viewUpdateUIWhenScrollToItem'][0]();
+      //this.masonry.current.updateUIWhenScrollToItem();
     }
   }
 
-  _updateOldDataIds = () => {
-    this.oldItemIds = [];
-    for (let key of this.dataMap.keys()) {
-      this.oldItemIds.push(key);
-    }
-  };
-
-  /* ========================================================================
-   Add | Remove Style
-   ======================================================================== */
-  appendStyle(el, animationNames) {
-    if (this.masonry &&
-      this.masonry.current) {
-      this.masonry.current.appendStyle(el, animationNames);
-    }
-  }
-
-  removeStyle(el, animationNames) {
-    if (this.masonry &&
-      this.masonry.current) {
-      this.masonry.current.removeStyle(el, animationNames);
+  function _updateOldDataIds() {
+    oldItemsId = [];
+    for (let key of dataMap.keys()) {
+      oldItemsId.push(key);
     }
   }
 
@@ -499,45 +578,29 @@ class MasonryViewModel {
   /* ========================================================================
    Checkers
    ======================================================================== */
-  isIdAlready(id: string): boolean {
-    return this.dataMap.has(id);
-  };
+  function _hasAlreadyId(id: string): boolean {
+    return dataMap.has(id);
+  }
 
-  isValidIndex(index: number, dataLength: number = this.dataOnList.length): boolean {
+  function _isValidIndex(index: number, dataLength: number = data.length): boolean {
     const rsIndex = parseInt(index);
     return (
       typeof rsIndex === 'number' &&
+      !isNaN(rsIndex) &&
       rsIndex <= dataLength &&
       rsIndex >= 0
     );
   }
 
-  hasItem(itemId: string): boolean {
-    return this.dataMap.has(itemId);
+  function _hasItem(itemId: string): boolean {
+    return dataMap.has(itemId);
   }
 
 
   /* ========================================================================
    Supporters
    ======================================================================== */
-  getItemIdBeforeAndAfterByIndex(itemIndex: string) {
-    let beforeItemId = this.itemCache.getItemId(itemIndex - 1);
-    let afterItemId = this.itemCache.getItemId(itemIndex + 1);
-
-    if (beforeItemId === NOT_FOUND) {
-      beforeItemId = null;
-    }
-    if (afterItemId === NOT_FOUND) {
-      afterItemId = null;
-    }
-
-    return {
-      beforeItemId,
-      afterItemId,
-    };
-  }
-
-  static getCorrectDefaultHeight(defaultHeight) {
+  function _getCorrectDefaultHeight(defaultHeight) {
     let _defaultHeight = undefined;
 
     if (typeof defaultHeight === 'number') {
@@ -556,46 +619,50 @@ class MasonryViewModel {
     return _defaultHeight;
   }
 
+  function _getItemBeforeAndAfterByIndex(itemIndex: number) {
+    let bItemId = __itemCache__.getItemId(itemIndex - 1);
+    let aItemId = __itemCache__.getItemId(itemIndex + 1);
+
+    let beforeItem = bItemId !== NOT_FOUND ?
+      dataMap.get(bItemId) :
+      null;
+    let afterItem = aItemId !== NOT_FOUND ?
+      dataMap.get(aItemId) :
+      null;
+
+    return {
+      beforeItem,
+      afterItem,
+    };
+  }
+
+
   /* ========================================================================
    Get - Set
    ======================================================================== */
-
-  // region GET-SET
-  get getOldDataIds() {
-    return this.oldItemIds;
+  function getData() {
+    return Object.freeze([...data]);
   }
 
-  get getRefId() {
-    if (
-      this.masonry &&
-      this.masonry.current &&
-      this.masonry.current.props) {
-      return this.masonry.current.props.id;
-    }
-    return null;
+  function getDataMap() {
+    return dataMap;
   }
 
-  get getNumItemsNeedRender() {
-    return this.numItemsNeedRender;
+  function getOldItems() {
+    return oldItemsId;
   }
 
-  get getDataOnList() {
-    return this.dataOnList;
+  function getCache() {
+    return Object.freeze(__itemCache__);
   }
 
-  get getMasonry() {
-    return this.masonry;
+  function getNumOfNewItems() {
+    return Object.freeze(numOfNewItems);
   }
 
-  get getItemCache() {
-    return this.itemCache;
+  function setNumOfNewItems(newValue) {
+    numOfNewItems = newValue;
   }
-
-  setMasonry(masonry) {
-    this.masonry = masonry;
-  }
-
-  // endregion
 }
 
-export default MasonryViewModel;
+export default createMasonryViewModel;
