@@ -1,3 +1,5 @@
+// @flow
+
 import ItemCache from '../utils/ItemCache';
 import { NOT_FOUND } from '../utils/value';
 import isFunction from '../vendors/isFunction';
@@ -193,7 +195,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    TODO: Load more
    ======================================================================== */
-  function onLoadMoreTop(onLoadMoreTopCallback) {
+  function onLoadMoreTop(onLoadMoreTopCallback: Function) {
     if (isFunction(onLoadMoreTopCallback)) {
       const firstItemId = data[0].itemId;
       if (isFunction(storageEvents['viewOnLoadMoreTop'][0])) {
@@ -204,7 +206,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function onLoadMoreBottom(onLoadMoreBottomCallback) {
+  function onLoadMoreBottom(onLoadMoreBottomCallback: Function) {
     if (isFunction(onLoadMoreBottomCallback)) {
       if (data.length > 0) {
         const lastItemId = data[data.length - 1].itemId;
@@ -213,7 +215,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function loadTop(item) {
+  function loadTop(item: Object) {
     if (item && !_hasAlreadyId(item.itemId)) {
       if (
         isFunction(storageEvents['viewOnLoadMore'][0]) &&
@@ -227,7 +229,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function loadBottom(item) {
+  function loadBottom(item: Object) {
     if (item && !_hasAlreadyId(item.itemId)) {
       if (
         isFunction(storageEvents['viewOnLoadMore'][0]) &&
@@ -245,7 +247,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    TODO: Scroll To
    ======================================================================== */
-  function scrollToSpecialItem(itemId) {
+  function scrollToSpecialItem(itemId: string) {
     if (!_hasItem(itemId) ||
       __itemCache__.getIndex(itemId) === 0) {
       // Send a notification to outside.
@@ -282,7 +284,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function scrollToTop(firstItemId) {
+  function scrollToTop(firstItemId: string) {
     if (
       !_hasItem(firstItemId) &&
       isFunction(storageEvents['lookUpItemToScrollTop'][0])
@@ -298,7 +300,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function scrollToBottom(lastItemId) {
+  function scrollToBottom(lastItemId: string) {
     if (!_hasItem(lastItemId)) {
       // Send a notification to outside.
       if (isFunction(storageEvents['lookUpItemToScrollBottom'][0])) {
@@ -327,17 +329,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    [Public API] - Interact with list
    ======================================================================== */
-  function onRemoveItem(itemId) {
-    if (
-      isFunction(storageEvents['viewOnRemoveItem'][0]) &&
-      isFunction(storageEvents['viewReRender'][0])
-    ) {
-      storageEvents['viewOnRemoveItem'][0](itemId);
-      storageEvents['viewReRender'][0]();
-    }
-  }
-
-  function onAddItem(index, item) {
+  function onAddItem(index: number, item: Object) {
     if (
       isFunction(storageEvents['viewOnAddItem'][0]) &&
       isFunction(storageEvents['viewReRender'][0]) &&
@@ -351,7 +343,21 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function onUpdateItem(itemId, item) {
+  function onAddItems(startIndex: number, items: Array) {
+
+  }
+
+  function onRemoveItem(itemId: string) {
+    if (
+      isFunction(storageEvents['viewOnRemoveItem'][0]) &&
+      isFunction(storageEvents['viewReRender'][0])
+    ) {
+      storageEvents['viewOnRemoveItem'][0](itemId);
+      storageEvents['viewReRender'][0]();
+    }
+  }
+
+  function onUpdateItem(itemId: string, item: Object) {
     if (_hasAlreadyId(itemId)) {
       const itemIndex = __itemCache__.getIndex(itemId);
       if (itemIndex !== NOT_FOUND) {
@@ -364,11 +370,11 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function addTop(item) {
+  function addTop(item: Object) {
     onAddItem(0, item);
   }
 
-  function addBottom(item) {
+  function addBottom(item: Object) {
     onAddItem(data.length, item);
   }
 
@@ -376,7 +382,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    Interaction with list data & cache
    ======================================================================== */
-  function insertItem(index: number, item) {
+  function insertItem(index: number, item: Object) {
     const newItemPos = parseInt(index) === 0 ?
       0 :
       __itemCache__.getPosition(data[index - 1].itemId) + __itemCache__.getHeight(data[index - 1].itemId);
@@ -553,7 +559,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function updateData(newData) {
+  function updateData(newData: Array) {
     _updateOldDataIds();
     _clearData();
     _clearDataMap();
@@ -600,7 +606,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    Supporters
    ======================================================================== */
-  function _getCorrectDefaultHeight(defaultHeight) {
+  function _getCorrectDefaultHeight(defaultHeight: number) {
     let _defaultHeight = undefined;
 
     if (typeof defaultHeight === 'number') {
@@ -660,7 +666,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     return Object.freeze(numOfNewItems);
   }
 
-  function setNumOfNewItems(newValue) {
+  function setNumOfNewItems(newValue: number) {
     numOfNewItems = newValue;
   }
 }
