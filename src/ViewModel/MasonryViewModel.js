@@ -25,7 +25,8 @@ type EventTypes =
   'viewScrollTo' |
   'viewOnRemoveItem' |
   'viewUpdateUIWhenScrollToItem' |
-  'viewOnAddItem';
+  'viewOnAddItem' |
+  'viewOnAddItems';
 
 type Callback = (params: any) => any;
 
@@ -99,7 +100,7 @@ function createMasonryViewModel({data, defaultHeight}) {
 
     // CRUD
     onAddItem,
-    onRemoveItem,
+    onAddItems,
     onRemoveItemsById,
     onRemoveItemsAt,
     onUpdateItem,
@@ -221,7 +222,7 @@ function createMasonryViewModel({data, defaultHeight}) {
         isFunction(storageEvents['viewOnLoadMore'][0]) &&
         isFunction(storageEvents['viewReRender'][0])
       ) {
-        insertItemWhenLoadMore(0, item);
+        _insertItemWhenLoadMore(0, item);
         storageEvents['viewOnLoadMore'][0](0, item);
         storageEvents['viewReRender'][0]();
       }
@@ -234,7 +235,7 @@ function createMasonryViewModel({data, defaultHeight}) {
         isFunction(storageEvents['viewOnLoadMore'][0]) &&
         isFunction(storageEvents['viewReRender'][0])
       ) {
-        insertItemWhenLoadMore(data.length, item);
+        _insertItemWhenLoadMore(data.length, item);
         storageEvents['viewOnLoadMore'][0](data.length, item);
         storageEvents['viewReRender'][0]();
       }
@@ -327,34 +328,115 @@ function createMasonryViewModel({data, defaultHeight}) {
       item &&
       !_hasAlreadyId(item.itemId)
     ) {
-      insertItem(index, item);
+      _insertItem(index, item);
       storageEvents['viewOnAddItem'][0](index, item);
       storageEvents['viewReRender'][0]();
     }
   }
 
   function onAddItems(startIndex: number, items: Array) {
+    if (
+      isFunction(storageEvents['viewOnAddItem'][0]) &&
+      isFunction(storageEvents['viewReRender'][0]) &&
+      items
+    ) {
+      const start = _getValidStartIndex(startIndex);
 
+      _insertItems(start, items);
+      storageEvents['viewOnAddItems'][0](start, items);
+      storageEvents['viewReRender'][0]();
+    }
   }
 
-  function onRemoveItem(itemId: string) {
-    if (
-      _hasAlreadyId(itemId) &&
-      isFunction(storageEvents['viewOnRemoveItem'][0]) &&
-      isFunction(storageEvents['viewReRender'][0])
-    ) {
+  function onRemoveItemsById(itemId: string) {
+    if (_hasAlreadyId(itemId)) {
       const iIndex = __itemCache__.getIndex(itemId);
       const iHeight = __itemCache__.getHeight(itemId);
       const iPosition = __itemCache__.getPosition(itemId);
-      deleteItem(itemId);
+      const result = _deleteItemsById(itemId);
 
-      storageEvents['viewOnRemoveItem'][0]({
-        itemId,
-        iIndex,
-        iHeight,
-        iPosition
-      });
-      storageEvents['viewReRender'][0]();
+      if (result.hasDeleteSucceed) {
+        if (
+          storageEvents['viewOnRemoveItem'] &&
+          storageEvents['viewReRender'] &&
+          isFunction(storageEvents['viewOnRemoveItem'][0]) &&
+          isFunction(storageEvents['viewReRender'][0])) {
+
+          storageEvents['viewOnRemoveItem'][0]({
+            itemId,
+            iIndex,
+            iHeight,
+            iPosition,
+          });
+          storageEvents['viewReRender'][0]();
+        }
+
+        // Notify to outside to remove item.
+        if (
+          storageEvents['removeItemsByIdSucceed'] &&
+          isFunction(storageEvents['removeItemsByIdSucceed'][0])
+        ) {
+          storageEvents['removeItemsByIdSucceed'][0](
+            result.successValues.willDeleteItems,
+            result.successValues.beforeItem,
+            result.successValues.afterItem);
+        }
+      }
+      else {
+        if (
+          storageEvents['removeItemsByIdFail'] &&
+          isFunction(storageEvents['removeItemsByIdFail'][0])
+        ) {
+          const msgError = 'Can not find itemId';
+          storageEvents['removeItemsByIdFail'][0](msgError);
+        }
+      }
+    }
+  }
+
+  function onRemoveItemsAt(itemId: string) {
+    if (_hasAlreadyId(itemId)) {
+      const iIndex = __itemCache__.getIndex(itemId);
+      const iHeight = __itemCache__.getHeight(itemId);
+      const iPosition = __itemCache__.getPosition(itemId);
+      const result = _deleteItemsAt(itemId);
+
+      if (result.hasDeleteSucceed) {
+        if (
+          storageEvents['viewOnRemoveItem'] &&
+          storageEvents['viewReRender'] &&
+          isFunction(storageEvents['viewOnRemoveItem'][0]) &&
+          isFunction(storageEvents['viewReRender'][0])) {
+
+          storageEvents['viewOnRemoveItem'][0]({
+            itemId,
+            iIndex,
+            iHeight,
+            iPosition,
+          });
+          storageEvents['viewReRender'][0]();
+        }
+
+        // Notify to outside to remove item.
+        if (
+          storageEvents['removeItemsAtSucceed'] &&
+          isFunction(storageEvents['removeItemsAtSucceed'][0])
+        ) {
+          storageEvents['removeItemsAtSucceed'][0](
+            result.successValues.willDeleteItems,
+            result.successValues.beforeItem,
+            result.successValues.afterItem);
+        }
+      }
+      else {
+        if (
+          storageEvents['removeItemsAtFail'] &&
+          isFunction(storageEvents['removeItemsAtFail'][0])
+        ) {
+          const msgError = 'Can not find itemId';
+          storageEvents['removeItemsAtFail'][0](msgError);
+        }
+      }
     }
   }
 
@@ -382,7 +464,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    Interaction with list data & cache
    ======================================================================== */
-  function insertItem(index: number, item: Object) {
+  function _insertItem(index: number, item: Object) {
     const newItemPos = parseInt(index) === 0 ?
       0 :
       __itemCache__.getPosition(data[index - 1].itemId) + __itemCache__.getHeight(data[index - 1].itemId);
@@ -417,7 +499,43 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function insertItemWhenLoadMore(index: number, item: Object) {
+  function _insertItems(startIndex: number, items: Array) {
+    // const newItemPos = parseInt(index) === 0 ?
+    //   0 :
+    //   __itemCache__.getPosition(data[index - 1].itemId) + __itemCache__.getHeight(data[index - 1].itemId);
+    //
+    // // Insert item on Data on list
+    // if (
+    //   Array.isArray(data) &&
+    //   _isValidIndex(index) &&
+    //   item &&
+    //   !_hasAlreadyId(item.itemId)
+    // ) {
+    //   data.splice(index, 0, item);
+    //   dataMap.set(item.itemId, item);
+    // }
+    //
+    // // Insert item on itemCache
+    // __itemCache__.updateIndexMap(index - 1, data);
+    // __itemCache__.updateItemOnMap(
+    //   item.itemId,
+    //   data.indexOf(item),
+    //   __itemCache__.getDefaultHeight,
+    //   newItemPos,
+    //   false);
+    // __itemCache__.updateItemsMap(index - 1, data.length);
+    //
+    // // Get before & after itemId of newest added item.
+    // const {beforeItem, afterItem} = _getItemBeforeAndAfterByIndex(index);
+    //
+    // // notify to outside to add new item.
+    // //TODO: addItems undefined
+    // if (isFunction(storageEvents['addItems'][0])) {
+    //   storageEvents['addItems'][0](item, beforeItem, afterItem);
+    // }
+  }
+
+  function _insertItemWhenLoadMore(index: number, item: Object) {
     const newItemPos = parseInt(index) === 0 ?
       0 :
       __itemCache__.getPosition(data[index - 1].itemId) + __itemCache__.getHeight(data[index - 1].itemId);
@@ -721,6 +839,27 @@ function createMasonryViewModel({data, defaultHeight}) {
       beforeItem,
       afterItem,
     };
+  }
+
+  function _getValidStartIndex(startIndex: number) {
+    const validStartIndex = parseInt(startIndex);
+    if (isNaN(validStartIndex)) {
+      console.error('Invalid startIndex');
+      return;
+    }
+
+    let start = undefined;
+    if (validStartIndex < 0) {
+      start = 0;
+    }
+    else if (validStartIndex > data.length) {
+      start = data.length;
+    }
+    else {
+      start = validStartIndex;
+    }
+
+    return start;
   }
 
 
