@@ -1,4 +1,4 @@
-import { NOT_FOUND } from "./value";
+import { NOT_FOUND } from './value';
 
 class ItemCache {
   constructor(defaultHeight) {
@@ -21,7 +21,9 @@ class ItemCache {
   }
 
   getItemId(index: number): string {
-    return this.__indexMap__.has(index) ? this.__indexMap__.get(index) : NOT_FOUND;
+    return this.__indexMap__.has(index) ?
+      this.__indexMap__.get(index) :
+      NOT_FOUND;
   }
 
   hasItem(itemId: string): boolean {
@@ -29,19 +31,27 @@ class ItemCache {
   }
 
   getIndex(itemId: string): number {
-    return this.__itemsMap__.has(itemId) ? this.__itemsMap__.get(itemId).index : NOT_FOUND
+    return this.__itemsMap__.has(itemId) ?
+      this.__itemsMap__.get(itemId).index :
+      NOT_FOUND;
   }
 
   getHeight(itemId: string): number {
-    return this.__itemsMap__.has(itemId) ? this.__itemsMap__.get(itemId).height : NOT_FOUND
+    return this.__itemsMap__.has(itemId) ?
+      this.__itemsMap__.get(itemId).height :
+      NOT_FOUND;
   }
 
   getPosition(itemId: string): number {
-    return this.__itemsMap__.has(itemId) ? this.__itemsMap__.get(itemId).position : NOT_FOUND
+    return this.__itemsMap__.has(itemId) ?
+      this.__itemsMap__.get(itemId).position :
+      NOT_FOUND;
   }
 
   isRendered(itemId: string): boolean {
-    return this.__itemsMap__.has(itemId) ? this.__itemsMap__.get(itemId).isRendered : NOT_FOUND
+    return this.__itemsMap__.has(itemId) ?
+      this.__itemsMap__.get(itemId).isRendered :
+      NOT_FOUND;
   }
 
   get getIndexMap() {
@@ -58,7 +68,7 @@ class ItemCache {
       this.getIndex(itemId),
       newHeight,
       this.getPosition(itemId),
-      isRendered
+      isRendered,
     );
   }
 
@@ -68,7 +78,7 @@ class ItemCache {
       this.getIndex(itemId),
       this.getHeight(itemId),
       newPosition,
-      isRendered
+      isRendered,
     );
   }
 
@@ -78,7 +88,7 @@ class ItemCache {
       this.getIndex(itemId),
       this.getHeight(itemId),
       this.getPosition(itemId),
-      isRendered
+      isRendered,
     );
   }
 
@@ -99,7 +109,7 @@ class ItemCache {
         index: itemIndex,
         height: itemHeight,
         position: itemPosition,
-        isRendered: isRendered
+        isRendered: isRendered,
       });
   }
 
@@ -110,7 +120,9 @@ class ItemCache {
   updateItemsMap(startIndex: number, dataLength: number) {
     if (dataLength) {
       let itemId;
-      if (startIndex < 0) startIndex = 0;
+      if (startIndex < 0) {
+        startIndex = 0;
+      }
       for (let i = startIndex; i <= dataLength - 1; i++) {
         itemId = this.getItemId(i);
         this.updateItemOnMap(
@@ -125,9 +137,13 @@ class ItemCache {
 
   updateIndexMap(startIndex: number, data: Array) {
     if (!!data.length) {
-      if (startIndex < 0) startIndex = 0;
+      if (startIndex < 0) {
+        startIndex = 0;
+      }
       for (let i = startIndex; i < data.length; i++) {
-        this.updateIndexItem(i, data[i].itemId);
+        if (data[i] && data[i].itemId) {
+          this.updateIndexItem(i, data[i].itemId);
+        }
       }
     }
   }
