@@ -7,7 +7,10 @@ import isFunction from '../vendors/isFunction';
 type EventTypes =
 // Outside events listener
   'addItem' |
-  'removeItem' |
+  'removeItemsByIdSucceed' |
+  'removeItemsByIdFail' |
+  'removeItemsAtSucceed' |
+  'removeItemsAtFail' |
   'onLoadTop' |
   'onLoadBottom' |
   'lookUpItemToScroll' |
@@ -97,15 +100,12 @@ function createMasonryViewModel({data, defaultHeight}) {
     // CRUD
     onAddItem,
     onRemoveItem,
+    onRemoveItemsById,
+    onRemoveItemsAt,
     onUpdateItem,
     addTop,
     addBottom,
 
-    // Interactive
-    insertItem,
-    insertItemWhenLoadMore,
-    deleteItem,
-    deleteItemsAt,
 
     // Update
     updateItemsPositionFromSpecifiedItem,
@@ -444,39 +444,70 @@ function createMasonryViewModel({data, defaultHeight}) {
     __itemCache__.updateItemsMap(index - 1, data.length);
   }
 
-  function deleteItem(itemId: string, deleteCount: number = 1) {
+  function _deleteItemsById(itemId: string, deleteCount: number = 1) {
     const itemIndex = __itemCache__.getIndex(itemId);
+    let willDeleteItems = undefined;
+    let beforeItem, afterItem = undefined;
+    let hasDeleteSucceed = undefined;
 
-    // Get before & after itemId of `be deleted item`.
-    const {beforeItem, afterItem} = _getItemBeforeAndAfterByIndex(itemIndex);
+    if (itemIndex !== NOT_FOUND) {
+      // Get before & after itemId of `be deleted item`.
+      const temp = _getItemBeforeAndAfterByIndex(itemIndex);
+      beforeItem = temp.beforeItem;
+      afterItem = temp.afterItem;
 
-    // Set height of `be deleted item` equals 0
-    __itemCache__.updateItemHeight(itemId, 0);
-
-    // Update under items' position
-    updateItemsPositionFromSpecifiedItem(itemId);
-
-    // Delete item on dataOnList - dataMap
-    if (
-      Array.isArray(data) &&
-      _isValidIndex(itemIndex)
-    ) {
-      for (let i = itemIndex; i < itemIndex + deleteCount; i++) {
-        dataMap.delete(data[i].itemId);
-      }
-      data.splice(itemIndex, deleteCount);
+      // All itemId of deleted items
+      willDeleteItems = _deleteItems(itemIndex, deleteCount);
+      hasDeleteSucceed = true;
+    }
+    else {
+      hasDeleteSucceed = false;
     }
 
-    // Delete item in itemCache
-    __itemCache__.deleteItem(itemIndex, itemId, data);
-
-    // notify to outside to remove item.
-    if (isFunction(storageEvents['removeItem'][0])) {
-      storageEvents['removeItem'][0](itemId, beforeItem, afterItem);
-    }
+    return {
+      hasDeleteSucceed,
+      successValues: {
+        willDeleteItems,
+        beforeItem,
+        afterItem,
+      },
+    };
   }
 
-  function deleteItemsAt(index: number, deleteCount: number = 1) {
+  function _deleteItemsAt(index: number, deleteCount: number = 1) {
+    let startIndex = _getValidStartIndex(index);
+    if (startIndex === data.length) {
+      startIndex = data.length - 1;
+    }
+    let willDeleteItems = undefined;
+    let beforeItem, afterItem = undefined;
+    let hasDeleteSucceed = undefined;
+
+    if (startIndex !== undefined) {
+      // Get before & after itemId of `be deleted item`.
+      const temp = _getItemBeforeAndAfterByIndex(startIndex);
+      beforeItem = temp.beforeItem;
+      afterItem = temp.afterItem;
+
+      // All itemId of deleted items
+      willDeleteItems = _deleteItems(startIndex, deleteCount);
+      hasDeleteSucceed = true;
+    }
+    else {
+      hasDeleteSucceed = false;
+    }
+
+    return {
+      hasDeleteSucceed,
+      successValues: {
+        willDeleteItems,
+        beforeItem,
+        afterItem,
+      },
+    };
+  }
+
+  function _deleteItems(index: number, deleteCount: number = 1) {
     let startIndex = _getValidStartIndex(index);
     if (startIndex === data.length) {
       startIndex = data.length - 1;
@@ -484,9 +515,6 @@ function createMasonryViewModel({data, defaultHeight}) {
     const storeStartIndex = startIndex;
 
     let willDeleteItems = [];
-
-    // Get before & after itemId of `be deleted item`.
-    const {beforeItem, afterItem} = _getItemBeforeAndAfterByIndex(startIndex);
 
     // Delete items on dataOnList - dataMap
     if (
@@ -522,16 +550,11 @@ function createMasonryViewModel({data, defaultHeight}) {
         aboveItemId = __itemCache__.getItemId(storeStartIndex - 1);
       }
 
-      __itemCache__.updateItemsMap(storeStartIndex - 1,data.length);
+      __itemCache__.updateItemsMap(storeStartIndex - 1, data.length);
       updateItemsPositionFromSpecifiedItem(aboveItemId);
     }
 
-    // notify to outside to remove item.
-    if (
-      storageEvents['removeItems'] &&
-      isFunction(storageEvents['removeItems'][0])) {
-      storageEvents['removeItems'][0](willDeleteItems, beforeItem, afterItem);
-    }
+    return willDeleteItems;
   }
 
 
