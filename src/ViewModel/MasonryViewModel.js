@@ -105,6 +105,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     insertItem,
     insertItemWhenLoadMore,
     deleteItem,
+    deleteItemsAt,
 
     // Update
     updateItemsPositionFromSpecifiedItem,
@@ -472,6 +473,64 @@ function createMasonryViewModel({data, defaultHeight}) {
     // notify to outside to remove item.
     if (isFunction(storageEvents['removeItem'][0])) {
       storageEvents['removeItem'][0](itemId, beforeItem, afterItem);
+    }
+  }
+
+  function deleteItemsAt(index: number, deleteCount: number = 1) {
+    let startIndex = _getValidStartIndex(index);
+    if (startIndex === data.length) {
+      startIndex = data.length - 1;
+    }
+    const storeStartIndex = startIndex;
+
+    let willDeleteItems = [];
+
+    // Get before & after itemId of `be deleted item`.
+    const {beforeItem, afterItem} = _getItemBeforeAndAfterByIndex(startIndex);
+
+    // Delete items on dataOnList - dataMap
+    if (
+      Array.isArray(data) &&
+      _isValidIndex(startIndex)
+    ) {
+      for (let i = 0; i < deleteCount; i++) {
+        if (startIndex < data.length && data[startIndex]) {
+          const itemId = data[startIndex].itemId;
+          if (itemId && _hasItem(itemId)) {
+            willDeleteItems.push(itemId);
+            dataMap.delete(data[startIndex].itemId);
+            __itemCache__.getIndexMap.delete(startIndex);
+          }
+        }
+        startIndex++;
+      }
+
+      data.splice(storeStartIndex, deleteCount);
+
+      __itemCache__.updateIndexMap(storeStartIndex, data);
+
+      for (let i = 0; i < willDeleteItems.length; i++) {
+        __itemCache__.getIndexMap.delete(data.length + i);
+        __itemCache__.getItemsMap.delete(willDeleteItems[i]);
+      }
+
+      let aboveItemId = undefined;
+      if (storeStartIndex - 1 < 0) {
+        aboveItemId = __itemCache__.getItemId(0);
+      }
+      else {
+        aboveItemId = __itemCache__.getItemId(storeStartIndex - 1);
+      }
+
+      __itemCache__.updateItemsMap(storeStartIndex - 1,data.length);
+      updateItemsPositionFromSpecifiedItem(aboveItemId);
+    }
+
+    // notify to outside to remove item.
+    if (
+      storageEvents['removeItems'] &&
+      isFunction(storageEvents['removeItems'][0])) {
+      storageEvents['removeItems'][0](willDeleteItems, beforeItem, afterItem);
     }
   }
 
