@@ -6,11 +6,14 @@ import isFunction from '../vendors/isFunction';
 
 type EventTypes =
 // Outside events listener
-  'addItem' |
-  'removeItemsByIdSucceed' |
-  'removeItemsByIdFail' |
-  'removeItemsAtSucceed' |
-  'removeItemsAtFail' |
+  'onAddItemSucceed' |
+  'onAddItemFail' |
+  'onAddItemsSucceed' |
+  'onAddItemsFail' |
+  'onRemoveItemsByIdSucceed' |
+  'onRemoveItemsByIdFail' |
+  'onRemoveItemsAtSucceed' |
+  'onRemoveItemsAtFail' |
   'onLoadTop' |
   'onLoadBottom' |
   'lookUpItemToScroll' |
@@ -107,10 +110,10 @@ function createMasonryViewModel({data, defaultHeight}) {
     addTop,
     addBottom,
 
-
     // Update
     updateItemsPositionFromSpecifiedItem,
     updateData,
+    reRenderUI,
 
     // Get - Set
     getData,
@@ -222,7 +225,7 @@ function createMasonryViewModel({data, defaultHeight}) {
         isFunction(storageEvents['viewOnLoadMore'][0]) &&
         isFunction(storageEvents['viewReRender'][0])
       ) {
-        _insertItemWhenLoadMore(0, item);
+        //_insertItemWhenLoadMore(0, item);
         storageEvents['viewOnLoadMore'][0](0, item);
         storageEvents['viewReRender'][0]();
       }
@@ -235,7 +238,7 @@ function createMasonryViewModel({data, defaultHeight}) {
         isFunction(storageEvents['viewOnLoadMore'][0]) &&
         isFunction(storageEvents['viewReRender'][0])
       ) {
-        _insertItemWhenLoadMore(data.length, item);
+        //_insertItemWhenLoadMore(data.length, item);
         storageEvents['viewOnLoadMore'][0](data.length, item);
         storageEvents['viewReRender'][0]();
       }
@@ -348,35 +351,30 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function onRemoveItemsById(itemId: string) {
+  function onRemoveItemsById(itemId: string, deleteCount: number = 1) {
     if (_hasAlreadyId(itemId)) {
       const iIndex = __itemCache__.getIndex(itemId);
       const iHeight = __itemCache__.getHeight(itemId);
       const iPosition = __itemCache__.getPosition(itemId);
-      const result = _deleteItemsById(itemId);
+      const result = _deleteItemsById(itemId, deleteCount);
 
       if (result.hasDeleteSucceed) {
-        if (
-          storageEvents['viewOnRemoveItem'] &&
-          storageEvents['viewReRender'] &&
-          isFunction(storageEvents['viewOnRemoveItem'][0]) &&
-          isFunction(storageEvents['viewReRender'][0])) {
-
+        if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
           storageEvents['viewOnRemoveItem'][0]({
             itemId,
             iIndex,
             iHeight,
             iPosition,
           });
-          storageEvents['viewReRender'][0]();
+          reRenderUI();
         }
 
         // Notify to outside to remove item.
         if (
-          storageEvents['removeItemsByIdSucceed'] &&
-          isFunction(storageEvents['removeItemsByIdSucceed'][0])
+          storageEvents['onRemoveItemsByIdSucceed'] &&
+          isFunction(storageEvents['onRemoveItemsByIdSucceed'][0])
         ) {
-          storageEvents['removeItemsByIdSucceed'][0](
+          storageEvents['onRemoveItemsByIdSucceed'][0](
             result.successValues.willDeleteItems,
             result.successValues.beforeItem,
             result.successValues.afterItem);
@@ -384,45 +382,41 @@ function createMasonryViewModel({data, defaultHeight}) {
       }
       else {
         if (
-          storageEvents['removeItemsByIdFail'] &&
-          isFunction(storageEvents['removeItemsByIdFail'][0])
+          storageEvents['onRemoveItemsByIdFail'] &&
+          isFunction(storageEvents['onRemoveItemsByIdFail'][0])
         ) {
           const msgError = 'Can not find itemId';
-          storageEvents['removeItemsByIdFail'][0](msgError);
+          storageEvents['onRemoveItemsByIdFail'][0](msgError);
         }
       }
     }
   }
 
-  function onRemoveItemsAt(itemId: string) {
+  function onRemoveItemsAt(index: number, deleteCount: number = 1) {
+    const itemId = __itemCache__.getItemId(index);
     if (_hasAlreadyId(itemId)) {
-      const iIndex = __itemCache__.getIndex(itemId);
+      const iIndex = index;
       const iHeight = __itemCache__.getHeight(itemId);
       const iPosition = __itemCache__.getPosition(itemId);
-      const result = _deleteItemsAt(itemId);
+      const result = _deleteItemsAt(index, deleteCount);
 
       if (result.hasDeleteSucceed) {
-        if (
-          storageEvents['viewOnRemoveItem'] &&
-          storageEvents['viewReRender'] &&
-          isFunction(storageEvents['viewOnRemoveItem'][0]) &&
-          isFunction(storageEvents['viewReRender'][0])) {
-
+        if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
           storageEvents['viewOnRemoveItem'][0]({
             itemId,
             iIndex,
             iHeight,
             iPosition,
           });
-          storageEvents['viewReRender'][0]();
+          reRenderUI();
         }
 
         // Notify to outside to remove item.
         if (
-          storageEvents['removeItemsAtSucceed'] &&
-          isFunction(storageEvents['removeItemsAtSucceed'][0])
+          storageEvents['onRemoveItemsAtSucceed'] &&
+          isFunction(storageEvents['onRemoveItemsAtSucceed'][0])
         ) {
-          storageEvents['removeItemsAtSucceed'][0](
+          storageEvents['onRemoveItemsAtSucceed'][0](
             result.successValues.willDeleteItems,
             result.successValues.beforeItem,
             result.successValues.afterItem);
@@ -430,11 +424,11 @@ function createMasonryViewModel({data, defaultHeight}) {
       }
       else {
         if (
-          storageEvents['removeItemsAtFail'] &&
-          isFunction(storageEvents['removeItemsAtFail'][0])
+          storageEvents['onRemoveItemsAtFail'] &&
+          isFunction(storageEvents['onRemoveItemsAtFail'][0])
         ) {
           const msgError = 'Can not find itemId';
-          storageEvents['removeItemsAtFail'][0](msgError);
+          storageEvents['onRemoveItemsAtFail'][0](msgError);
         }
       }
     }
@@ -533,33 +527,6 @@ function createMasonryViewModel({data, defaultHeight}) {
     // if (isFunction(storageEvents['addItems'][0])) {
     //   storageEvents['addItems'][0](item, beforeItem, afterItem);
     // }
-  }
-
-  function _insertItemWhenLoadMore(index: number, item: Object) {
-    const newItemPos = parseInt(index) === 0 ?
-      0 :
-      __itemCache__.getPosition(data[index - 1].itemId) + __itemCache__.getHeight(data[index - 1].itemId);
-
-    // Insert item on Data on list
-    if (
-      Array.isArray(data) &&
-      _isValidIndex(index) &&
-      item &&
-      !_hasAlreadyId(item.itemId)
-    ) {
-      data.splice(index, 0, item);
-      dataMap.set(item.itemId, item);
-    }
-
-    // Insert item on itemCache
-    __itemCache__.updateIndexMap(index - 1, data);
-    __itemCache__.updateItemOnMap(
-      item.itemId,
-      data.indexOf(item),
-      __itemCache__.getDefaultHeight,
-      newItemPos,
-      false);
-    __itemCache__.updateItemsMap(index - 1, data.length);
   }
 
   function _deleteItemsById(itemId: string, deleteCount: number = 1) {
@@ -776,6 +743,20 @@ function createMasonryViewModel({data, defaultHeight}) {
     oldItemsId = [];
     for (let key of dataMap.keys()) {
       oldItemsId.push(key);
+    }
+  }
+
+  function reRenderUI() {
+    if (storageEvents['viewReRender']) {
+      if(isFunction(storageEvents['viewReRender'][0])) {
+        storageEvents['viewReRender'][0]();
+      }
+      else {
+        console.error('UI reRender callback is not a function');
+      }
+    }
+    else {
+      console.error('UI reRender callback is undefined');
     }
   }
 
