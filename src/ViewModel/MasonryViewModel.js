@@ -331,7 +331,7 @@ function createMasonryViewModel({data, defaultHeight}) {
       item &&
       !_hasAlreadyId(item.itemId)
     ) {
-      _insertItem(index, item);
+      _insertItems(index, item);
       storageEvents['viewOnAddItem'][0](index, item);
       storageEvents['viewReRender'][0]();
     }
@@ -458,75 +458,74 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    Interaction with list data & cache
    ======================================================================== */
-  function _insertItem(index: number, item: Object) {
-    const newItemPos = parseInt(index) === 0 ?
-      0 :
-      __itemCache__.getPosition(data[index - 1].itemId) + __itemCache__.getHeight(data[index - 1].itemId);
-
-    // Insert item on Data on list
-    if (
-      Array.isArray(data) &&
-      _isValidIndex(index) &&
-      item &&
-      !_hasAlreadyId(item.itemId)
-    ) {
-      data.splice(index, 0, item);
-      dataMap.set(item.itemId, item);
-    }
-
-    // Insert item on itemCache
-    __itemCache__.updateIndexMap(index - 1, data);
-    __itemCache__.updateItemOnMap(
-      item.itemId,
-      data.indexOf(item),
-      __itemCache__.getDefaultHeight,
-      newItemPos,
-      false);
-    __itemCache__.updateItemsMap(index - 1, data.length);
-
-    // Get before & after itemId of newest added item.
-    const {beforeItem, afterItem} = _getItemBeforeAndAfterByIndex(index);
-
-    // notify to outside to add new item.
-    if (isFunction(storageEvents['addItem'][0])) {
-      storageEvents['addItem'][0](item, beforeItem, afterItem);
-    }
-  }
-
   function _insertItems(startIndex: number, items: Array) {
-    // const newItemPos = parseInt(index) === 0 ?
-    //   0 :
-    //   __itemCache__.getPosition(data[index - 1].itemId) + __itemCache__.getHeight(data[index - 1].itemId);
-    //
-    // // Insert item on Data on list
-    // if (
-    //   Array.isArray(data) &&
-    //   _isValidIndex(index) &&
-    //   item &&
-    //   !_hasAlreadyId(item.itemId)
-    // ) {
-    //   data.splice(index, 0, item);
-    //   dataMap.set(item.itemId, item);
-    // }
-    //
-    // // Insert item on itemCache
-    // __itemCache__.updateIndexMap(index - 1, data);
-    // __itemCache__.updateItemOnMap(
-    //   item.itemId,
-    //   data.indexOf(item),
-    //   __itemCache__.getDefaultHeight,
-    //   newItemPos,
-    //   false);
-    // __itemCache__.updateItemsMap(index - 1, data.length);
-    //
-    // // Get before & after itemId of newest added item.
-    // const {beforeItem, afterItem} = _getItemBeforeAndAfterByIndex(index);
-    //
-    // // notify to outside to add new item.
-    // //TODO: addItems undefined
-    // if (isFunction(storageEvents['addItems'][0])) {
-    //   storageEvents['addItems'][0](item, beforeItem, afterItem);
-    // }
+    let validIndex = _getValidStartIndex(startIndex);
+    let positionStartOfNewItems = 0;
+    let hasInsertSucceed = undefined;
+    let beforeItem, afterItem = undefined;
+
+    if (validIndex !== undefined) {
+      const beforeItemId = __itemCache__.getItemId(validIndex - 1 < 0 ?
+        0 :
+        validIndex - 1);
+      const beforeItemPos = __itemCache__.getPosition(beforeItemId);
+      const beforeItemHeight = __itemCache__.getHeight(beforeItemId);
+      if (beforeItemPos !== NOT_FOUND && beforeItemHeight !== NOT_FOUND) {
+        positionStartOfNewItems = validIndex === 0 ?
+          0 :
+          beforeItemPos + beforeItemHeight;
+      }
+
+      if (!items) {
+        hasInsertSucceed = false;
+      }
+      else {
+        if (!Array.isArray(items)) {
+          items = [(items)];
+        }
+
+        if (Array.isArray(data) && Array.isArray(items)) {
+          const temp = _getItemBeforeAndAfterByIndex(validIndex);
+          beforeItem = temp.beforeItem;
+          afterItem = temp.afterItem;
+
+          data.splice(validIndex, 0, items);
+          data = data.flat();
+
+          // Insert item on itemCache
+          __itemCache__.updateIndexMap(validIndex - 1, data);
+
+          items.forEach((item) => {
+            if (item && item.itemId) {
+                dataMap.set(item.itemId, item);
+                __itemCache__.updateItemOnMap(
+                  item.itemId,
+                  data.indexOf(item),
+                  __itemCache__.getDefaultHeight,
+                  positionStartOfNewItems,
+                  false);
+            }
+          });
+
+          __itemCache__.updateItemsMap(validIndex - 1, data.length);
+          updateItemsPositionFromSpecifiedItem(validIndex === 0 ?
+            data[0].itemId :
+            beforeItemId);
+          hasInsertSucceed = true;
+        }
+      }
+    }
+    else {
+      hasInsertSucceed = false;
+    }
+
+    return {
+      hasInsertSucceed,
+      successValues: {
+        beforeItem,
+        afterItem,
+      },
+    };
   }
 
   function _deleteItemsById(itemId: string, deleteCount: number = 1) {
@@ -748,7 +747,7 @@ function createMasonryViewModel({data, defaultHeight}) {
 
   function reRenderUI() {
     if (storageEvents['viewReRender']) {
-      if(isFunction(storageEvents['viewReRender'][0])) {
+      if (isFunction(storageEvents['viewReRender'][0])) {
         storageEvents['viewReRender'][0]();
       }
       else {
