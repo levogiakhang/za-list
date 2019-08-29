@@ -371,19 +371,6 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    [Public API] - Interact with list
    ======================================================================== */
-  function onAddItem(index: number, item: Object) {
-    if (
-      storageEvents['viewOnAddItem'] &&
-      isFunction(storageEvents['viewOnAddItem'][0]) &&
-      item &&
-      !_hasAlreadyId(item.itemId)
-    ) {
-      _insertItems(index, item);
-      storageEvents['viewOnAddItem'][0](index, item);
-      reRenderUI();
-    }
-  }
-
   function onAddItems(startIndex: number, items: Array) {
     if (
       storageEvents['viewOnAddItems'] &&
@@ -391,9 +378,12 @@ function createMasonryViewModel({data, defaultHeight}) {
       items
     ) {
       const start = _getValidStartIndex(startIndex);
-
+      if(!Array.isArray(items)){
+        items = _convertToArray(items);
+      }
+      const oldMap = new Map(__itemCache__.getItemsMap);
       _insertItems(start, items);
-      storageEvents['viewOnAddItems'][0](start, items);
+      storageEvents['viewOnAddItems'][0](start, items, oldMap);
       reRenderUI();
     }
   }
@@ -491,12 +481,12 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function addTop(item: Object) {
-    onAddItem(0, item);
+  function addTop(items: Array) {
+    onAddItems(0, items);
   }
 
-  function addBottom(item: Object) {
-    onAddItem(data.length, item);
+  function addBottom(items: Array) {
+    onAddItems(data.length, items);
   }
 
 
