@@ -120,7 +120,6 @@ function createMasonryViewModel({data, defaultHeight}) {
     scrollTo,
 
     // CRUD
-    onAddItem,
     onAddItems,
     onRemoveItemsById,
     onRemoveItemsAt,
@@ -516,7 +515,7 @@ function createMasonryViewModel({data, defaultHeight}) {
       }
       else {
         if (!Array.isArray(items)) {
-          items = [(items)];
+          items = _convertToArray(items);
         }
 
         if (Array.isArray(data) && Array.isArray(items)) {
@@ -878,6 +877,10 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
 
     return start;
+  }
+
+  function _convertToArray(item: Object): Array {
+    return [(item)];
   }
 
 
