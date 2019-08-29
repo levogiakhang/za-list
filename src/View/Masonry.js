@@ -859,7 +859,7 @@ class Masonry extends React.Component<Props> {
     offset: number,
     itemId: string,
     animationName: string,
-    stepInPixel: number = 70,
+    stepInPixel: number = 50,
     msDelayInEachStep: number = 16.66) {
 
     this.jumpBeforeScroll(offset);
@@ -881,7 +881,7 @@ class Masonry extends React.Component<Props> {
     offset: number,
     itemId: string,
     animationName: string,
-    stepInPixel: number = 70,
+    stepInPixel: number = 50,
     msDelayInEachStep: number = 16.66) {
 
     this.jumpBeforeScroll(offset);
@@ -958,7 +958,7 @@ class Masonry extends React.Component<Props> {
   }
 
   _onScroll() {
-    console.log('onScr');
+    //console.log('onScr');
     const {height} = this.props;
 
     this._removeStyleOfSpecialItem();
