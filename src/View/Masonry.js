@@ -15,6 +15,8 @@ import removeClass from '../utils/removeClass';
 import addClass from '../utils/addClass';
 import { Scrollbars } from 'react-custom-scrollbars';
 
+type RenderDirection = 'TopDown' | 'BottomUp';
+
 type Props = {
   className?: string,
   innerScrollClassName?: string,
@@ -33,6 +35,7 @@ type Props = {
   additionAnim?: string,
   removalAnim?: string,
   timingResetAnimation?: number,
+  renderDirection?: RenderDirection,
 };
 
 const LOAD_MORE_TOP_TRIGGER_POS = 50;
@@ -54,6 +57,7 @@ class Masonry extends React.Component<Props> {
     hideScrollToBottomBtn: false,
     isItemScrollToInBottom: false,
     timingResetAnimation: 1000,
+    renderDirection: 'TopDown',
   };
 
   constructor(props) {
@@ -626,6 +630,7 @@ class Masonry extends React.Component<Props> {
       style,
       innerScrollStyle,
       isScrolling,
+      renderDirection,
     } = this.props;
 
     const {scrollTop} = this.state;

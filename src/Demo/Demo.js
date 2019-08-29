@@ -852,6 +852,7 @@ class Demo extends React.Component {
                additionAnim={'zoomIn'}
                removalAnim={'zoomOut'}
                timingResetAnimation={200}
+               renderDirection={'BottomUp'}
                noHScroll/>
     );
   };
