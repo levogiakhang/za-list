@@ -5,19 +5,37 @@ import { NOT_FOUND } from '../utils/value';
 import isFunction from '../vendors/isFunction';
 
 type EventTypes =
-// Outside events listener
-  'onAddItemSucceed' |
-  'onAddItemFail' |
+/* ========================================================================
+ Outer events listener
+ ======================================================================== */
+// Load
+  'loadTopStart' |
+  'loadBottomStart' |
+  'onLoadTop' |
+  'onLoadBottom' |
+  'loadTopEnd' |
+  'loadBottomEnd' |
+
+  // Add
+  'addItemsStart' |
   'onAddItemsSucceed' |
   'onAddItemsFail' |
+
+  // Remove
+  'removeItemsStart' |
   'onRemoveItemsByIdSucceed' |
   'onRemoveItemsByIdFail' |
   'onRemoveItemsAtSucceed' |
   'onRemoveItemsAtFail' |
-  'onLoadTop' |
-  'onLoadBottom' |
-  'lookUpItemToScroll' |
-  // View events listener
+
+  // Scroll
+  'onLookForItemToScroll' |
+  'onLookForItemToScrollTop' |
+  'onLookForItemToScrollBottom' |
+
+  /* ========================================================================
+   Inner UI events listener
+   ======================================================================== */
   'viewOnLoadMoreTop' |
   'viewOnLoadMore' |
   'viewReRender' |
@@ -85,10 +103,10 @@ function createMasonryViewModel({data, defaultHeight}) {
     removeEventListener,
 
     // Load more
-    enableLoadMoreTop,
-    enableLoadMoreBottom,
-    onLoadMoreTop,
-    onLoadMoreBottom,
+    enableLoadTop,
+    enableLoadBottom,
+    onLoadTop,
+    onLoadBottom,
     loadTop,
     loadBottom,
 
@@ -180,17 +198,17 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function enableLoadMoreTop() {
-    if (Array.isArray(storageEvents['onLoadTop'])) {
-      storageEvents['onLoadTop'].forEach((eventCallback) => {
+  function enableLoadTop() {
+    if (Array.isArray(storageEvents['loadTopStart'])) {
+      storageEvents['loadTopStart'].forEach((eventCallback) => {
         eventCallback();
       });
     }
   }
 
-  function enableLoadMoreBottom() {
-    if (Array.isArray(storageEvents['onLoadBottom'])) {
-      storageEvents['onLoadBottom'].forEach((eventCallback) => {
+  function enableLoadBottom() {
+    if (Array.isArray(storageEvents['loadBottomStart'])) {
+      storageEvents['loadBottomStart'].forEach((eventCallback) => {
         eventCallback();
       });
     }
@@ -200,7 +218,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    TODO: Load more
    ======================================================================== */
-  function onLoadMoreTop(onLoadMoreTopCallback: Function) {
+  function onLoadTop(onLoadMoreTopCallback: Function) {
     if (isFunction(onLoadMoreTopCallback)) {
       const firstItemId = data[0].itemId;
       if (
@@ -213,11 +231,11 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function onLoadMoreBottom(onLoadMoreBottomCallback: Function) {
-    if (isFunction(onLoadMoreBottomCallback)) {
+  function onLoadBottom(onLoadBottomCallback: Function) {
+    if (isFunction(onLoadBottomCallback)) {
       if (data.length > 0) {
         const lastItemId = data[data.length - 1].itemId;
-        onLoadMoreBottomCallback(lastItemId);
+        onLoadBottomCallback(lastItemId);
       }
     }
   }
@@ -257,10 +275,10 @@ function createMasonryViewModel({data, defaultHeight}) {
       __itemCache__.getIndex(itemId) === 0) {
       // Send a notification to outside.
       if (
-        storageEvents['lookUpItemToScroll'] &&
-        isFunction(storageEvents['lookUpItemToScroll'][0])
+        storageEvents['onLookForItemToScroll'] &&
+        isFunction(storageEvents['onLookForItemToScroll'][0])
       ) {
-        storageEvents['lookUpItemToScroll'][0](itemId);
+        storageEvents['onLookForItemToScroll'][0](itemId);
       }
     }
     else {
@@ -303,11 +321,11 @@ function createMasonryViewModel({data, defaultHeight}) {
   function scrollToTop(firstItemId: string) {
     if (
       !_hasItem(firstItemId) &&
-      storageEvents['lookUpItemToScrollTop'] &&
-      isFunction(storageEvents['lookUpItemToScrollTop'][0])
+      storageEvents['onLookForItemToScrollTop'] &&
+      isFunction(storageEvents['onLookForItemToScrollTop'][0])
     ) {
       // Send a notification to outside.
-      storageEvents['lookUpItemToScrollTop'][0]();
+      storageEvents['onLookForItemToScrollTop'][0]();
     }
     else {
       if (
@@ -323,10 +341,10 @@ function createMasonryViewModel({data, defaultHeight}) {
     if (!_hasItem(lastItemId)) {
       // Send a notification to outside.
       if (
-        storageEvents['lookUpItemToScrollBottom'] &&
-        isFunction(storageEvents['lookUpItemToScrollBottom'][0])
+        storageEvents['onLookForItemToScrollBottom'] &&
+        isFunction(storageEvents['onLookForItemToScrollBottom'][0])
       ) {
-        storageEvents['lookUpItemToScrollBottom'][0]();
+        storageEvents['onLookForItemToScrollBottom'][0]();
       }
     }
     else {
