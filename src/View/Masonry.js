@@ -67,12 +67,11 @@ class Masonry extends React.Component<Props> {
     /* Scroll to bottom when the first loading */
     this.isFirstLoadingDone = false;
     this.isLoadingTop = false;
-    this.isLoadDone = false; // Prevent load more on zoom to item when item is not rendered
+    this.isLoadNewItemsDone = false; // Prevent load more on zoom to item when item is not rendered
     this.preventLoadTop = true;
     this.preventLoadBottom = true;
-    this.firstItemInViewportBeforeLoadTop = {};
+    this.currentFirstItemInViewport = {};
     this.curItemInViewPort = undefined;
-    this.firstItemInViewportBeforeAddMore = {};
 
     this.isLoadMore = false;
     this.loadMoreTopCount = 0; // resolves remove incorrect item when removal animation end.
@@ -82,7 +81,7 @@ class Masonry extends React.Component<Props> {
     this.needScrollTop = false;
     this.isAddLast = false;
     this.needScrollBottom = false;
-    this.newLastItemHeight = 0;
+    this.newLastItemsTotalHeight = 0;
     this.needScrollBack = false;
     this.loadDone = false;
     this.initItemCount = 0;
@@ -142,7 +141,7 @@ class Masonry extends React.Component<Props> {
     this.scrollTo = this.scrollTo.bind(this);
     this.onRemoveItem = this.onRemoveItem.bind(this);
     this.updateUIWhenScrollToItem = this.updateUIWhenScrollToItem.bind(this);
-    this.onAddItem = this.onAddItem.bind(this);
+    this.onAddItems = this.onAddItems.bind(this);
 
     this._removeStyleOfSpecialItem = this._removeStyleOfSpecialItem.bind(this);
     this._removeScrollBackItemTrigger = this._removeScrollBackItemTrigger.bind(this);
@@ -205,7 +204,7 @@ class Masonry extends React.Component<Props> {
     this.viewModel.addEventListener('viewScrollTo', this.scrollTo);
     this.viewModel.addEventListener('viewOnRemoveItem', this.onRemoveItem);
     this.viewModel.addEventListener('viewUpdateUIWhenScrollToItem', this.updateUIWhenScrollToItem);
-    this.viewModel.addEventListener('viewOnAddItem', this.onAddItem);
+    this.viewModel.addEventListener('viewOnAddItems', this.onAddItems);
 
     if (this.parentRef !== undefined) {
       this.btnScrollBottomPos.top = this.parentRef.current.offsetTop + height - 50;
@@ -264,21 +263,8 @@ class Masonry extends React.Component<Props> {
       }
 
       // Scroll back to old position when add an item above
-      if (!itemCache.isRendered(itemId) && itemCache.getIndex(itemId) < itemCache.getIndex(this.curItemInViewPort)) {
+      if (!itemCache.isRendered(itemId) && itemCache.getIndex(itemId) < itemCache.getIndex(this.currentFirstItemInViewport.itemId)) {
         this.needScrollBack = true;
-      }
-
-      // Scroll to top when add an item in top && scrollTop is near top
-      if (this.isAddFirst) {
-        this.isAddFirst = false;
-        this.needScrollTop = true;
-      }
-
-      // Scroll to bottom when add an item in bottom && scrollTop is near bottom
-      if (this.isAddLast) {
-        this.isAddLast = false;
-        this.needScrollBottom = true;
-        this.newLastItemHeight = newHeight;
       }
 
       if (!itemCache.isRendered(itemId) && this.isFirstLoadingDone) {
@@ -298,18 +284,36 @@ class Masonry extends React.Component<Props> {
         this.loadDone = true;
       }
 
+      if (this.isAddLast) {
+        this.newLastItemsTotalHeight += newHeight;
+      }
+
       const isDone = !(this.scrollToSpecialItemCount < this.numOfNewLoading - 1);
       if (!isDone) {
         this.scrollToSpecialItemCount++;
       }
       else if (isDone && this.numOfNewLoading !== 0) {
         if (this.isFirstLoadingDone) {
+          // Scroll to top when add an item in top && scrollTop is near top
+          if (this.isAddFirst) {
+            this.isAddFirst = false;
+            this.needScrollTop = true;
+          }
+
+          // Scroll to bottom when add an item in bottom && scrollTop is near bottom
+          if (this.isAddLast) {
+            this.isAddLast = false;
+            this.needScrollBottom = true;
+          }
+
           this.scrollToSpecialItemCount = 0;
           this.numOfNewLoading = 0;
+
           if (this.isScrollToSpecialItem) {
             this.needScrollToSpecialItem = true;
           }
-          this.isLoadDone = true;
+
+          this.isLoadNewItemsDone = true;
         }
       }
 
@@ -319,26 +323,35 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  onAddItem(index, item) {
-    this.isAddMore = true;
+  onAddItems(startIndex, items, oldMap) {
+    if(Array.isArray(items)) {
+      this.isAddMore = true;
+      this.numOfNewLoading = items.length;
 
-    this._removeStyleOfSpecialItem();
+      this._removeStyleOfSpecialItem();
 
-    if (parseInt(index) === 0) {
-      this.isAddFirst = true;
+      if (parseInt(startIndex) === 0) {
+        this.isAddFirst = true;
+      }
+      if (parseInt(startIndex) + items.length === this.viewModel.getData().length) {
+        this.isAddLast = true;
+      }
+
+      const stateScrollTop = this.state.scrollTop;
+
+      // Usage to scroll back, prevent flick view
+      this.currentFirstItemInViewport = {
+        itemId: this.curItemInViewPort,
+        disparity: stateScrollTop - oldMap.get(this.curItemInViewPort).position,
+      };
+
+      let index = startIndex;
+      for (let i = 0; i < items.length; i++) {
+        this._addStaticItemToChildren(index, items[i]);
+        index++;
+      }
+      this._updateEstimatedHeight(this.viewModel.getCache().defaultHeight * items.length);
     }
-    if (parseInt(index) === this.viewModel.getData().length) {
-      this.isAddLast = true;
-    }
-
-    // Usage to scroll back, prevent flick view
-    this.firstItemInViewportBeforeAddMore = {
-      itemId: this.curItemInViewPort,
-      disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
-    };
-
-    this._addStaticItemToChildren(index, item);
-    this._updateEstimatedHeight(this.viewModel.getCache().defaultHeight);
   }
 
   onRemoveItem({itemId, iIndex, iHeight, iPosition}) {
@@ -704,7 +717,7 @@ class Masonry extends React.Component<Props> {
       !this.isLoadingTop &&
       !this.preventLoadTop
     ) {
-      this.viewModel.enableLoadMoreTop();
+      this.viewModel.enableLoadTop();
     }
 
     // trigger load more bottom
@@ -714,7 +727,7 @@ class Masonry extends React.Component<Props> {
       this.isFirstLoadingDone &&
       !this.preventLoadBottom
     ) {
-      this.viewModel.enableLoadMoreBottom();
+      this.viewModel.enableLoadBottom();
     }
 
     if (scrollTop > LOAD_MORE_TOP_TRIGGER_POS) {
@@ -738,7 +751,7 @@ class Masonry extends React.Component<Props> {
 
     // Notify if viewport is not full.
     if (this.isFirstLoadingDone && this.estimateTotalHeight < height) {
-      //this.viewModel.enableLoadMoreTop();
+      this.viewModel.enableLoadTop();
     }
 
     if (this.needScrollTopWithAnim) {
@@ -753,19 +766,22 @@ class Masonry extends React.Component<Props> {
 
     // Check scroll to old position when load more top.
     if (this.needScrollBack) {
-      if (this.isAddMore) {
+      console.log(this.isLoadNewItemsDone, this.isAddMore);
+      if (this.isLoadNewItemsDone && this.isAddMore) {
         this.isAddMore = false;
+        this.isLoadNewItemsDone = false;
         this._scrollToItem(
-          this.firstItemInViewportBeforeAddMore.itemId,
-          this.firstItemInViewportBeforeAddMore.disparity,
+          this.currentFirstItemInViewport.itemId,
+          this.currentFirstItemInViewport.disparity,
         );
       }
       else {
         clearInterval(this.scrTopTimeOutId);
-        if (!this.isScrollToSpecialItem) {
+        if (!this.isScrollToSpecialItem && this.isLoadNewItemsDone) {
+          this.isLoadNewItemsDone = false;
           this._scrollToItem(
-            this.firstItemInViewportBeforeLoadTop.itemId,
-            this.firstItemInViewportBeforeLoadTop.disparity,
+            this.currentFirstItemInViewport.itemId,
+            this.currentFirstItemInViewport.disparity,
           );
         }
       }
@@ -781,7 +797,8 @@ class Masonry extends React.Component<Props> {
 
     if (this.needScrollBottom) {
       this.needScrollBottom = false;
-      if (scrollTop >= this.estimateTotalHeight - this.newLastItemHeight - height - NEED_TO_SCROLL_BOTTOM_POS) {
+      this.newLastItemsTotalHeight = 0;
+      if (scrollTop >= this.estimateTotalHeight - this.newLastItemsTotalHeight - height - NEED_TO_SCROLL_BOTTOM_POS) {
         //TODO: conflict with "resize" after add bottom
         this.scrollToBottomAtCurrentUI();
       }
@@ -799,7 +816,7 @@ class Masonry extends React.Component<Props> {
 
   onLoadMoreTop() {
     this.isLoadingTop = true;
-    this.firstItemInViewportBeforeLoadTop = {
+    this.currentFirstItemInViewport = {
       itemId: this.curItemInViewPort,
       disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
     };
