@@ -562,7 +562,11 @@ function createMasonryViewModel({data, defaultHeight}) {
           __itemCache__.updateIndexMap(validIndex - 1, data);
 
           items.forEach((item) => {
-            if (item && item.itemId) {
+            if (
+              item &&
+              item.itemId &&
+              !_hasAlreadyId(item.itemId)
+            ) {
               dataMap.set(item.itemId, item);
               __itemCache__.updateItemOnMap(
                 item.itemId,
