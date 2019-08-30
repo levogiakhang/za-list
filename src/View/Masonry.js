@@ -930,7 +930,7 @@ class Masonry extends React.Component<Props> {
     const defaultHeight = this.viewModel.getCache().getDefaultHeight;
 
     // const index = this.itemCache.getIndex;
-    const removeCallback = this.viewModel.onRemoveItem;
+    const removeCallback = this.viewModel.onRemoveItemsById;
     this.children.splice(index, 0,
       <CellMeasurer id={item.itemId}
                     key={item.itemId}
