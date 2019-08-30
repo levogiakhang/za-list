@@ -410,10 +410,13 @@ function createMasonryViewModel({data, defaultHeight}) {
           storageEvents['onRemoveItemsByIdSucceed'] &&
           isFunction(storageEvents['onRemoveItemsByIdSucceed'][0])
         ) {
-          storageEvents['onRemoveItemsByIdSucceed'][0](
-            result.successValues.willDeleteItems,
-            result.successValues.beforeItem,
-            result.successValues.afterItem);
+          storageEvents['onRemoveItemsByIdSucceed'][0]({
+            fromItemId: itemId,
+            deleteCount,
+            deletedItems: result.successValues.willDeleteItems,
+            beforeItem: result.successValues.beforeItem,
+            afterItem: result.successValues.afterItem,
+          });
         }
       }
       else {
@@ -431,10 +434,10 @@ function createMasonryViewModel({data, defaultHeight}) {
   function onRemoveItemsAt(index: number, deleteCount: number = 1) {
     const itemId = __itemCache__.getItemId(index);
     if (_hasAlreadyId(itemId)) {
-      const iIndex = index;
+      const iIndex = _getValidStartIndex(index);
       const iHeight = __itemCache__.getHeight(itemId);
       const iPosition = __itemCache__.getPosition(itemId);
-      const result = _deleteItemsAt(index, deleteCount);
+      const result = _deleteItemsAt(iIndex, deleteCount);
 
       if (result.hasDeleteSucceed) {
         if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
@@ -452,10 +455,13 @@ function createMasonryViewModel({data, defaultHeight}) {
           storageEvents['onRemoveItemsAtSucceed'] &&
           isFunction(storageEvents['onRemoveItemsAtSucceed'][0])
         ) {
-          storageEvents['onRemoveItemsAtSucceed'][0](
-            result.successValues.willDeleteItems,
-            result.successValues.beforeItem,
-            result.successValues.afterItem);
+          storageEvents['onRemoveItemsAtSucceed'][0]({
+            fromIndex: index,
+            deleteCount,
+            deletedItems: result.successValues.willDeleteItems,
+            beforeItem: result.successValues.beforeItem,
+            afterItem: result.successValues.afterItem,
+          });
         }
       }
       else {
