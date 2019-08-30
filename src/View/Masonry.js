@@ -781,7 +781,6 @@ class Masonry extends React.Component<Props> {
 
     // Check scroll to old position when load more top.
     if (this.needScrollBack) {
-      console.log(this.isLoadNewItemsDone, this.isAddMore);
       if (this.isLoadNewItemsDone && this.isAddMore) {
         this.isAddMore = false;
         this.isLoadNewItemsDone = false;
