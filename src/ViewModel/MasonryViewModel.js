@@ -68,6 +68,10 @@ function createMasonryViewModel({data, defaultHeight}) {
   let oldItemsId = [];
   let numOfNewItems = 0;
 
+  /* Store this itemId when number delete count equals data length
+   leads to error when get first & last data to load more.  */
+  let remainderItem = undefined;
+
   // Stores all be added events to dispatch a specialized callback
   let storageEvents = {};
 
@@ -219,7 +223,10 @@ function createMasonryViewModel({data, defaultHeight}) {
    ======================================================================== */
   function onLoadTop(onLoadMoreTopCallback: Function) {
     if (isFunction(onLoadMoreTopCallback)) {
-      const firstItemId = data[0].itemId;
+      const firstItemId = data.length !== 0 ?
+        data[0].itemId :
+        remainderItem;
+
       if (
         storageEvents['viewOnLoadMoreTop'] &&
         isFunction(storageEvents['viewOnLoadMoreTop'][0])
@@ -237,15 +244,15 @@ function createMasonryViewModel({data, defaultHeight}) {
 
   function onLoadBottom(onLoadBottomCallback: Function) {
     if (isFunction(onLoadBottomCallback)) {
-      if (data.length > 0) {
-        const lastItemId = data[data.length - 1].itemId;
+      const lastItemId = data.length > 0 ?
+        data[data.length - 1].itemId :
+        remainderItem;
 
-        if (storageEvents['onLoadBottom'] && isFunction(storageEvents['onLoadBottom'][0])) {
-          storageEvents['onLoadBottom'][0]();
-        }
-
-        onLoadBottomCallback(lastItemId);
+      if (storageEvents['onLoadBottom'] && isFunction(storageEvents['onLoadBottom'][0])) {
+        storageEvents['onLoadBottom'][0]();
       }
+
+      onLoadBottomCallback(lastItemId);
     }
   }
 
@@ -712,7 +719,8 @@ function createMasonryViewModel({data, defaultHeight}) {
     // Delete items on dataOnList - dataMap
     if (
       Array.isArray(data) &&
-      _isValidIndex(startIndex)
+      _isValidIndex(startIndex) &&
+      Number.isInteger(deleteCount)
     ) {
       for (let i = 0; i < deleteCount; i++) {
         if (startIndex < data.length && data[startIndex]) {
@@ -724,6 +732,10 @@ function createMasonryViewModel({data, defaultHeight}) {
           }
         }
         startIndex++;
+      }
+
+      if (data.length === deleteCount) {
+        remainderItem = data[data.length - 1].itemId;
       }
 
       data.splice(storeStartIndex, deleteCount);

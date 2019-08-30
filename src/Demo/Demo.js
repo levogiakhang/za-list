@@ -178,8 +178,11 @@ class Demo extends React.Component {
   };
 
   loadMoreTop(firstItemIdInCurrentUI) {
-    const index = this.dataTotalMap.get(firstItemIdInCurrentUI);
-    if (!index || index < 0 || index >= this.dataTotal.length) {
+    let index = firstItemIdInCurrentUI === null ?
+      0 :
+      this.dataTotalMap.get(firstItemIdInCurrentUI);
+
+    if (index <= 0 || index >= this.dataTotal.length - 1) {
       return;
     }
 
@@ -188,12 +191,16 @@ class Demo extends React.Component {
   }
 
   loadMoreBottom(lastItemIdInCurrentUI) {
-    const index = this.dataTotalMap.get(lastItemIdInCurrentUI);
-    if (!index || index < 0 || index >= this.dataTotal.length) {
+    let index = lastItemIdInCurrentUI === null ?
+      0 :
+      this.dataTotalMap.get(lastItemIdInCurrentUI);
+
+    if (index < 0 || index >= this.dataTotal.length - 1) {
       return;
     }
 
     const res = this._getDataFromDataTotal(index + 1, index + 10);
+    console.log(res)
     this.viewModel.loadBottom(res);
   }
 
