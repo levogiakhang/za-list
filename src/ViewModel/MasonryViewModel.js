@@ -371,19 +371,45 @@ function createMasonryViewModel({data, defaultHeight}) {
    [Public API] - Interact with list
    ======================================================================== */
   function onAddItems(startIndex: number, items: Array) {
-    if (
-      storageEvents['viewOnAddItems'] &&
-      isFunction(storageEvents['viewOnAddItems'][0]) &&
-      items
-    ) {
+    if (items) {
       const start = _getValidStartIndex(startIndex);
-      if(!Array.isArray(items)){
+      if (!Array.isArray(items)) {
         items = _convertToArray(items);
       }
+
       const oldMap = new Map(__itemCache__.getItemsMap);
-      _insertItems(start, items);
-      storageEvents['viewOnAddItems'][0](start, items, oldMap);
-      reRenderUI();
+      const insertResult = _insertItems(start, items);
+
+      if (insertResult.hasInsertSucceed) {
+        if (
+          storageEvents['viewOnAddItems'] &&
+          isFunction(storageEvents['viewOnAddItems'][0])) {
+          storageEvents['viewOnAddItems'][0](start, items, oldMap);
+          reRenderUI();
+        }
+
+        // Notify to outside to remove item.
+        if (
+          storageEvents['onAddItemsSucceed'] &&
+          isFunction(storageEvents['onAddItemsSucceed'][0])
+        ) {
+          storageEvents['onAddItemsSucceed'][0]({
+            startIndex: start,
+            items: items,
+            beforeItem: insertResult.successValues.beforeItem,
+            afterItem: insertResult.successValues.afterItem,
+          });
+        }
+      }
+      else {
+        if (
+          storageEvents['onAddItemsFail'] &&
+          isFunction(storageEvents['onAddItemsFail'][0])
+        ) {
+          const msgError = `Try to add item(s) ${items} failed!`;
+          storageEvents['onAddItemsFail'][0](msgError);
+        }
+      }
     }
   }
 

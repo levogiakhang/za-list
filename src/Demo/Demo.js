@@ -59,13 +59,14 @@ class Demo extends React.Component {
     });
 
     //this.dataOnList.addEventListener('onDataChanged', this.viewModel.onDataChanged);
-    this.viewModel.addEventListener('addItem', this.addItemToDataTotal);
-    this.viewModel.addEventListener('removeItem', this.removeItemFromDataTotal);
-    this.viewModel.addEventListener('onLoadTop', this.enableLoadMoreTop);
-    this.viewModel.addEventListener('onLoadBottom', this.enableLoadMoreBottom);
-    this.viewModel.addEventListener('lookUpItemToScroll', this.lookUpItem);
-    this.viewModel.addEventListener('lookUpItemToScrollTop', this.lookUpItemToScrollTop);
-    this.viewModel.addEventListener('lookUpItemToScrollBottom', this.lookUpItemToScrollBottom);
+    this.viewModel.addEventListener('onAddItemsSucceed', this.addItemToDataTotal);
+    this.viewModel.addEventListener('onRemoveItemsByIdSucceed', this.removeItemFromDataTotal);
+    this.viewModel.addEventListener('onRemoveItemsAtSucceed', this.removeItemFromDataTotal);
+    this.viewModel.addEventListener('loadTopStart', this.enableLoadMoreTop);
+    this.viewModel.addEventListener('loadBottomStart', this.enableLoadMoreBottom);
+    this.viewModel.addEventListener('onLookForItemToScroll', this.lookUpItem);
+    this.viewModel.addEventListener('onLookForItemToScrollTop', this.lookUpItemToScrollTop);
+    this.viewModel.addEventListener('onLookForItemToScrollBottom', this.lookUpItemToScrollBottom);
   };
 
 
@@ -99,11 +100,11 @@ class Demo extends React.Component {
    Events Listener Callback
    ======================================================================== */
   enableLoadMoreTop() {
-    this.viewModel.onLoadMoreTop(throttle(this.loadMoreTop, 1000));
+    this.viewModel.onLoadTop(throttle(this.loadMoreTop, 1000));
   }
 
   enableLoadMoreBottom() {
-    this.viewModel.onLoadMoreBottom(throttle(this.loadMoreBottom, 1000));
+    this.viewModel.onLoadBottom(throttle(this.loadMoreBottom, 1000));
   }
 
   lookUpItem(itemId: string) {
@@ -209,16 +210,16 @@ class Demo extends React.Component {
   };
 
   onAddItemTop = () => {
-    let item = generation.generateItems(1)[0];
+    let item = generation.generateItems(10);
     this.viewModel.addTop(item);
   };
 
   onAddItemBottom = () => {
-    let item = generation.generateItems(1)[0];
+    let item = generation.generateItems(10);
     this.viewModel.addBottom(item);
   };
 
-  addItemToDataTotal = (item, beforeItem, afterItem) => {
+  addItemToDataTotal = ({startIndex, items, beforeItem, afterItem}) => {
     if (Array.isArray(this.dataTotal)) {
       const beforeItemId = beforeItem ?
         beforeItem.itemId :
@@ -228,10 +229,12 @@ class Demo extends React.Component {
         null;
 
       if (beforeItemId !== null) {
-        this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, 0, item);
+        this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, 0, items);
+        this.dataTotal = this.dataTotal.flat();
       }
       else {
-        this.dataTotal.splice(this.dataTotalMap.get(afterItemId), 0, item);
+        this.dataTotal.splice(this.dataTotalMap.get(afterItemId) - 1, 0, items);
+        this.dataTotal = this.dataTotal.flat();
       }
       this.updateDataIndexMap();
     }
