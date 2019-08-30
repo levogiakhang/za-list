@@ -802,11 +802,11 @@ class Masonry extends React.Component<Props> {
 
     if (this.needScrollBottom) {
       this.needScrollBottom = false;
-      this.newLastItemsTotalHeight = 0;
       if (scrollTop >= this.estimateTotalHeight - this.newLastItemsTotalHeight - height - NEED_TO_SCROLL_BOTTOM_POS) {
         //TODO: conflict with "resize" after add bottom
         this.scrollToBottomAtCurrentUI();
       }
+      this.newLastItemsTotalHeight = 0;
     }
 
     if (this.needScrollToSpecialItem) {
