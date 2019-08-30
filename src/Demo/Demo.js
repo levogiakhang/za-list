@@ -183,10 +183,8 @@ class Demo extends React.Component {
       return;
     }
 
-    const res = this._getDataFromDataTotal(index - 10, index - 1).reverse();
-    for (let i = 0; i < res.length; i++) {
-      this.viewModel.loadTop(res[i]);
-    }
+    const res = this._getDataFromDataTotal(index - 10, index - 1);
+    this.viewModel.loadTop(res);
   }
 
   loadMoreBottom(lastItemIdInCurrentUI) {
@@ -196,9 +194,7 @@ class Demo extends React.Component {
     }
 
     const res = this._getDataFromDataTotal(index + 1, index + 10);
-    for (let i = 0; i < res.length; i++) {
-      this.viewModel.loadBottom(res[i]);
-    }
+    this.viewModel.loadBottom(res);
   }
 
   onAddItem = () => {

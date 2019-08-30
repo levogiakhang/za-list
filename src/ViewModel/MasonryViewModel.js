@@ -226,6 +226,11 @@ function createMasonryViewModel({data, defaultHeight}) {
       ) {
         storageEvents['viewOnLoadMoreTop'][0]();
       }
+
+      if (storageEvents['onLoadTop'] && isFunction(storageEvents['onLoadTop'][0])) {
+        storageEvents['onLoadTop'][0]();
+      }
+
       onLoadMoreTopCallback(firstItemId);
     }
   }
@@ -234,33 +239,66 @@ function createMasonryViewModel({data, defaultHeight}) {
     if (isFunction(onLoadBottomCallback)) {
       if (data.length > 0) {
         const lastItemId = data[data.length - 1].itemId;
+
+        if (storageEvents['onLoadBottom'] && isFunction(storageEvents['onLoadBottom'][0])) {
+          storageEvents['onLoadBottom'][0]();
+        }
+
         onLoadBottomCallback(lastItemId);
       }
     }
   }
 
-  function loadTop(item: Object) {
-    if (item && !_hasAlreadyId(item.itemId)) {
-      if (
-        storageEvents['viewOnLoadMore'] &&
-        isFunction(storageEvents['viewOnLoadMore'][0])
-      ) {
-        //_insertItemWhenLoadMore(0, item);
-        storageEvents['viewOnLoadMore'][0](0, item);
-        reRenderUI();
+  function loadTop(items: Array) {
+    if (items) {
+      if (!Array.isArray(items)) {
+        items = _convertToArray(items);
+      }
+
+      const insertResult = _insertItems(0, items);
+      if (insertResult.hasInsertSucceed) {
+        if (
+          storageEvents['viewOnLoadMore'] &&
+          isFunction(storageEvents['viewOnLoadMore'][0])
+        ) {
+          storageEvents['viewOnLoadMore'][0](0, items);
+          reRenderUI();
+        }
+
+        // Notify to outside when load top end.
+        if (
+          storageEvents['loadTopEnd'] &&
+          isFunction(storageEvents['loadTopEnd'][0])
+        ) {
+          storageEvents['loadTopEnd'][0]();
+        }
       }
     }
   }
 
-  function loadBottom(item: Object) {
-    if (item && !_hasAlreadyId(item.itemId)) {
-      if (
-        storageEvents['viewOnLoadMore'] &&
-        isFunction(storageEvents['viewOnLoadMore'][0])
-      ) {
-        //_insertItemWhenLoadMore(data.length, item);
-        storageEvents['viewOnLoadMore'][0](data.length, item);
-        reRenderUI();
+  function loadBottom(items: Array) {
+    if (items) {
+      if (!Array.isArray(items)) {
+        items = _convertToArray(items);
+      }
+
+      const insertResult = _insertItems(data.length, items);
+      if (insertResult.hasInsertSucceed) {
+        if (
+          storageEvents['viewOnLoadMore'] &&
+          isFunction(storageEvents['viewOnLoadMore'][0])
+        ) {
+          storageEvents['viewOnLoadMore'][0](data.length, items);
+          reRenderUI();
+        }
+
+        // Notify to outside when load bottom end.
+        if (
+          storageEvents['loadBottomEnd'] &&
+          isFunction(storageEvents['loadBottomEnd'][0])
+        ) {
+          storageEvents['loadBottomEnd'][0]();
+        }
       }
     }
   }
@@ -388,7 +426,7 @@ function createMasonryViewModel({data, defaultHeight}) {
           reRenderUI();
         }
 
-        // Notify to outside to remove item.
+        // Notify to outside when add item(s) succeed.
         if (
           storageEvents['onAddItemsSucceed'] &&
           isFunction(storageEvents['onAddItemsSucceed'][0])
@@ -402,6 +440,7 @@ function createMasonryViewModel({data, defaultHeight}) {
         }
       }
       else {
+        // Notify to outside when add item(s) failure.
         if (
           storageEvents['onAddItemsFail'] &&
           isFunction(storageEvents['onAddItemsFail'][0])

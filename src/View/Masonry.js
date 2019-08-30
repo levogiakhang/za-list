@@ -334,6 +334,9 @@ class Masonry extends React.Component<Props> {
 
       this._removeStyleOfSpecialItem();
 
+      // Conflict with trigger load more when scroll to first | last item on UI
+      this._clearIntervalId();
+
       if (parseInt(startIndex) === 0) {
         this.isAddFirst = true;
       }
@@ -461,20 +464,27 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  onLoadMore(index, item) {
-    this.numOfNewLoading++;
-    this.isLoadMore = true;
+  onLoadMore(startIndex, items) {
+    if(Array.isArray(items)) {
+      this.isLoadMore = true;
+      this.numOfNewLoading = items.length;
 
-    if (parseInt(index) === 0) {
-      this.loadMoreTopCount++;
+      this._removeStyleOfSpecialItem();
+
+      // Conflict with trigger load more when scroll to first | last item on UI
+      this._clearIntervalId();
+
+      if (parseInt(startIndex) === 0) {
+        this.loadMoreTopCount = items.length;
+      }
+
+      let index = startIndex;
+      for (let i = 0; i < items.length; i++) {
+        this._addStaticItemToChildren(index, items[i]);
+        index++;
+      }
+      this._updateEstimatedHeight(this.viewModel.getCache().getDefaultHeight * items.length);
     }
-
-    // Conflict with trigger load more when scroll to first | last item on UI
-    this._clearIntervalId();
-
-    this._removeStyleOfSpecialItem();
-    this._addStaticItemToChildren(index, item);
-    this._updateEstimatedHeight(this.viewModel.getCache().getDefaultHeight);
   }
 
   zoomToItem(itemId: string, withAnim: boolean = true) {
