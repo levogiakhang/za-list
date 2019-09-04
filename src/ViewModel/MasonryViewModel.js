@@ -996,7 +996,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   }
 
   function getNumOfNewItems() {
-    return Object.freeze(numOfNewItems);
+    return numOfNewItems;
   }
 
   function setNumOfNewItems(newValue: number) {
