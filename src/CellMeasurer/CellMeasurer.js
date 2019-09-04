@@ -1,12 +1,12 @@
 // @flow
 
 import * as React from 'react';
-import * as ReactDOM from "react-dom";
+import * as ReactDOM from 'react-dom';
 import ResizeObserver from 'resize-observer-polyfill';
-import throttle from "../vendors/throttle";
-import { THROTTLING_TIMER } from "../utils/value";
-import { Position } from "../utils/types";
-import CellMeasurerViewModel from "../ViewModel/CellMeasurerViewModel";
+import throttle from '../vendors/throttle';
+import { THROTTLING_TIMER } from '../utils/value';
+import { Position } from '../utils/types';
+import CellMeasurerViewModel from '../ViewModel/CellMeasurerViewModel';
 
 type OnChangedHeightCallback = any;
 
@@ -31,7 +31,7 @@ export default class CellMeasurer extends React.PureComponent<CellMeasurerProps>
     this.viewModel = new CellMeasurerViewModel(
       {
         node: this._cellMeasurer,
-        props: this.props
+        props: this.props,
       });
     this.resizeObserver = new ResizeObserver(throttle(this.viewModel.onChildrenChangeHeight, THROTTLING_TIMER));
     this.resizeObserver.observe(this._cellMeasurer);
@@ -47,7 +47,7 @@ export default class CellMeasurer extends React.PureComponent<CellMeasurerProps>
       className,
       children,
       position: {top, left},
-      isVirtualized
+      isVirtualized,
     } = this.props;
 
     return (
@@ -55,11 +55,13 @@ export default class CellMeasurer extends React.PureComponent<CellMeasurerProps>
            className={className}
            style={{
              display: 'block',
-             position: isVirtualized ? 'absolute' : 'relative',
+             position: isVirtualized ?
+               'absolute' :
+               'relative',
              top: top,
              left: left,
              overflow: 'auto',
-             width: '100%'
+             width: '100%',
            }}>
         {children}
       </div>
