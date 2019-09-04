@@ -1172,7 +1172,7 @@ class Masonry extends React.Component<Props> {
     if (!!data.length) {
       const currentItemId = this._getItemIdFromPosition(scrollTop);
       const currentIndex = this.viewModel.getCache().getIndex(currentItemId);
-      const numOfItemInViewport = this._getItemsInViewport(scrollTop, height, data.length, currentItemId).length;
+      const numOfItemInViewport = this._getItemsInViewport(scrollTop, height, currentItemId).length;
 
       const startIndex = Math.max(0, currentIndex - numOfOverscan);
       const endIndex = Math.min(currentIndex + numOfItemInViewport + numOfOverscan, data.length);
