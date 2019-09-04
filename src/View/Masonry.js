@@ -172,7 +172,7 @@ class Masonry extends React.Component<Props> {
   }
 
   initialize() {
-    const data = this.viewModel.getData();
+    const data = this.viewModel.getDataUnfreeze();
     this.children = [];
     this._updateOldData();
 
@@ -232,7 +232,7 @@ class Masonry extends React.Component<Props> {
   }
 
   updateUIWhenScrollToItem() {
-    const data = this.viewModel.getData();
+    const data = this.viewModel.getDataUnfreeze();
     this.children = [];
     this._updateOldData();
 
@@ -281,10 +281,10 @@ class Masonry extends React.Component<Props> {
 
       this._updateItemsOnChangedHeight(itemId, newHeight, true);
 
-      if (this.initItemCount < this.viewModel.getData().length - 1) {
+      if (this.initItemCount < this.viewModel.getDataUnfreeze().length - 1) {
         this.initItemCount++;
       }
-      else if (this.initItemCount === this.viewModel.getData().length - 1) {
+      else if (this.initItemCount === this.viewModel.getDataUnfreeze().length - 1) {
         this.loadDone = true;
       }
 
@@ -340,7 +340,7 @@ class Masonry extends React.Component<Props> {
       if (parseInt(startIndex) === 0) {
         this.isAddFirst = true;
       }
-      if (parseInt(startIndex) + items.length === this.viewModel.getData().length) {
+      if (parseInt(startIndex) + items.length === this.viewModel.getDataUnfreeze().length) {
         this.isAddLast = true;
       }
 
@@ -722,7 +722,7 @@ class Masonry extends React.Component<Props> {
   }
 
   componentDidUpdate() {
-    const data = this.viewModel.getData();
+    const data = this.viewModel.getDataUnfreeze();
     const {height} = this.props;
     const {scrollTop} = this.state;
 
@@ -1006,7 +1006,7 @@ class Masonry extends React.Component<Props> {
    *  Get total height in estimation.
    */
   _getEstimatedTotalHeight(): number {
-    const data = this.viewModel.getData();
+    const data = this.viewModel.getDataUnfreeze();
     let totalHeight = 0;
 
     if (!!data.length) {
@@ -1021,7 +1021,7 @@ class Masonry extends React.Component<Props> {
   }
 
   _updateOldData() {
-    const data = this.viewModel.getData();
+    const data = this.viewModel.getDataUnfreeze();
     if (!!data.length) {
       this.oldData.oldLength = data.length;
       if (!!data[0]) {
@@ -1050,7 +1050,7 @@ class Masonry extends React.Component<Props> {
    *  @return {number} - OUT_OF_RANGE ('out of range'): if position param is greater than total height.
    */
   _getItemIdFromPosition(positionTop: number): string {
-    const data = this.viewModel.getData();
+    const data = this.viewModel.getDataUnfreeze();
     const itemCache = this.viewModel.getCache();
     if (!!data.length) {
       if (positionTop >= this.estimateTotalHeight) {

@@ -138,6 +138,7 @@ function createMasonryViewModel({data, defaultHeight}) {
 
     // Get - Set
     getData,
+    getDataUnfreeze,
     getDataMap,
     getOldItems,
     getCache,
@@ -976,6 +977,10 @@ function createMasonryViewModel({data, defaultHeight}) {
    ======================================================================== */
   function getData() {
     return Object.freeze([...data]);
+  }
+
+  function getDataUnfreeze() {
+    return data;
   }
 
   function getDataMap() {
