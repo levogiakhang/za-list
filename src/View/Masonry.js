@@ -36,6 +36,8 @@ type Props = {
   removalAnim?: string,
   timingResetAnimation?: number,
   renderDirection?: RenderDirection,
+  isVirtualized?: boolean,
+  numOfOverscan?: number,
 };
 
 const LOAD_MORE_TOP_TRIGGER_POS = 50;
@@ -128,6 +130,7 @@ class Masonry extends React.Component<Props> {
     this.state = {
       scrollTop: 0,
       intervalId: 0,
+      isScrolling: false,
     };
 
     this._onScroll = this._onScroll.bind(this);
@@ -173,14 +176,17 @@ class Masonry extends React.Component<Props> {
 
   initialize() {
     const data = this.viewModel.getDataUnfreeze();
+    const isVirtualized = this.props;
     this.children = [];
     this._updateOldData();
 
     if (Array.isArray(data)) {
-      // eslint-disable-next-line array-callback-return
-      data.map((item, index) => {
-        this._addStaticItemToChildren(index, item);
-      });
+      if (!isVirtualized) {
+        // eslint-disable-next-line array-callback-return
+        data.map((item, index) => {
+          this._addStaticItemToChildren(index, item);
+        });
+      }
     }
     else {
       console.error('Data list is not an array');
@@ -328,7 +334,7 @@ class Masonry extends React.Component<Props> {
   }
 
   onAddItems(startIndex, items, oldMap) {
-    if(Array.isArray(items)) {
+    if (Array.isArray(items)) {
       this.isAddMore = true;
       this.numOfNewLoading = items.length;
 
@@ -465,7 +471,7 @@ class Masonry extends React.Component<Props> {
   }
 
   onLoadMore(startIndex, items) {
-    if(Array.isArray(items)) {
+    if (Array.isArray(items)) {
       this.isLoadMore = true;
       this.numOfNewLoading = items.length;
 
@@ -641,6 +647,7 @@ class Masonry extends React.Component<Props> {
       innerScrollStyle,
       isScrolling,
       renderDirection,
+      isVirtualized,
     } = this.props;
 
     const {scrollTop} = this.state;
@@ -668,6 +675,41 @@ class Masonry extends React.Component<Props> {
       };
     }
 
+    if (isVirtualized) {
+      const itemsInBatch = this._getItemsInBatch(scrollTop);
+      this.children = [];
+
+      for (let i = 0; i < itemsInBatch.length; i++) {
+        const index = this.viewModel.getCache().getIndex(itemsInBatch[i]);
+        const item = this.viewModel.getDataUnfreeze()[index];
+        const removeCallback = this.viewModel.onRemoveItemsById;
+        const position = {
+          top: this.viewModel.getCache().getPosition(itemsInBatch[i]),
+          left: 0,
+        };
+        if (!!item) {
+          this.children.push(
+            <CellMeasurer
+              id={this.viewModel.getCache().getItemId(index)}
+              key={this.viewModel.getCache().getItemId(index)}
+              isVirtualized={this.props.isVirtualized}
+              defaultHeight={this.viewModel.getCache().getDefaultHeight}
+              onChangedHeight={this.onChildrenChangeHeight}
+              position={position}>
+              {
+                isFunction(this.props.cellRenderer) ?
+                  this.props.cellRenderer({
+                    item,
+                    index,
+                    removeCallback,
+                  }) :
+                  null
+              }
+            </CellMeasurer>,
+          );
+        }
+      }
+    }
     return (
       <Scrollbars
         key="scroller"
@@ -989,7 +1031,10 @@ class Masonry extends React.Component<Props> {
     }
 
     if (this.state.scrollTop !== scrollTop) {
-      this.setState({scrollTop});
+      this.setState({
+        isScrolling: true,
+        scrollTop,
+      });
     }
   };
 
@@ -1057,13 +1102,137 @@ class Masonry extends React.Component<Props> {
         return itemCache.getItemId(data.length - 1);
       }
 
-      for (let key of itemCache.getItemsMap.keys()) {
-        if (positionTop >= itemCache.getPosition(key) &&
-          positionTop < itemCache.getPosition(key) + itemCache.getHeight(key)) {
-          return key;
+      // for (let key of itemCache.getItemsMap.keys()) {
+      //   if (positionTop >= itemCache.getPosition(key) &&
+      //     positionTop < itemCache.getPosition(key) + itemCache.getHeight(key)) {
+      //     return key;
+      //   }
+      // }
+
+      return this._ternarySearch(0, data.length, positionTop);
+    }
+  }
+
+  // Unneeded check params type cause this func using inner
+  _ternarySearch(left: number, right: number, positionTop: number) {
+    if (right >= left) {
+      const cache = this.viewModel.getCache();
+
+      const midLeft = left + Math.floor((right - left) / 3);
+      const midRight = right - Math.floor((right - left) / 3);
+
+      if (midLeft > midRight) {
+        return;
+      }
+      const midLeftId = cache.getItemId(midLeft);
+      const midRightId = cache.getItemId(midRight);
+
+      const midLeftPos = cache.getPosition(midLeftId);
+      const midLeftHeight = cache.getHeight(midLeftId);
+
+      const midRightPos = cache.getPosition(midRightId);
+      const midRightHeight = cache.getHeight(midRightId);
+
+      if (positionTop >= midLeftPos &&
+        positionTop < midLeftPos + midLeftHeight) {
+        return midLeftId;
+      }
+      else if (positionTop >= midRightPos &&
+        positionTop < midRightPos + midRightHeight) {
+        return midRightId;
+      }
+
+      if (positionTop < midLeftPos) {
+        // Between left and midLeft
+        return this._ternarySearch(left, midLeft - 1, positionTop);
+      }
+      else if (positionTop > midRightPos) {
+        // Between midRight and right
+        return this._ternarySearch(midRight + 1, right, positionTop);
+      }
+      else {
+        // Between midLeft and midRight
+        return this._ternarySearch(midLeft + 1, midRight - 1, positionTop);
+      }
+    }
+  }
+
+  /**
+   *  Return an array that stores itemId of items rendering in batch.
+   *
+   *  @param {number} scrollTop - Offset top of Masonry.
+   *
+   *  @return {Array<string>} - Can be empty.
+   */
+  _getItemsInBatch(scrollTop: number): Array<string> {
+    const data = this.viewModel.getDataUnfreeze();
+    const {height, numOfOverscan} = this.props;
+    let results: Array<string> = [];
+
+    if (!!data.length) {
+      const currentItemId = this._getItemIdFromPosition(scrollTop);
+      const currentIndex = this.viewModel.getCache().getIndex(currentItemId);
+      const numOfItemInViewport = this._getItemsInViewport(scrollTop, height, data.length, currentItemId).length;
+
+      const startIndex = Math.max(0, currentIndex - numOfOverscan);
+      const endIndex = Math.min(currentIndex + numOfItemInViewport + numOfOverscan, data.length);
+
+      for (let i = startIndex; i < endIndex; i++) {
+        results.push(data[i].itemId);
+      }
+
+    }
+    return results;
+  }
+
+  /**
+   *  Return an array stores all items rendering in viewport.
+   *
+   *  @param {number} scrollTop - This masonry position.
+   *  @param {number} viewportHeight
+   *  @param {string} firstItemIdInViewport
+   *
+   *  @return {Array<string>} - Stores all items' id in viewport. Can be empty.
+   */
+  _getItemsInViewport(scrollTop: number, viewportHeight: number, firstItemIdInViewport: string): Array<string> {
+    const dataLength = this.viewModel.getDataUnfreeze().length;
+    const results = [];
+
+    if (!!dataLength) {
+      const itemIdStart = firstItemIdInViewport;
+
+      if (itemIdStart !== NOT_FOUND) {
+        results.push(itemIdStart);
+
+        // disparity > 0 when scrollTop position is between `the item's position` and `item's position + its height`.
+        const disparity = scrollTop - this.viewModel.getCache().getPosition(itemIdStart);
+        let remainingViewHeight = viewportHeight - this.viewModel.getCache().getHeight(itemIdStart) + disparity;
+
+        let i = 1;
+        let itemIndex = this.viewModel.getCache().getIndex(itemIdStart);
+        if (itemIndex + i >= dataLength) {
+          itemIndex = dataLength - 2;
+        }
+
+        let nextItemId = this.viewModel.getCache().getItemId(itemIndex + i);
+        let nextItemHeight = this.viewModel.getCache().getHeight(nextItemId);
+
+        while (remainingViewHeight > nextItemHeight && nextItemHeight !== 0) {
+          remainingViewHeight -= nextItemHeight;
+          results.push(nextItemId);
+          i++;
+          nextItemId = this.viewModel.getCache().getItemId(itemIndex + i);
+          if (nextItemId !== NOT_FOUND) {
+            nextItemHeight = this.viewModel.getCache().getHeight(nextItemId);
+          }
+        }
+        if (remainingViewHeight > 0) {
+          results.push(nextItemId);
         }
       }
     }
+
+    return results;
   }
 
   _scrollToItem(itemId: string, disparity = 0) {
