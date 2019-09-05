@@ -304,6 +304,10 @@ class Masonry extends React.Component<Props> {
             this.needScrollBackWhenHavingNewItem = true;
           }
         }
+        if (!this.isFirstLoadingDone && !this.props.isStartAtBottom && itemCache.getIndex(itemId) === 0) {
+          // Render first item => call scroll top on componentDidMount
+          this.isFirstLoadingDone = true;
+        }
       }
       else {
         if (this.initItemCount < this.viewModel.getDataUnfreeze().length - 1) {
@@ -505,11 +509,14 @@ class Masonry extends React.Component<Props> {
         this.loadMoreTopCount = items.length;
       }
 
-      let index = startIndex;
-      for (let i = 0; i < items.length; i++) {
-        this._addStaticItemToChildren(index, items[i]);
-        index++;
+      if (!this.props.isVirtualized) {
+        let index = startIndex;
+        for (let i = 0; i < items.length; i++) {
+          this._addStaticItemToChildren(index, items[i]);
+          index++;
+        }
       }
+
       this._updateEstimatedHeight(this.viewModel.getCache().getDefaultHeight * items.length);
     }
   }
@@ -790,12 +797,27 @@ class Masonry extends React.Component<Props> {
     const {isVirtualized, height} = this.props;
     const {scrollTop} = this.state;
 
+    // Scroll to bottom at the first time.
+    if (this.props.isStartAtBottom && !this.isFirstLoadingDone) {
+      this._scrollToBottomAtFirst(this.itemsInBatch.length);
+      this.preventLoadBottom = true;
+    }
+    else if (!this.props.isStartAtBottom && !this.isFirstLoadingDone) {
+      this.preventLoadTop = true;
+      if (isVirtualized) {
+        this._scrollToOffset(0);
+      } else {
+        this.isFirstLoadingDone = true;
+      }
+    }
+
     if (
       scrollTop < LOAD_MORE_TOP_TRIGGER_POS &&
       this.isFirstLoadingDone &&
       !this.isLoadingTop &&
       !this.preventLoadTop
     ) {
+      console.log('enable load top');
       this.viewModel.enableLoadTop();
     }
 
@@ -818,16 +840,6 @@ class Masonry extends React.Component<Props> {
       this.preventLoadBottom = false;
     }
 
-    // Scroll to bottom at the first time.
-    if (this.props.isStartAtBottom && !this.isFirstLoadingDone) {
-      this._scrollToBottomAtFirst(this.itemsInBatch.length);
-      this.preventLoadBottom = true;
-    }
-    else if (!this.props.isStartAtBottom && !this.isFirstLoadingDone) {
-      this.preventLoadTop = true;
-      this.isFirstLoadingDone = true;
-    }
-
     // Notify if viewport is not full.
     if (this.isFirstLoadingDone && this.estimateTotalHeight < height) {
       this.viewModel.enableLoadTop();
@@ -843,7 +855,7 @@ class Masonry extends React.Component<Props> {
       }
     }
 
-    if (isVirtualized && this.needScrollBackWhenHavingNewItem && !this.isLoadingTop) {
+    if (isVirtualized && this.needScrollBackWhenHavingNewItem && !this.isLoadingTop && this.isFirstLoadingDone) {
       this.needScrollBackWhenHavingNewItem = false;
       const posNeedToScr = this.viewModel.getCache().getPosition(this.currentFirstItemInViewport.itemId) + this.viewModel.getCache().getHeight(this.currentFirstItemInViewport.itemId);
       this._scrollToOffset(posNeedToScr);
