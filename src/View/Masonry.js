@@ -89,8 +89,9 @@ class Masonry extends React.Component<Props> {
     this.needScrollBottom = false;
     this.newLastItemsTotalHeight = 0;
     this.needScrollBack = false;
-    this.loadDone = false;
+    this.initLoadDone = false;
     this.initItemCount = 0;
+    this.needScrollBackWhenHavingNewItem = false;
 
     this.isActiveAnimWhenScrollToItem = undefined;
     this.isScrollToSpecialItem = false;
@@ -176,7 +177,7 @@ class Masonry extends React.Component<Props> {
 
   initialize() {
     const data = this.viewModel.getDataUnfreeze();
-    const isVirtualized = this.props;
+    const {isVirtualized} = this.props;
     this.children = [];
     this._updateOldData();
 
@@ -239,14 +240,17 @@ class Masonry extends React.Component<Props> {
 
   updateUIWhenScrollToItem() {
     const data = this.viewModel.getDataUnfreeze();
+    const {isVirtualized} = this.props;
     this.children = [];
     this._updateOldData();
 
     if (Array.isArray(data)) {
-      // eslint-disable-next-line array-callback-return
-      data.map((item, index) => {
-        this._addStaticItemToChildren(index, item);
-      });
+      if (isVirtualized) {
+        // eslint-disable-next-line array-callback-return
+        data.map((item, index) => {
+          this._addStaticItemToChildren(index, item);
+        });
+      }
     }
     else {
       console.error('Data list is not an array');
@@ -266,18 +270,21 @@ class Masonry extends React.Component<Props> {
 
   onChildrenChangeHeight(itemId: string, oldHeight: number, newHeight: number) {
     const itemCache = this.viewModel.getCache();
+    const {isVirtualized} = this.props;
+
     if (itemCache.getHeight(itemId) !== newHeight) {
+      const isRendered = itemCache.isRendered(itemId);
       // For load more top
-      if (!itemCache.isRendered(itemId) && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldData.firstItem)) {
+      if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldData.firstItem)) {
         this.needScrollBack = true;
       }
 
       // Scroll back to old position when add an item above
-      if (!itemCache.isRendered(itemId) && itemCache.getIndex(itemId) < itemCache.getIndex(this.currentFirstItemInViewport.itemId)) {
+      if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.currentFirstItemInViewport.itemId)) {
         this.needScrollBack = true;
       }
 
-      if (!itemCache.isRendered(itemId) && this.isFirstLoadingDone) {
+      if (!isRendered && this.isFirstLoadingDone) {
         const {additionAnim, timingResetAnimation} = this.props;
         this.appendStyle(this.getElementFromId(itemId), additionAnim);
         setTimeout(() => {
@@ -287,11 +294,24 @@ class Masonry extends React.Component<Props> {
 
       this._updateItemsOnChangedHeight(itemId, newHeight, true);
 
-      if (this.initItemCount < this.viewModel.getDataUnfreeze().length - 1) {
-        this.initItemCount++;
+      if (isVirtualized) {
+        if (this.isFirstLoadingDone && !isRendered) {
+          this.currentFirstItemInViewport = {
+            itemId: this.curItemInViewPort,
+            disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort),
+          };
+          if (itemCache.getIndex(this.curItemInViewPort) >= itemCache.getIndex(itemId)) {
+            this.needScrollBackWhenHavingNewItem = true;
+          }
+        }
       }
-      else if (this.initItemCount === this.viewModel.getDataUnfreeze().length - 1) {
-        this.loadDone = true;
+      else {
+        if (this.initItemCount < this.viewModel.getDataUnfreeze().length - 1) {
+          this.initItemCount++;
+        }
+        else if (this.initItemCount === this.viewModel.getDataUnfreeze().length - 1) {
+          this.initLoadDone = true;
+        }
       }
 
       if (this.isAddLast) {
@@ -323,6 +343,7 @@ class Masonry extends React.Component<Props> {
             this.needScrollToSpecialItem = true;
           }
 
+          console.log('aaaaaaaaaaa');
           this.isLoadNewItemsDone = true;
         }
       }
@@ -676,15 +697,15 @@ class Masonry extends React.Component<Props> {
     }
 
     if (isVirtualized) {
-      const itemsInBatch = this._getItemsInBatch(scrollTop);
+      this.itemsInBatch = this._getItemsInBatch(scrollTop);
       this.children = [];
 
-      for (let i = 0; i < itemsInBatch.length; i++) {
-        const index = this.viewModel.getCache().getIndex(itemsInBatch[i]);
+      for (let i = 0; i < this.itemsInBatch.length; i++) {
+        const index = this.viewModel.getCache().getIndex(this.itemsInBatch[i]);
         const item = this.viewModel.getDataUnfreeze()[index];
         const removeCallback = this.viewModel.onRemoveItemsById;
         const position = {
-          top: this.viewModel.getCache().getPosition(itemsInBatch[i]),
+          top: this.viewModel.getCache().getPosition(this.itemsInBatch[i]),
           left: 0,
         };
         if (!!item) {
@@ -710,6 +731,7 @@ class Masonry extends React.Component<Props> {
         }
       }
     }
+
     return (
       <Scrollbars
         key="scroller"
@@ -749,7 +771,7 @@ class Masonry extends React.Component<Props> {
                 maxHeight: this.estimateTotalHeight,
                 overflow: 'hidden',
                 position: 'relative',
-                willChange: 'transform',
+                willChange: isVirtualized ? 'auto' : 'transform',
                 pointerEvents: isScrolling ?
                   'none' :
                   '', // property defines whether or not an element reacts to pointer events.
@@ -765,7 +787,7 @@ class Masonry extends React.Component<Props> {
 
   componentDidUpdate() {
     const data = this.viewModel.getDataUnfreeze();
-    const {height} = this.props;
+    const {isVirtualized, height} = this.props;
     const {scrollTop} = this.state;
 
     if (
@@ -798,7 +820,7 @@ class Masonry extends React.Component<Props> {
 
     // Scroll to bottom at the first time.
     if (this.props.isStartAtBottom && !this.isFirstLoadingDone) {
-      this._scrollToBottomAtFirst();
+      this._scrollToBottomAtFirst(this.itemsInBatch.length);
       this.preventLoadBottom = true;
     }
     else if (!this.props.isStartAtBottom && !this.isFirstLoadingDone) {
@@ -819,6 +841,12 @@ class Masonry extends React.Component<Props> {
         this.needScrollTopWithAnim = false;
         this._scrollTopWithAnim();
       }
+    }
+
+    if (isVirtualized && this.needScrollBackWhenHavingNewItem && !this.isLoadingTop) {
+      this.needScrollBackWhenHavingNewItem = false;
+      const posNeedToScr = this.viewModel.getCache().getPosition(this.currentFirstItemInViewport.itemId) + this.viewModel.getCache().getHeight(this.currentFirstItemInViewport.itemId);
+      this._scrollToOffset(posNeedToScr);
     }
 
     // Check scroll to old position when load more top.
@@ -970,9 +998,20 @@ class Masonry extends React.Component<Props> {
    * Scroll to bottom when the first loading
    */
   _scrollToBottomAtFirst(numOfItemsInBatch = 0) {
-    if (this.masonry !== undefined && this.loadDone) {
+    if (this.masonry !== undefined && this.initLoadDone) {
       this.isFirstLoadingDone = true;
       this.masonry.firstChild.scrollIntoView(false);
+    }
+    else if (this.masonry !== undefined && this.props.isVirtualized) {
+      // In virtualized mode, we dont know when init load done
+      // therefore call scroll to bottom until init count = data.
+      this.initItemCount++;
+      console.log(this.initItemCount, numOfItemsInBatch);
+      if (this.initItemCount >= numOfItemsInBatch) {
+        console.log('reverse done');
+        this.isFirstLoadingDone = true;
+        this.masonry.firstChild.scrollIntoView(false);
+      }
     }
   }
 
@@ -1180,7 +1219,6 @@ class Masonry extends React.Component<Props> {
       for (let i = startIndex; i < endIndex; i++) {
         results.push(data[i].itemId);
       }
-
     }
     return results;
   }
