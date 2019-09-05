@@ -80,14 +80,14 @@ function createMasonryViewModel({data, defaultHeight}) {
    Initialize
    ======================================================================== */
   if (Array.isArray(data)) {
-    data.forEach((item) => {
+    data.forEach((item, index) => {
       dataMap.set(item.itemId, item);
 
       __itemCache__.updateItemOnMap(
         item.itemId,
         data.indexOf(item),
         __itemCache__.defaultHeight,
-        0,
+        index * __itemCache__.getDefaultHeight,
         false);
     });
 
