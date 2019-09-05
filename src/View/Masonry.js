@@ -406,20 +406,25 @@ class Masonry extends React.Component<Props> {
       const itemHeight = iHeight;
 
       const el = document.getElementById(itemId);
-      el.style.position = 'absolute';
-      el.style.top = iPosition + 'px';
       this.removeStyle(el, scrollToAnim);
+      requestAnimationFrame(function () {
+        el.style.position = 'absolute';
+        el.style.top = iPosition + 'px';
+      });
 
       const parent = el.parentElement;
 
       const stuntman = document.createElement('DIV');
-      stuntman.id = itemId + '_fake';
-      stuntman.setAttribute('style', `height: ${itemHeight}px; width:100%; clear:both; position: relative`);
+      requestAnimationFrame(function () {
+        stuntman.id = itemId + '_fake';
+        stuntman.setAttribute('style', `height: ${itemHeight}px; width:100%; clear:both; position: relative`);
+      });
 
       parent.insertBefore(stuntman, el);
 
       const oldChildrenLength = this.children.length;
       this.appendStyle(el, removalAnim);
+
       el.addEventListener('animationend', () => {
         this._updateEstimatedHeight(-itemHeight);
         this._updateOldData();
@@ -469,8 +474,10 @@ class Masonry extends React.Component<Props> {
         scrollTop >= this.estimateTotalHeight - height - itemHeight) {
 
         const topEl = document.createElement('DIV');
-        topEl.setAttribute('style', `height: 0px; width:100%; clear:both; position: relative`);
-        topEl.style.setProperty('--itemHeight', itemHeight + 'px');
+        requestAnimationFrame(function () {
+          topEl.setAttribute('style', `height: 0px; width:100%; clear:both; position: relative`);
+          topEl.style.setProperty('--itemHeight', itemHeight + 'px');
+        });
         parent.prepend(topEl);
 
         this.appendStyle(topEl, 'makeBigger');
@@ -482,7 +489,9 @@ class Masonry extends React.Component<Props> {
         this.needScrollTopWithAnim = true;
       }
 
-      stuntman.style.setProperty('--itemHeight', itemHeight + 'px');
+      requestAnimationFrame(function () {
+        stuntman.style.setProperty('--itemHeight', itemHeight + 'px');
+      });
       this.appendStyle(stuntman, 'makeInvisible');
       stuntman.addEventListener('animationend', () => {
         // remove from UI
