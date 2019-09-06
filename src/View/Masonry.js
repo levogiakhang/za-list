@@ -277,6 +277,12 @@ class Masonry extends React.Component<Props> {
 
     if (itemCache.getHeight(itemId) !== newHeight) {
       const isRendered = itemCache.isRendered(itemId);
+      this.firstItemInViewportBefore = {
+        itemId: this.curItemInViewPort,
+        disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
+      };
+
+      // Debut
       if (!isRendered) {
         // For load more top
         if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldData.firstItem)) {
@@ -363,9 +369,10 @@ class Masonry extends React.Component<Props> {
 
         this._updateEstimatedHeight(newHeight - oldHeight);
       }
-      // when item has rendered and change size, unmount and mount again
+      // re-mount with other size
       else {
-        if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.currentFirstItemInViewport.itemId)) {
+        if (itemCache.getIndex(itemId) < itemCache.getIndex(this.firstItemInViewportBefore.itemId)) {
+          this.difSizeWhenReMount = true;
           this.needScrollBack = true;
         }
         const itemOldHeight = itemCache.getHeight(itemId);
@@ -974,8 +981,15 @@ class Masonry extends React.Component<Props> {
     if (isVirtualized && this.needScrollBackWhenHavingNewItem && !this.isLoadingTop && this.isFirstLoadingDone) {
       this.needScrollBackWhenHavingNewItem = false;
       const posNeedToScr =
-        this.viewModel.getCache().getPosition(this.currentFirstItemInViewport.itemId) +
-        this.viewModel.getCache().getHeight(this.currentFirstItemInViewport.itemId);
+        this.viewModel.getCache().getPosition(this.firstItemInViewportBefore.itemId) +
+        this.viewModel.getCache().getHeight(this.firstItemInViewportBefore.itemId);
+      this._scrollToOffset(posNeedToScr);
+    }
+    else if (isVirtualized && this.difSizeWhenReMount && !this.isLoadingTop && this.isFirstLoadingDone) {
+      this.difSizeWhenReMount = false;
+      const posNeedToScr =
+        this.viewModel.getCache().getPosition(this.firstItemInViewportBefore.itemId) +
+        this.viewModel.getCache().getHeight(this.firstItemInViewportBefore.itemId);
       this._scrollToOffset(posNeedToScr);
     }
   }
