@@ -77,7 +77,7 @@ class Masonry extends React.Component<Props> {
     this.isLoadNewItemsDone = false; // Prevent load more on zoom to item when item is not rendered
     this.preventLoadTop = true;
     this.preventLoadBottom = true;
-    this.currentFirstItemInViewport = {};
+    this.firstItemInViewportBefore = {};
     this.curItemInViewPort = undefined;
 
     this.isLoadMore = false;
@@ -290,7 +290,7 @@ class Masonry extends React.Component<Props> {
         }
 
         // Scroll back to old position when add an item above
-        if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.currentFirstItemInViewport.itemId)) {
+        if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.firstItemInViewportBefore.itemId)) {
           this.needScrollBack = true;
         }
 
@@ -306,7 +306,7 @@ class Masonry extends React.Component<Props> {
 
         if (isVirtualized) {
           if (this.isFirstLoadingDone && !isRendered) {
-            this.currentFirstItemInViewport = {
+            this.firstItemInViewportBefore = {
               itemId: this.curItemInViewPort,
               disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort),
             };
@@ -403,7 +403,7 @@ class Masonry extends React.Component<Props> {
       const stateScrollTop = this.state.scrollTop;
 
       // Usage to scroll back, prevent flick view
-      this.currentFirstItemInViewport = {
+      this.firstItemInViewportBefore = {
         itemId: this.curItemInViewPort,
         disparity: stateScrollTop - oldMap.get(this.curItemInViewPort).position,
       };
@@ -899,7 +899,7 @@ class Masonry extends React.Component<Props> {
 
   onLoadMoreTop() {
     this.isLoadingTop = true;
-    this.currentFirstItemInViewport = {
+    this.firstItemInViewportBefore = {
       itemId: this.curItemInViewPort,
       disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
     };
@@ -1000,8 +1000,8 @@ class Masonry extends React.Component<Props> {
         this.isAddMore = false;
         this.isLoadNewItemsDone = false;
         this._scrollToItem(
-          this.currentFirstItemInViewport.itemId,
-          this.currentFirstItemInViewport.disparity,
+          this.firstItemInViewportBefore.itemId,
+          this.firstItemInViewportBefore.disparity,
         );
       }
       else {
@@ -1009,8 +1009,8 @@ class Masonry extends React.Component<Props> {
         if (!this.isScrollToSpecialItem && this.isLoadNewItemsDone) {
           this.isLoadNewItemsDone = false;
           this._scrollToItem(
-            this.currentFirstItemInViewport.itemId,
-            this.currentFirstItemInViewport.disparity,
+            this.firstItemInViewportBefore.itemId,
+            this.firstItemInViewportBefore.disparity,
           );
         }
       }
