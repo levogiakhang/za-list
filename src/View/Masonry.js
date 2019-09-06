@@ -847,20 +847,59 @@ class Masonry extends React.Component<Props> {
     const {isVirtualized, height} = this.props;
     const {scrollTop} = this.state;
 
-    // Scroll to bottom at the first time.
+    this._checkScrollToBottomInFirstSight();
+
+    this._checkEnableLoadTop(scrollTop);
+
+    this._checkEnableLoadBottom(scrollTop, height);
+
+    this._checkAndResetTriggerLoadTop(scrollTop);
+
+    this._checkAndResetTriggerLoadBottom(scrollTop, height);
+
+    this._checkAndNotifyIfViewNotFull(height);
+
+    this._checkScrollTopWithAnimation();
+
+    this._checkAndScrollBackWhenHavingNewItem(isVirtualized);
+
+    // Check scroll to old position when load more top.
+    this._checkAndScrollBackWhenLoadOrAddTop();
+
+    this._checkAndScrollTopWhenAddItem(scrollTop);
+
+    this._checkAndScrollBottomWhenAddItem(scrollTop, height);
+
+    this._checkAndScrollToSpecialItem();
+
+    this._checkAndUpdateOldData(data.length);
+  }
+
+  onLoadMoreTop() {
+    this.isLoadingTop = true;
+    this.currentFirstItemInViewport = {
+      itemId: this.curItemInViewPort,
+      disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
+    };
+  }
+
+  _checkScrollToBottomInFirstSight() {
     if (this.props.isStartAtBottom && !this.isFirstLoadingDone) {
       this._scrollToBottomAtFirst(this.itemsInBatch.length);
       this.preventLoadBottom = true;
     }
     else if (!this.props.isStartAtBottom && !this.isFirstLoadingDone) {
       this.preventLoadTop = true;
-      if (isVirtualized) {
+      if (this.props.isVirtualized) {
         this._scrollToOffset(0);
-      } else {
+      }
+      else {
         this.isFirstLoadingDone = true;
       }
     }
+  }
 
+  _checkEnableLoadTop(scrollTop) {
     if (
       scrollTop < LOAD_MORE_TOP_TRIGGER_POS &&
       this.isFirstLoadingDone &&
@@ -868,9 +907,11 @@ class Masonry extends React.Component<Props> {
       !this.preventLoadTop
     ) {
       console.log('enable load top');
-      this.viewModel.enableLoadTop();
+      //this.viewModel.enableLoadTop();
     }
+  }
 
+  _checkEnableLoadBottom(scrollTop, height) {
     // trigger load more bottom
     LOAD_MORE_BOTTOM_TRIGGER_POS = this.estimateTotalHeight - height - 2;
     if (
@@ -880,21 +921,29 @@ class Masonry extends React.Component<Props> {
     ) {
       this.viewModel.enableLoadBottom();
     }
+  }
 
+  _checkAndResetTriggerLoadTop(scrollTop) {
     if (scrollTop > LOAD_MORE_TOP_TRIGGER_POS) {
       this.preventLoadTop = false;
       this.isLoadingTop = false;
     }
+  }
 
+  _checkAndResetTriggerLoadBottom(scrollTop, height) {
     if (scrollTop < this.estimateTotalHeight - height - 20 && this.isFirstLoadingDone) {
       this.preventLoadBottom = false;
     }
+  }
 
+  _checkAndNotifyIfViewNotFull(height) {
     // Notify if viewport is not full.
     if (this.isFirstLoadingDone && this.estimateTotalHeight < height) {
       this.viewModel.enableLoadTop();
     }
+  }
 
+  _checkScrollTopWithAnimation() {
     if (this.needScrollTopWithAnim) {
       if (
         !this.isLoadMore &&
@@ -904,14 +953,19 @@ class Masonry extends React.Component<Props> {
         this._scrollTopWithAnim();
       }
     }
+  }
 
+  _checkAndScrollBackWhenHavingNewItem(isVirtualized) {
     if (isVirtualized && this.needScrollBackWhenHavingNewItem && !this.isLoadingTop && this.isFirstLoadingDone) {
       this.needScrollBackWhenHavingNewItem = false;
-      const posNeedToScr = this.viewModel.getCache().getPosition(this.currentFirstItemInViewport.itemId) + this.viewModel.getCache().getHeight(this.currentFirstItemInViewport.itemId);
+      const posNeedToScr =
+        this.viewModel.getCache().getPosition(this.currentFirstItemInViewport.itemId) +
+        this.viewModel.getCache().getHeight(this.currentFirstItemInViewport.itemId);
       this._scrollToOffset(posNeedToScr);
     }
+  }
 
-    // Check scroll to old position when load more top.
+  _checkAndScrollBackWhenLoadOrAddTop() {
     if (this.needScrollBack) {
       if (this.isLoadNewItemsDone && this.isAddMore) {
         this.isAddMore = false;
@@ -933,14 +987,18 @@ class Masonry extends React.Component<Props> {
       }
       this.needScrollBack = false;
     }
+  }
 
+  _checkAndScrollTopWhenAddItem(scrollTop) {
     if (this.needScrollTop) {
       this.needScrollTop = false;
       if (scrollTop <= NEED_TO_SCROLL_TOP_POS) {
         this._scrollToOffset(0);
       }
     }
+  }
 
+  _checkAndScrollBottomWhenAddItem(scrollTop, height) {
     if (this.needScrollBottom) {
       this.needScrollBottom = false;
       if (scrollTop >= this.estimateTotalHeight - this.newLastItemsTotalHeight - height - NEED_TO_SCROLL_BOTTOM_POS) {
@@ -949,23 +1007,19 @@ class Masonry extends React.Component<Props> {
       }
       this.newLastItemsTotalHeight = 0;
     }
+  }
 
+  _checkAndScrollToSpecialItem() {
     if (this.needScrollToSpecialItem) {
       this.needScrollToSpecialItem = false;
       this.scrollToSpecialItem(this.itemIdToScroll, this.isActiveAnimWhenScrollToItem);
     }
-
-    if (this.oldData.oldLength !== data.length && !this.isLoadingTop) {
-      this._updateOldData();
-    }
   }
 
-  onLoadMoreTop() {
-    this.isLoadingTop = true;
-    this.currentFirstItemInViewport = {
-      itemId: this.curItemInViewPort,
-      disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
-    };
+  _checkAndUpdateOldData(dataLength) {
+    if (this.oldData.oldLength !== dataLength && !this.isLoadingTop) {
+      this._updateOldData();
+    }
   }
 
   pendingScrollToSpecialItem(numOfItems: number, itemId: string, withAnim: boolean = true) {
