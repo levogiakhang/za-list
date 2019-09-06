@@ -14,6 +14,7 @@ import hasWhiteSpace from '../utils/hasWhiteSpace';
 import removeClass from '../utils/removeClass';
 import addClass from '../utils/addClass';
 import { Scrollbars } from 'react-custom-scrollbars';
+import * as Lodash from 'lodash/core';
 
 type RenderDirection = 'TopDown' | 'BottomUp';
 
@@ -116,6 +117,8 @@ class Masonry extends React.Component<Props> {
     this.oldEstimateTotalHeight = 0;
 
     this.children = [];
+    this.oldItemsInBatch = undefined;
+    this.itemsInBatch = undefined;
 
     this.resizeMap = {};
     this.isResize = false;
@@ -714,36 +717,40 @@ class Masonry extends React.Component<Props> {
 
     if (isVirtualized) {
       this.itemsInBatch = this._getItemsInBatch(scrollTop);
-      this.children = [];
 
-      for (let i = 0; i < this.itemsInBatch.length; i++) {
-        const index = this.viewModel.getCache().getIndex(this.itemsInBatch[i]);
-        const item = this.viewModel.getDataUnfreeze()[index];
-        const removeCallback = this.viewModel.onRemoveItemsById;
-        const position = {
-          top: this.viewModel.getCache().getPosition(this.itemsInBatch[i]),
-          left: 0,
-        };
-        if (!!item) {
-          this.children.push(
-            <CellMeasurer
-              id={this.viewModel.getCache().getItemId(index)}
-              key={this.viewModel.getCache().getItemId(index)}
-              isVirtualized={this.props.isVirtualized}
-              defaultHeight={this.viewModel.getCache().getDefaultHeight}
-              onChangedHeight={this.onChildrenChangeHeight}
-              position={position}>
-              {
-                isFunction(this.props.cellRenderer) ?
-                  this.props.cellRenderer({
-                    item,
-                    index,
-                    removeCallback,
-                  }) :
-                  null
-              }
-            </CellMeasurer>,
-          );
+      if (!Lodash.isEqual(this.itemsInBatch, this.oldItemsInBatch)) {
+        this.oldItemsInBatch = [...this.itemsInBatch];
+        this.children = [];
+
+        for (let i = 0; i < this.itemsInBatch.length; i++) {
+          const index = this.viewModel.getCache().getIndex(this.itemsInBatch[i]);
+          const item = this.viewModel.getDataUnfreeze()[index];
+          const removeCallback = this.viewModel.onRemoveItemsById;
+          const position = {
+            top: this.viewModel.getCache().getPosition(this.itemsInBatch[i]),
+            left: 0,
+          };
+          if (!!item) {
+            this.children.push(
+              <CellMeasurer
+                id={this.viewModel.getCache().getItemId(index)}
+                key={this.viewModel.getCache().getItemId(index)}
+                isVirtualized={this.props.isVirtualized}
+                defaultHeight={this.viewModel.getCache().getDefaultHeight}
+                onChangedHeight={this.onChildrenChangeHeight}
+                position={position}>
+                {
+                  isFunction(this.props.cellRenderer) ?
+                    this.props.cellRenderer({
+                      item,
+                      index,
+                      removeCallback,
+                    }) :
+                    null
+                }
+              </CellMeasurer>,
+            );
+          }
         }
       }
     }
