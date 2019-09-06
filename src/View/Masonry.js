@@ -277,86 +277,101 @@ class Masonry extends React.Component<Props> {
 
     if (itemCache.getHeight(itemId) !== newHeight) {
       const isRendered = itemCache.isRendered(itemId);
-      // For load more top
-      if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldData.firstItem)) {
-        this.needScrollBack = true;
-      }
+      if (!isRendered) {
+        // For load more top
+        if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldData.firstItem)) {
+          this.needScrollBack = true;
+        }
 
-      // Scroll back to old position when add an item above
-      if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.currentFirstItemInViewport.itemId)) {
-        this.needScrollBack = true;
-      }
+        // Scroll back to old position when add an item above
+        if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.currentFirstItemInViewport.itemId)) {
+          this.needScrollBack = true;
+        }
 
-      if (!isRendered && this.isFirstLoadingDone) {
-        const {additionAnim, timingResetAnimation} = this.props;
-        this.appendStyle(this.getElementFromId(itemId), additionAnim);
-        setTimeout(() => {
-          this.removeStyle(this.getElementFromId(itemId), additionAnim);
-        }, timingResetAnimation);
-      }
+        if (!isRendered && this.isFirstLoadingDone) {
+          const {additionAnim, timingResetAnimation} = this.props;
+          this.appendStyle(this.getElementFromId(itemId), additionAnim);
+          setTimeout(() => {
+            this.removeStyle(this.getElementFromId(itemId), additionAnim);
+          }, timingResetAnimation);
+        }
 
-      this._updateItemsOnChangedHeight(itemId, newHeight, true);
+        this._updateItemsOnChangedHeight(itemId, newHeight, true);
 
-      if (isVirtualized) {
-        if (this.isFirstLoadingDone && !isRendered) {
-          this.currentFirstItemInViewport = {
-            itemId: this.curItemInViewPort,
-            disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort),
-          };
-          if (itemCache.getIndex(this.curItemInViewPort) >= itemCache.getIndex(itemId)) {
-            this.needScrollBackWhenHavingNewItem = true;
+        if (isVirtualized) {
+          if (this.isFirstLoadingDone && !isRendered) {
+            this.currentFirstItemInViewport = {
+              itemId: this.curItemInViewPort,
+              disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort),
+            };
+            if (itemCache.getIndex(this.curItemInViewPort) >= itemCache.getIndex(itemId)) {
+              this.needScrollBackWhenHavingNewItem = true;
+            }
+          }
+          if (!this.isFirstLoadingDone && !this.props.isStartAtBottom && itemCache.getIndex(itemId) === 0) {
+            // Render first item => call scroll top on componentDidMount
+            this.isFirstLoadingDone = true;
           }
         }
-        if (!this.isFirstLoadingDone && !this.props.isStartAtBottom && itemCache.getIndex(itemId) === 0) {
-          // Render first item => call scroll top on componentDidMount
-          this.isFirstLoadingDone = true;
+        else {
+          if (this.initItemCount < this.viewModel.getDataUnfreeze().length - 1) {
+            this.initItemCount++;
+          }
+          else if (this.initItemCount === this.viewModel.getDataUnfreeze().length - 1) {
+            this.initLoadDone = true;
+          }
         }
+
+        if (this.isAddLast) {
+          if (isVirtualized) {
+
+          }
+          else {
+            this.newLastItemsTotalHeight += newHeight;
+          }
+        }
+
+        const isDone = !(this.scrollToSpecialItemCount < this.numOfNewLoading - 1);
+        if (!isDone) {
+          this.scrollToSpecialItemCount++;
+        }
+        else if (isDone && this.numOfNewLoading !== 0) {
+          if (this.isFirstLoadingDone) {
+            // Scroll to top when add an item in top && scrollTop is near top
+            if (this.isAddFirst) {
+              this.isAddFirst = false;
+              this.needScrollTop = true;
+            }
+
+            // Scroll to bottom when add an item in bottom && scrollTop is near bottom
+            if (this.isAddLast) {
+              this.isAddLast = false;
+              this.needScrollBottom = true;
+            }
+
+            this.scrollToSpecialItemCount = 0;
+            this.numOfNewLoading = 0;
+
+            if (this.isScrollToSpecialItem) {
+              this.needScrollToSpecialItem = true;
+            }
+
+            console.log('aaaaaaaaaaa');
+            this.isLoadNewItemsDone = true;
+          }
+        }
+
+        this._updateEstimatedHeight(newHeight - oldHeight);
       }
+      // when item has rendered and change size, unmount and mount again
       else {
-        if (this.initItemCount < this.viewModel.getDataUnfreeze().length - 1) {
-          this.initItemCount++;
+        if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.currentFirstItemInViewport.itemId)) {
+          this.needScrollBack = true;
         }
-        else if (this.initItemCount === this.viewModel.getDataUnfreeze().length - 1) {
-          this.initLoadDone = true;
-        }
+        const itemOldHeight = itemCache.getHeight(itemId);
+        this._updateItemsOnChangedHeight(itemId, newHeight);
+        this._updateEstimatedHeight(newHeight - itemOldHeight);
       }
-
-      if (this.isAddLast) {
-        this.newLastItemsTotalHeight += newHeight;
-      }
-
-      const isDone = !(this.scrollToSpecialItemCount < this.numOfNewLoading - 1);
-      if (!isDone) {
-        this.scrollToSpecialItemCount++;
-      }
-      else if (isDone && this.numOfNewLoading !== 0) {
-        if (this.isFirstLoadingDone) {
-          // Scroll to top when add an item in top && scrollTop is near top
-          if (this.isAddFirst) {
-            this.isAddFirst = false;
-            this.needScrollTop = true;
-          }
-
-          // Scroll to bottom when add an item in bottom && scrollTop is near bottom
-          if (this.isAddLast) {
-            this.isAddLast = false;
-            this.needScrollBottom = true;
-          }
-
-          this.scrollToSpecialItemCount = 0;
-          this.numOfNewLoading = 0;
-
-          if (this.isScrollToSpecialItem) {
-            this.needScrollToSpecialItem = true;
-          }
-
-          console.log('aaaaaaaaaaa');
-          this.isLoadNewItemsDone = true;
-        }
-      }
-
-      this._updateEstimatedHeight(newHeight - oldHeight);
-
       this.setState(this.state); // instead of this.forceUpdate();
     }
   }
