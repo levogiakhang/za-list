@@ -428,104 +428,109 @@ class Masonry extends React.Component<Props> {
 
     console.log(itemId);
     if (itemIndex !== NOT_FOUND) {
-      const itemHeight = iHeight;
+      if (!this.props.isVirtualized) {
+        const itemHeight = iHeight;
 
-      const el = document.getElementById(itemId);
-      this.removeStyle(el, scrollToAnim);
-      requestAnimationFrame(function () {
-        el.style.position = 'absolute';
-        el.style.top = iPosition + 'px';
-      });
-
-      const parent = el.parentElement;
-
-      const stuntman = document.createElement('DIV');
-      requestAnimationFrame(function () {
-        stuntman.id = itemId + '_fake';
-        stuntman.setAttribute('style', `height: ${itemHeight}px; width:100%; clear:both; position: relative`);
-      });
-
-      parent.insertBefore(stuntman, el);
-
-      const oldChildrenLength = this.children.length;
-      this.appendStyle(el, removalAnim);
-
-      el.addEventListener('animationend', () => {
-        this._updateEstimatedHeight(-itemHeight);
-        this._updateOldData();
-
-        console.log(oldChildrenLength);
-
-        // Check in case be loaded more
-        if (oldChildrenLength !== this.children.length) {
-          console.log('el - diff', itemId, itemIndex);
-          this.children.splice(itemIndex + this.loadMoreTopCount, 1);
-        }
-        else {
-          console.log('el - non', itemId, itemIndex);
-          this.children.splice(itemIndex, 1);
-        }
-
-        this.isLoadMore = false;
-        this.loadMoreTopCount = 0;
-        this.setState(this.state);
-      });
-
-
-      el.addEventListener('onanimationcancel', () => {
-        console.log('el - cancel');
-        this._updateEstimatedHeight(-itemHeight);
-        this._updateOldData();
-
-        // Check in case be loaded more
-        if (oldChildrenLength !== this.children.length) {
-          // remove from UI
-          this.children.splice(itemIndex + this.loadMoreTopCount, 1);
-        }
-        else {
-          // remove from UI
-          this.children.splice(itemIndex, 1);
-        }
-
-        this.isLoadMore = false;
-        this.loadMoreTopCount = 0;
-        this.setState(this.state);
-      });
-
-
-      if (this.estimateTotalHeight > height &&
-        scrollTop >= itemHeight &&
-        this.estimateTotalHeight - itemHeight > height &&
-        scrollTop >= this.estimateTotalHeight - height - itemHeight) {
-
-        const topEl = document.createElement('DIV');
+        const el = document.getElementById(itemId);
+        this.removeStyle(el, scrollToAnim);
         requestAnimationFrame(function () {
-          topEl.setAttribute('style', `height: 0px; width:100%; clear:both; position: relative`);
-          topEl.style.setProperty('--itemHeight', itemHeight + 'px');
+          el.style.position = 'absolute';
+          el.style.top = iPosition + 'px';
         });
-        parent.prepend(topEl);
 
-        this.appendStyle(topEl, 'makeBigger');
-        topEl.addEventListener('animationend', () => {
-          parent.removeChild(topEl);
+        const parent = el.parentElement;
+
+        const stuntman = document.createElement('DIV');
+        requestAnimationFrame(function () {
+          stuntman.id = itemId + '_fake';
+          stuntman.setAttribute('style', `height: ${itemHeight}px; width:100%; clear:both; position: relative`);
+        });
+
+        parent.insertBefore(stuntman, el);
+
+        const oldChildrenLength = this.children.length;
+        this.appendStyle(el, removalAnim);
+
+        el.addEventListener('animationend', () => {
+          this._updateEstimatedHeight(-itemHeight);
+          this._updateOldData();
+
+          console.log(oldChildrenLength);
+
+          // Check in case be loaded more
+          if (oldChildrenLength !== this.children.length) {
+            console.log('el - diff', itemId, itemIndex);
+            this.children.splice(itemIndex + this.loadMoreTopCount, 1);
+          }
+          else {
+            console.log('el - non', itemId, itemIndex);
+            this.children.splice(itemIndex, 1);
+          }
+
+          this.isLoadMore = false;
+          this.loadMoreTopCount = 0;
+          this.setState(this.state);
+        });
+
+
+        el.addEventListener('onanimationcancel', () => {
+          console.log('el - cancel');
+          this._updateEstimatedHeight(-itemHeight);
+          this._updateOldData();
+
+          // Check in case be loaded more
+          if (oldChildrenLength !== this.children.length) {
+            // remove from UI
+            this.children.splice(itemIndex + this.loadMoreTopCount, 1);
+          }
+          else {
+            // remove from UI
+            this.children.splice(itemIndex, 1);
+          }
+
+          this.isLoadMore = false;
+          this.loadMoreTopCount = 0;
+          this.setState(this.state);
+        });
+
+
+        if (this.estimateTotalHeight > height &&
+          scrollTop >= itemHeight &&
+          this.estimateTotalHeight - itemHeight > height &&
+          scrollTop >= this.estimateTotalHeight - height - itemHeight) {
+
+          const topEl = document.createElement('DIV');
+          requestAnimationFrame(function () {
+            topEl.setAttribute('style', `height: 0px; width:100%; clear:both; position: relative`);
+            topEl.style.setProperty('--itemHeight', itemHeight + 'px');
+          });
+          parent.prepend(topEl);
+
+          this.appendStyle(topEl, 'makeBigger');
+          topEl.addEventListener('animationend', () => {
+            parent.removeChild(topEl);
+          });
+        }
+        else if (this.estimateTotalHeight - itemHeight < height) {
+          this.needScrollTopWithAnim = true;
+        }
+
+        requestAnimationFrame(function () {
+          stuntman.style.setProperty('--itemHeight', itemHeight + 'px');
+        });
+        this.appendStyle(stuntman, 'makeInvisible');
+        stuntman.addEventListener('animationend', () => {
+          // remove from UI
+          parent.removeChild(stuntman);
+        });
+        stuntman.addEventListener('onanimationcancel', () => {
+          // remove from UI
+          parent.removeChild(stuntman);
         });
       }
-      else if (this.estimateTotalHeight - itemHeight < height) {
-        this.needScrollTopWithAnim = true;
+      else {
+        
       }
-
-      requestAnimationFrame(function () {
-        stuntman.style.setProperty('--itemHeight', itemHeight + 'px');
-      });
-      this.appendStyle(stuntman, 'makeInvisible');
-      stuntman.addEventListener('animationend', () => {
-        // remove from UI
-        parent.removeChild(stuntman);
-      });
-      stuntman.addEventListener('onanimationcancel', () => {
-        // remove from UI
-        parent.removeChild(stuntman);
-      });
     }
   }
 
