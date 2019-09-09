@@ -1384,7 +1384,7 @@ class Masonry extends React.Component<Props> {
     if (!!dataLength) {
       const itemIdStart = firstItemIdInViewport;
 
-      if (itemIdStart !== NOT_FOUND) {
+      if (itemIdStart && itemIdStart !== NOT_FOUND) {
         results.push(itemIdStart);
 
         // disparity > 0 when scrollTop position is between `the item's position` and `item's position + its height`.
