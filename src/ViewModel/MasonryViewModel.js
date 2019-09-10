@@ -96,6 +96,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     __itemCache__.updateIndexMap(0, data);
   }
   else {
+    data = [];
     console.error(new TypeError('The data params must be an array', this));
   }
 
