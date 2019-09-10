@@ -1298,7 +1298,22 @@ class Masonry extends React.Component<Props> {
       //   }
       // }
 
-      return this._ternarySearch(0, data.length, positionTop);
+      let result =  this._ternarySearch(0, data.length, positionTop);
+      if(!result) {
+        const lastItem = itemCache.getItemId(data.length - 1);
+        if(positionTop < itemCache.getPosition(itemCache.getItemId(0))) {
+          // rarely, some cases first item's pos doesn't equals 0
+          result = itemCache.getItemId(0);
+        }
+        else if (positionTop >
+          itemCache.getPosition(lastItem) +
+          itemCache.getHeight(lastItem)) {
+          // some cases positionTop is higher than last item's position
+          result = lastItem;
+        }
+      }
+
+      return result;
     }
   }
 
