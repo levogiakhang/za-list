@@ -3,6 +3,7 @@
 import ItemCache from '../utils/ItemCache';
 import { NOT_FOUND } from '../utils/value';
 import isFunction from '../vendors/isFunction';
+import throttle from '../vendors/throttle';
 
 type EventTypes =
 /* ========================================================================
@@ -75,6 +76,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   // Stores all be added events to dispatch a specialized callback
   let storageEvents = {};
 
+  const throttleRenderUI = throttle(reRenderUI, 200);
 
   /* ========================================================================
    Initialize
@@ -283,7 +285,7 @@ function createMasonryViewModel({data, defaultHeight}) {
           isFunction(storageEvents['viewOnLoadMore'][0])
         ) {
           storageEvents['viewOnLoadMore'][0](0, items);
-          reRenderUI();
+          throttleRenderUI();
         }
 
         // Notify to outside when load top end.
@@ -310,7 +312,7 @@ function createMasonryViewModel({data, defaultHeight}) {
           isFunction(storageEvents['viewOnLoadMore'][0])
         ) {
           storageEvents['viewOnLoadMore'][0](data.length, items);
-          reRenderUI();
+          throttleRenderUI();
         }
 
         // Notify to outside when load bottom end.
@@ -445,7 +447,7 @@ function createMasonryViewModel({data, defaultHeight}) {
           storageEvents['viewOnAddItems'] &&
           isFunction(storageEvents['viewOnAddItems'][0])) {
           storageEvents['viewOnAddItems'][0](start, items, oldMap);
-          reRenderUI();
+          throttleRenderUI();
         }
 
         // Notify to outside when add item(s) succeed.
@@ -489,7 +491,7 @@ function createMasonryViewModel({data, defaultHeight}) {
             iHeight,
             iPosition,
           });
-          reRenderUI();
+          throttleRenderUI();
         }
 
         // Notify to outside to remove item.
@@ -534,7 +536,7 @@ function createMasonryViewModel({data, defaultHeight}) {
             iHeight,
             iPosition,
           });
-          reRenderUI();
+          throttleRenderUI();
         }
 
         // Notify to outside to remove item.
@@ -568,7 +570,7 @@ function createMasonryViewModel({data, defaultHeight}) {
       const itemIndex = __itemCache__.getIndex(itemId);
       if (itemIndex !== NOT_FOUND) {
         data[itemIndex] = item;
-        reRenderUI();
+        throttleRenderUI();
       }
     }
   }
