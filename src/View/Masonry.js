@@ -418,34 +418,36 @@ class Masonry extends React.Component<Props> {
   }
 
   onRemoveItem({itemId, iIndex, iHeight, iPosition}) {
-    const {height} = this.props;
+    const {height, isVirtualized, scrollToAnim, removalAnim} = this.props;
     const {scrollTop} = this.state;
-    const itemIndex = iIndex;
-
-    const {scrollToAnim, removalAnim} = this.props;
 
     this._removeStyleOfSpecialItem();
 
-    console.log(itemId);
-    if (itemIndex !== NOT_FOUND) {
-      if (!this.props.isVirtualized) {
-        const itemHeight = iHeight;
+    console.log(itemId, iIndex, iHeight, iPosition);
+    // ToNumber(null) = 0 => isNaN(null) = false
+    if (
+      itemId &&
+      iIndex !== null && !isNaN(iIndex) &&
+      iHeight !== null && !isNaN(iHeight) &&
+      iPosition !== null && !isNaN(iPosition)
+    ) {
+      const itemIndex = iIndex;
+      const itemHeight = iHeight;
+      const el = document.getElementById(itemId);
+      this.removeStyle(el, scrollToAnim);
+      requestAnimationFrame(function () {
+        el.style.position = 'absolute';
+        el.style.top = iPosition + 'px';
+      });
+      const parent = el.parentElement;
 
-        const el = document.getElementById(itemId);
-        this.removeStyle(el, scrollToAnim);
-        requestAnimationFrame(function () {
-          el.style.position = 'absolute';
-          el.style.top = iPosition + 'px';
-        });
-
-        const parent = el.parentElement;
-
+      // Non-virtualized list
+      if (!isVirtualized) {
         const stuntman = document.createElement('DIV');
         requestAnimationFrame(function () {
           stuntman.id = itemId + '_fake';
           stuntman.setAttribute('style', `height: ${itemHeight}px; width:100%; clear:both; position: relative`);
         });
-
         parent.insertBefore(stuntman, el);
 
         const oldChildrenLength = this.children.length;
@@ -472,7 +474,6 @@ class Masonry extends React.Component<Props> {
           this.setState(this.state);
         });
 
-
         el.addEventListener('onanimationcancel', () => {
           console.log('el - cancel');
           this._updateEstimatedHeight(-itemHeight);
@@ -492,7 +493,6 @@ class Masonry extends React.Component<Props> {
           this.loadMoreTopCount = 0;
           this.setState(this.state);
         });
-
 
         if (this.estimateTotalHeight > height &&
           scrollTop >= itemHeight &&
@@ -528,8 +528,9 @@ class Masonry extends React.Component<Props> {
           parent.removeChild(stuntman);
         });
       }
+      // Virtualized list
       else {
-        
+        this._updateEstimatedHeight(-itemHeight);
       }
     }
   }
@@ -540,7 +541,7 @@ class Masonry extends React.Component<Props> {
       this.numOfNewLoading = items.length;
 
       this._removeStyleOfSpecialItem();
-
+      console.log(startIndex);
       // Conflict with trigger load more when scroll to first | last item on UI
       this._clearIntervalId();
 
@@ -855,7 +856,9 @@ class Masonry extends React.Component<Props> {
                 maxHeight: this.estimateTotalHeight,
                 overflow: 'hidden',
                 position: 'relative',
-                willChange: isVirtualized ? 'auto' : 'transform',
+                willChange: isVirtualized ?
+                  'auto' :
+                  'transform',
                 pointerEvents: isScrolling ?
                   'none' :
                   '', // property defines whether or not an element reacts to pointer events.
@@ -934,7 +937,7 @@ class Masonry extends React.Component<Props> {
       !this.preventLoadTop
     ) {
       console.log('enable load top');
-      //this.viewModel.enableLoadTop();
+      this.viewModel.enableLoadTop();
     }
   }
 
@@ -991,6 +994,7 @@ class Masonry extends React.Component<Props> {
       this._scrollToOffset(posNeedToScr);
     }
     else if (isVirtualized && this.difSizeWhenReMount && !this.isLoadingTop && this.isFirstLoadingDone) {
+      // scroll back when item re-mount with different size.
       this.difSizeWhenReMount = false;
       const posNeedToScr =
         this.viewModel.getCache().getPosition(this.firstItemInViewportBefore.itemId) +
@@ -1298,10 +1302,10 @@ class Masonry extends React.Component<Props> {
       //   }
       // }
 
-      let result =  this._ternarySearch(0, data.length, positionTop);
-      if(!result) {
+      let result = this._ternarySearch(0, data.length, positionTop);
+      if (!result) {
         const lastItem = itemCache.getItemId(data.length - 1);
-        if(positionTop < itemCache.getPosition(itemCache.getItemId(0))) {
+        if (positionTop < itemCache.getPosition(itemCache.getItemId(0))) {
           // rarely, some cases first item's pos doesn't equals 0
           result = itemCache.getItemId(0);
         }
