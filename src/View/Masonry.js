@@ -1287,7 +1287,9 @@ class Masonry extends React.Component<Props> {
   }
 
   _scrollToOffset(top) {
-    this.masonry.scrollTo(0, top);
+    if (isNum(top)) {
+      this.masonry.scrollTo(0, top);
+    }
   }
 
   /*
