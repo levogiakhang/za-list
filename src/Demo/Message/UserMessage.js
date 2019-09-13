@@ -2,6 +2,8 @@
 
 import React from 'react';
 import GConst from '../utils/values';
+import isNum from '../../utils/isNum';
+import { convertTime } from '../utils/Converter';
 
 type UserMessageProps = {
   userAvatarSrc: string,
@@ -19,7 +21,41 @@ class UserMessage extends React.PureComponent<UserMessageProps> {
   };
 
   _getDisplayTime(time) {
-    return time;
+    const d = Date.parse(time.toString());
+    let timestamp = undefined;
+
+    if (isNum(time)) {
+      timestamp = time;
+    }
+    else if (isNum(d) && d > 0) {
+      timestamp = d;
+    }
+    else {
+      return 'Not valid time!';
+    }
+
+    const now = Date.now();
+    const disparity = now - timestamp;
+    let result = 'Not valid time!';
+
+    if (disparity <= 60000) {
+      result = 'vài giây';
+    }
+    else if (disparity <= 3600000) {
+      result = `${Math.floor(disparity / 60000)} phút`;
+    }
+    else if (disparity <= 86400000) {
+      result = `${Math.floor(disparity / 3600000)} giờ`;
+    }
+    else if (disparity <= 604800000) {
+      result = `${Math.floor(disparity / 86400000)} ngày`;
+    }
+    else if (disparity > 604800000) {
+      const rD = convertTime(timestamp);
+      result = `${rD.date}/${rD.month}`;
+    }
+
+    return result;
   }
 
   _renderAvatar({userAvatarSrc}) {
