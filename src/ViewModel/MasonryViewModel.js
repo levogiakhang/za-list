@@ -260,8 +260,8 @@ function createMasonryViewModel({data, defaultHeight}) {
     if (
       isFunction(onLoadBottomCallback) &&
       data &&
-      data[0] &&
-      data[0].itemId
+      data[data.length - 1] &&
+      data[data.length - 1].itemId
     ) {
       const lastItemId = data.length > 0 ?
         data[data.length - 1].itemId :

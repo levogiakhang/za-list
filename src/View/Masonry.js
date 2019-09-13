@@ -1490,7 +1490,9 @@ class Masonry extends React.Component<Props> {
       const endIndex = Math.min(currentIndex + numOfItemInViewport + numOfOverscan, data.length);
 
       for (let i = startIndex; i < endIndex; i++) {
-        results.push(data[i].itemId);
+        if (data[i] && data[i].itemId) {
+          results.push(data[i].itemId);
+        }
       }
     }
     return results;
