@@ -129,6 +129,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     scrollTo,
 
     // CRUD
+    onAddItem,
     onAddItems,
     onRemoveItemsById,
     onRemoveItemsAt,
@@ -238,11 +239,13 @@ function createMasonryViewModel({data, defaultHeight}) {
         data[0].itemId :
         remainderItem;
 
+      const oldPosOfFirstItem = __itemCache__.getPosition(firstItemId);
+
       if (
         storageEvents['viewOnLoadMoreTop'] &&
         isFunction(storageEvents['viewOnLoadMoreTop'][0])
       ) {
-        storageEvents['viewOnLoadMoreTop'][0]();
+        storageEvents['viewOnLoadMoreTop'][0](firstItemId, oldPosOfFirstItem);
       }
 
       if (storageEvents['onLoadTop'] && isFunction(storageEvents['onLoadTop'][0])) {
@@ -432,6 +435,50 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    [Public API] - Interact with list
    ======================================================================== */
+  function onAddItem(index: number, item: Object) {
+    if (item) {
+      const start = _getValidStartIndex(index);
+      if (!Array.isArray(item)) {
+        item = _convertToArray(item);
+      }
+
+      const oldMap = new Map(__itemCache__.getItemsMap);
+      const insertResult = _insertItems(start, item);
+
+      if (insertResult.hasInsertSucceed) {
+        if (
+          storageEvents['viewOnAddItems'] &&
+          isFunction(storageEvents['viewOnAddItems'][0])) {
+          storageEvents['viewOnAddItems'][0](start, item, oldMap);
+          throttleRenderUI();
+        }
+
+        // Notify to outside when add item succeed.
+        if (
+          storageEvents['onAddItemsSucceed'] &&
+          isFunction(storageEvents['onAddItemsSucceed'][0])
+        ) {
+          storageEvents['onAddItemsSucceed'][0]({
+            startIndex: start,
+            items: item,
+            beforeItem: insertResult.successValues.beforeItem,
+            afterItem: insertResult.successValues.afterItem,
+          });
+        }
+      }
+      else {
+        // Notify to outside when add item failure.
+        if (
+          storageEvents['onAddItemsFail'] &&
+          isFunction(storageEvents['onAddItemsFail'][0])
+        ) {
+          const msgError = `Try to add item ${item} failed!`;
+          storageEvents['onAddItemsFail'][0](msgError);
+        }
+      }
+    }
+  }
+
   function onAddItems(startIndex: number, items: Array) {
     if (items) {
       const start = _getValidStartIndex(startIndex);
