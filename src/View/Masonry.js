@@ -407,6 +407,12 @@ class Masonry extends React.Component<Props> {
       this.needReRenderChildrenChangedHeight = true;
       this.setState(this.state); // instead of this.forceUpdate();
     }
+
+    // Add anim for the item has rendered but not in batch in virtualized list
+    if(itemId && this.itemNeedAddAnim === itemId) {
+      this.addAnimWhenScrollToSpecialItem(itemId, this.props.scrollToAnim);
+      this.itemNeedAddAnim = null;
+    }
   }
 
   onAddItems(startIndex, items, oldMap) {
@@ -695,6 +701,7 @@ class Masonry extends React.Component<Props> {
     else {
       this._removeScrollBackItemTrigger();
       this._scrollToOffset(scrollTop);
+      this.addAnimWhenScrollToSpecialItem(itemId, scrollToAnim);
     }
   }
 
@@ -704,14 +711,26 @@ class Masonry extends React.Component<Props> {
       if (itemId !== NOT_FOUND) {
         this._removeScrollBackItemTrigger();
         this._removeStyleOfSpecialItem();
-        this.zoomToItem(itemId);
+        if (this.props.isVirtualized) {
+          this.zoomToItem(itemId, false);
+        }
+        else {
+          this.zoomToItem(itemId);
+        }
       }
     }
   }
 
   addAnimWhenScrollToSpecialItem(itemId, animationNames) {
     if (itemId) {
-      this.appendStyle(this.getElementFromId(itemId), animationNames);
+      const el = this.getElementFromId(itemId);
+      if (el !== null) {
+        this.appendStyle(el, animationNames);
+      }
+      else {
+        this.itemNeedAddAnim = itemId;
+      }
+
       setTimeout(
         () => {
           this.isStableAfterScrollToSpecialItem = true;
