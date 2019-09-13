@@ -18,11 +18,6 @@ class UserMessage extends React.PureComponent<UserMessageProps> {
     msgContent: 'I love you',
   };
 
-  constructor(props) {
-    super(props);
-    console.log(props);
-  }
-
   _getDisplayTime(time) {
     return time;
   }
