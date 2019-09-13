@@ -814,6 +814,7 @@ function createMasonryViewModel({data, defaultHeight}) {
       let aboveItemId = undefined;
       if (storeStartIndex - 1 < 0) {
         aboveItemId = __itemCache__.getItemId(0);
+        __itemCache__.updateItemPosition(aboveItemId, 0);
       }
       else {
         aboveItemId = __itemCache__.getItemId(storeStartIndex - 1);
