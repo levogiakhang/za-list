@@ -127,6 +127,7 @@ class Masonry extends React.Component<Props> {
     this.oldEstimateTotalHeight = 0;
 
     this.children = [];
+    this.needReRenderChildrenChangedHeight = true; // Reload children when item change height.
     this.oldItemsInBatch = undefined;
     this.itemsInBatch = undefined;
 
@@ -302,20 +303,20 @@ class Masonry extends React.Component<Props> {
       itemCache.getHeight(itemId) !== newHeight
     ) {
       const isRendered = itemCache.isRendered(itemId);
-      this.firstItemInViewportBefore = {
-        itemId: this.curItemInViewPort,
-        disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
-      };
+      // this.firstItemInViewportBefore = {
+      //   itemId: this.curItemInViewPort,
+      //   disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort),
+      // };
 
       // Debut
       if (!isRendered) {
+
         // For load more top
-        if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldData.firstItem)) {
+        if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.oldFirstItem)) {
           this.needScrollBack = true;
         }
-
         // Scroll back to old position when add an item above
-        if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.firstItemInViewportBefore.itemId)) {
+        else if (!isRendered && itemCache.getIndex(itemId) < itemCache.getIndex(this.firstItemInViewportBefore.itemId)) {
           this.needScrollBack = true;
         }
 
@@ -330,12 +331,14 @@ class Masonry extends React.Component<Props> {
         this._updateItemsOnChangedHeight(itemId, newHeight, true);
 
         if (isVirtualized) {
-          if (this.isFirstLoadingDone && !isRendered) {
-            this.firstItemInViewportBefore = {
-              itemId: this.curItemInViewPort,
-              disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort),
-            };
+          if (this.isFirstLoadingDone) {
             if (itemCache.getIndex(this.curItemInViewPort) >= itemCache.getIndex(itemId)) {
+              this.itemScrollBackWhenHavingNewItem = {
+                itemId: this.curItemInViewPort.toString(),
+                disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort) + newHeight - itemCache.getDefaultHeight
+              };
+              console.log(JSON.parse(JSON.stringify(this.state.scrollTop)),this.itemScrollBackWhenHavingNewItem.itemId, this.itemScrollBackWhenHavingNewItem.disparity, itemId);
+
               this.needScrollBackWhenHavingNewItem = true;
             }
           }
@@ -344,6 +347,7 @@ class Masonry extends React.Component<Props> {
             this.isFirstLoadingDone = true;
           }
         }
+        // Non-Virtualized
         else {
           if (this.initItemCount < this.viewModel.getDataUnfreeze().length - 1) {
             this.initItemCount++;
@@ -351,44 +355,39 @@ class Masonry extends React.Component<Props> {
           else if (this.initItemCount === this.viewModel.getDataUnfreeze().length - 1) {
             this.initLoadDone = true;
           }
-        }
 
-        if (this.isAddLast) {
-          if (isVirtualized) {
-
-          }
-          else {
+          if (this.isAddLast) {
             this.newLastItemsTotalHeight += newHeight;
           }
-        }
 
-        const isDone = !(this.scrollToSpecialItemCount < this.numOfNewLoading - 1);
-        if (!isDone) {
-          this.scrollToSpecialItemCount++;
-        }
-        else if (isDone && this.numOfNewLoading !== 0) {
-          if (this.isFirstLoadingDone) {
-            // Scroll to top when add an item in top && scrollTop is near top
-            if (this.isAddFirst) {
-              this.isAddFirst = false;
-              this.needScrollTop = true;
+          const isDone = !(this.scrollToSpecialItemCount < this.numOfNewLoading - 1);
+          if (!isDone) {
+            this.scrollToSpecialItemCount++;
+          }
+          else if (isDone && this.numOfNewLoading !== 0) {
+            if (this.isFirstLoadingDone) {
+              // Scroll to top when add an item in top && scrollTop is near top
+              if (this.isAddFirst) {
+                this.isAddFirst = false;
+                this.needScrollTop = true;
+              }
+
+              // Scroll to bottom when add an item in bottom && scrollTop is near bottom
+              if (this.isAddLast) {
+                this.isAddLast = false;
+                this.needScrollBottom = true;
+              }
+
+              this.scrollToSpecialItemCount = 0;
+              this.numOfNewLoading = 0;
+
+              if (this.isScrollToSpecialItem) {
+                this.needScrollToSpecialItem = true;
+              }
+
+              console.log('aaaaaaaaaaa');
+              this.isLoadNewItemsDone = true;
             }
-
-            // Scroll to bottom when add an item in bottom && scrollTop is near bottom
-            if (this.isAddLast) {
-              this.isAddLast = false;
-              this.needScrollBottom = true;
-            }
-
-            this.scrollToSpecialItemCount = 0;
-            this.numOfNewLoading = 0;
-
-            if (this.isScrollToSpecialItem) {
-              this.needScrollToSpecialItem = true;
-            }
-
-            console.log('aaaaaaaaaaa');
-            this.isLoadNewItemsDone = true;
           }
         }
 
@@ -404,6 +403,7 @@ class Masonry extends React.Component<Props> {
         this._updateItemsOnChangedHeight(itemId, newHeight);
         this._updateEstimatedHeight(newHeight - itemOldHeight);
       }
+      this.needReRenderChildrenChangedHeight = true;
       this.setState(this.state); // instead of this.forceUpdate();
     }
   }
@@ -436,11 +436,14 @@ class Masonry extends React.Component<Props> {
         itemId: this.curItemInViewPort,
         disparity: stateScrollTop - oldMap.get(this.curItemInViewPort).position,
       };
+      console.log(this.firstItemInViewportBefore);
 
-      let index = startIndex;
-      for (let i = 0; i < items.length; i++) {
-        this._addStaticItemToChildren(index, items[i]);
-        index++;
+      if (!this.props.isVirtualized) {
+        let index = startIndex;
+        for (let i = 0; i < items.length; i++) {
+          this._addStaticItemToChildren(index, items[i]);
+          index++;
+        }
       }
       this._updateEstimatedHeight(this.viewModel.getCache().defaultHeight * items.length);
     }
@@ -559,12 +562,41 @@ class Masonry extends React.Component<Props> {
       }
       // Virtualized list
       else {
+        el.animate([
+          {
+            transform: 'scale(1)',
+            opacity: 1,
+            offset: 0,
+          },
+          {
+            transform: 'scale(.5)',
+            opacity: .5,
+            offset: .3,
+          },
+          {
+            transform: 'scale(.667)',
+            opacity: .667,
+            offset: .7875,
+          },
+          {
+            transform: 'scale(.6)',
+            opacity: .6,
+            offset: 1,
+          },
+        ], {
+          duration: 700, //milliseconds
+          easing: 'ease-in-out', //'linear', a bezier curve, etc.
+          delay: 10, //milliseconds
+          iterations: Infinity, //or a number
+          direction: 'alternate', //'normal', 'reverse', etc.
+          fill: 'forwards', //'backwards', 'both', 'none', 'auto'
+        });
         this._updateEstimatedHeight(-itemHeight);
       }
     }
   }
 
-  onLoadMore(startIndex, items) {
+  onLoadMore(startIndex, items, firstItemId, oldPosOfFirstItem) {
     if (
       items &&
       Array.isArray(items) &&
@@ -574,7 +606,7 @@ class Masonry extends React.Component<Props> {
       this.numOfNewLoading = items.length;
 
       this._removeStyleOfSpecialItem();
-      console.log(startIndex);
+
       // Conflict with trigger load more when scroll to first | last item on UI
       this._clearIntervalId();
 
@@ -819,26 +851,27 @@ class Masonry extends React.Component<Props> {
         }
       }
 
-      // Change item height not affect the behind others
-      // if (!Lodash.isEqual(this.itemsInBatch, this.oldItemsInBatch)) {
+      // if (!Lodash.isEqual(this.itemsInBatch, this.oldItemsInBatch) || this.needReRenderChildrenChangedHeight) {
       //   this.oldItemsInBatch = [...this.itemsInBatch];
       //   this.children = [];
+      //   this.needReRenderChildrenChangedHeight = false;
       //
       //   for (let i = 0; i < this.itemsInBatch.length; i++) {
-      //     const index = this.viewModel.getCache().getIndex(this.itemsInBatch[i]);
+      //     const itemCache = this.viewModel.getCache();
+      //     const index = itemCache.getIndex(this.itemsInBatch[i]);
       //     const item = this.viewModel.getDataUnfreeze()[index];
       //     const removeCallback = this.viewModel.onRemoveItemsById;
       //     const position = {
-      //       top: this.viewModel.getCache().getPosition(this.itemsInBatch[i]),
+      //       top: itemCache.getPosition(this.itemsInBatch[i]),
       //       left: 0,
       //     };
       //     if (!!item) {
       //       this.children.push(
       //         <CellMeasurer
-      //           id={this.viewModel.getCache().getItemId(index)}
-      //           key={this.viewModel.getCache().getItemId(index)}
+      //           id={itemCache.getItemId(index)}
+      //           key={itemCache.getItemId(index)}
       //           isVirtualized={this.props.isVirtualized}
-      //           defaultHeight={this.viewModel.getCache().getDefaultHeight}
+      //           defaultHeight={itemCache.getDefaultHeight}
       //           onChangedHeight={this.onChildrenChangeHeight}
       //           position={position}>
       //           {
@@ -858,57 +891,49 @@ class Masonry extends React.Component<Props> {
     }
 
     return (
-      <Scrollbars
-        key="scroller"
-        ref={c => this._scrollBar = c}
-        thumbMinSize={2000}
-        autoHide
-        autoHideTimeout={1000}
-        autoHideDuration={200}
-        {...rest}>
+
+      <div
+        className={'masonry-parent'}
+        ref={this.parentRef}>
         <div
-          className={'masonry-parent'}
-          ref={this.parentRef}>
+          className={className}
+          id={id}
+          onScroll={this._onScroll}
+          style={{
+            backgroundColor: 'cornflowerblue',
+            boxSizing: 'border-box',
+            overflowX: 'hidden',
+            overflowY: 'scroll',
+            width: 'auto',
+            minWidth: minWidth,
+            height: height,
+            minHeight: minHeight,
+            position: 'relative',
+            willChange: isVirtualized ?
+              'auto' :
+              'transform',
+            ...style,
+          }}>
           <div
-            className={className}
-            id={id}
-            onScroll={this._onScroll}
+            className={`${innerScrollClassName ?
+              innerScrollClassName :
+              'innerScrollContainer'}`}
             style={{
-              backgroundColor: 'cornflowerblue',
-              boxSizing: 'border-box',
-              overflowX: 'hidden',
-              overflowY: 'scroll',
-              width: 'auto',
-              minWidth: minWidth,
-              height: height,
-              minHeight: minHeight,
+              width: '100%',
+              height: this.estimateTotalHeight,
+              maxWidth: '100%',
+              maxHeight: this.estimateTotalHeight,
+              overflow: 'hidden',
               position: 'relative',
-              ...style,
+              pointerEvents: isScrolling ?
+                'none' :
+                '', // property defines whether or not an element reacts to pointer events.
+              ...innerScrollStyle,
             }}>
-            <div
-              className={`${innerScrollClassName ?
-                innerScrollClassName :
-                'innerScrollContainer'}`}
-              style={{
-                width: '100%',
-                height: this.estimateTotalHeight,
-                maxWidth: '100%',
-                maxHeight: this.estimateTotalHeight,
-                overflow: 'hidden',
-                position: 'relative',
-                willChange: isVirtualized ?
-                  'auto' :
-                  'transform',
-                pointerEvents: isScrolling ?
-                  'none' :
-                  '', // property defines whether or not an element reacts to pointer events.
-                ...innerScrollStyle,
-              }}>
-              {this.children}
-            </div>
+            {this.children}
           </div>
         </div>
-      </Scrollbars>
+      </div>
     );
   }
 
@@ -934,7 +959,7 @@ class Masonry extends React.Component<Props> {
     this._checkAndScrollBackWhenHavingNewItem(isVirtualized);
 
     // Check scroll to old position when load more top.
-    this._checkAndScrollBackWhenLoadOrAddTop();
+    this._checkAndScrollBackWhenLoadOrAddTop(isVirtualized);
 
     this._checkAndScrollTopWhenAddItem(scrollTop);
 
@@ -945,12 +970,15 @@ class Masonry extends React.Component<Props> {
     this._checkAndUpdateOldData(data.length);
   }
 
-  onLoadMoreTop() {
+  onLoadMoreTop(firstItemId, oldPosOfFirstItem) {
     this.isLoadingTop = true;
     this.firstItemInViewportBefore = {
       itemId: this.curItemInViewPort,
-      disparity: this.state.scrollTop - this.viewModel.getCache().getPosition(this.curItemInViewPort),
+      disparity: this.state.scrollTop - oldPosOfFirstItem,
     };
+
+    this.oldFirstItem = firstItemId;
+
   }
 
   _checkScrollToBottomInFirstSight() {
@@ -1029,8 +1057,9 @@ class Masonry extends React.Component<Props> {
     if (isVirtualized && this.needScrollBackWhenHavingNewItem && !this.isLoadingTop && this.isFirstLoadingDone) {
       this.needScrollBackWhenHavingNewItem = false;
       const posNeedToScr =
-        this.viewModel.getCache().getPosition(this.firstItemInViewportBefore.itemId) +
-        this.viewModel.getCache().getHeight(this.firstItemInViewportBefore.itemId);
+        this.viewModel.getCache().getPosition(this.itemScrollBackWhenHavingNewItem.itemId) +
+        this.itemScrollBackWhenHavingNewItem.disparity;
+      console.log('having', posNeedToScr, this.itemScrollBackWhenHavingNewItem);
       this._scrollToOffset(posNeedToScr);
     }
     else if (isVirtualized && this.difSizeWhenReMount && !this.isLoadingTop && this.isFirstLoadingDone) {
@@ -1043,9 +1072,14 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  _checkAndScrollBackWhenLoadOrAddTop() {
+  _checkAndScrollBackWhenLoadOrAddTop(isVirtualized) {
     if (this.needScrollBack) {
-      if (this.isLoadNewItemsDone && this.isAddMore) {
+      if (isVirtualized && this.isLoadMore) {
+        console.log('load top', this.firstItemInViewportBefore.itemId, this.firstItemInViewportBefore.disparity);
+        //this.isLoadMore = false;
+        this._scrollToItem(this.firstItemInViewportBefore.itemId, this.firstItemInViewportBefore.disparity);
+      }
+      else if (this.isLoadNewItemsDone && this.isAddMore) {
         this.isAddMore = false;
         this.isLoadNewItemsDone = false;
         this._scrollToItem(
@@ -1065,10 +1099,20 @@ class Masonry extends React.Component<Props> {
       }
       this.needScrollBack = false;
     }
+    // [Virtualized] Add items out range of batch
+    else if (isVirtualized && this.isAddMore) {
+      console.log('aaaaaa');
+      this.isAddMore = false;
+      this._scrollToItem(
+        this.firstItemInViewportBefore.itemId,
+        this.firstItemInViewportBefore.disparity,
+      );
+    }
   }
 
   _checkAndScrollTopWhenAddItem(scrollTop) {
     if (this.needScrollTop) {
+      console.log('scrolltop');
       this.needScrollTop = false;
       if (scrollTop <= NEED_TO_SCROLL_TOP_POS) {
         this._scrollToOffset(0);
@@ -1287,7 +1331,11 @@ class Masonry extends React.Component<Props> {
   }
 
   _scrollToOffset(top) {
-    if (isNum(top)) {
+    if (
+      this.masonry &&
+      isFunction(this.masonry.scrollTo) &&
+      isNum(top)
+    ) {
       this.masonry.scrollTo(0, top);
     }
   }
