@@ -94,6 +94,7 @@ class Masonry extends React.Component<Props> {
     this.loadMoreTopCount = 0; // resolves remove incorrect item when removal animation end.
     this.needScrollTopWithAnim = false; // turn on this flag when remove an item in case after remove, list's height is greater than total items' height
     this.isAddMore = false;
+    this.preventUpdateFirstItemInViewportWhenAdd = false; // [Virtualized] when add items, store first item to scroll back
     this.isAddFirst = false;
     this.needScrollTop = false;
     this.isAddLast = false;
@@ -438,12 +439,15 @@ class Masonry extends React.Component<Props> {
 
       const stateScrollTop = this.state.scrollTop;
 
-      // Usage to scroll back, prevent flick view
-      this.firstItemInViewportBefore = {
-        itemId: this.curItemInViewPort,
-        disparity: stateScrollTop - oldMap.get(this.curItemInViewPort).position,
-      };
-      console.log(this.firstItemInViewportBefore);
+      if (this.props.isVirtualized && !this.preventUpdateFirstItemInViewportWhenAdd) {
+        this.preventUpdateFirstItemInViewportWhenAdd = true;
+        // Usage to scroll back, prevent flick view
+        this.firstItemInViewportBefore = {
+          itemId: this.curItemInViewPort,
+          disparity: stateScrollTop - oldMap.get(this.curItemInViewPort).position,
+        };
+        console.log(this.firstItemInViewportBefore);
+      }
 
       if (!this.props.isVirtualized) {
         let index = startIndex;
@@ -1121,6 +1125,7 @@ class Masonry extends React.Component<Props> {
     }
     // [Virtualized] Add items out range of batch
     else if (isVirtualized && this.isAddMore) {
+      this.preventUpdateFirstItemInViewportWhenAdd = false;
       console.log('aaaaaa');
       this.isAddMore = false;
       this._scrollToItem(
