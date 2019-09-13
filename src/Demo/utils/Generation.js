@@ -1,10 +1,16 @@
 // @flow
 
-import idGen from "./IdentificationGenerator";
+import idGen from './IdentificationGenerator';
 import type { DataType } from './type';
-import GConst from "./values";
-import { FakeMessage, FakeUserName } from "./FakeData";
-import { randomInclusive, repetition } from "./math";
+import GConst from './values';
+import {
+  FakeMessage,
+  FakeUserName,
+} from './FakeData';
+import {
+  randomInclusive,
+  repetition,
+} from './math';
 
 class Generation {
   constructor() {
@@ -14,12 +20,14 @@ class Generation {
   }
 
   //#region Special Item
-  generateMessage = (isMine: false) => {
+  generateDataOfMessage = (isMine: false) => {
     const msgId = this.id.generateId();
     const message: DataType = {
-      itemId: "itemId_" + msgId,
-      userId: "userId_" + msgId,
-      userName: `${isMine ? FakeUserName[0] : FakeUserName[randomInclusive(1, FakeUserName.length)]}`,
+      itemId: 'itemId_' + msgId,
+      userId: 'userId_' + msgId,
+      userName: `${isMine ?
+        FakeUserName[0] :
+        FakeUserName[randomInclusive(1, FakeUserName.length)]}`,
       userAva: `${isMine ?
         GConst.MyAva :
         GConst.AvatarBaseUrl + `thumb/men/${repetition(msgId, 99)}.jpg`}`,
@@ -27,7 +35,7 @@ class Generation {
         msgType: GConst.MessageTypes.Message,
         msgContent: {
           message: FakeMessage[randomInclusive(0, FakeMessage.length - 1)],
-        }
+        },
       },
       sentTime: Date.now(),
       isMine: isMine,
@@ -37,12 +45,14 @@ class Generation {
     return message;
   };
 
-  generateImageWithoutContent = ({width, height}, isMine: false) => {
+  generateDataOfImageWithoutContent = ({width, height}, isMine: false) => {
     const imgId = this.id.generateId();
     const img: DataType = {
-      itemId: "itemId_" + imgId,
-      userId: "userId_" + imgId,
-      userName: `${isMine ? FakeUserName[0] : FakeUserName[randomInclusive(1, FakeUserName.length)]}`,
+      itemId: 'itemId_' + imgId,
+      userId: 'userId_' + imgId,
+      userName: `${isMine ?
+        FakeUserName[0] :
+        FakeUserName[randomInclusive(1, FakeUserName.length)]}`,
       userAva: `${isMine ?
         GConst.MyAva :
         GConst.AvatarBaseUrl + `thumb/men/${repetition(imgId, 99)}.jpg`}`,
@@ -56,7 +66,7 @@ class Generation {
           },
           thumbUrl: GConst.ImageBaseUrl + repetition(imgId, 1010) + `/${width}/${height}`,
           oriUrl: GConst.ImageBaseUrl + repetition(imgId, 1010) + `/1920/1080`,
-        }
+        },
       },
       sentTime: Date.now(),
       isMine: isMine,
@@ -65,12 +75,14 @@ class Generation {
     return img;
   };
 
-  generateImage = ({width, height}, isMine: false) => {
+  generateDataOfImage = ({width, height}, isMine: false) => {
     const imgId = this.id.generateId();
     const img: DataType = {
-      itemId: "itemId_" + imgId,
-      userId: "userId_" + imgId,
-      userName: `${isMine ? FakeUserName[0] : FakeUserName[randomInclusive(1, FakeUserName.length)]}`,
+      itemId: 'itemId_' + imgId,
+      userId: 'userId_' + imgId,
+      userName: `${isMine ?
+        FakeUserName[0] :
+        FakeUserName[randomInclusive(1, FakeUserName.length)]}`,
       userAva: `${isMine ?
         GConst.MyAva :
         GConst.AvatarBaseUrl + `thumb/men/${repetition(imgId, 99)}.jpg`}`,
@@ -84,7 +96,7 @@ class Generation {
           },
           thumbUrl: GConst.ImageBaseUrl + repetition(imgId, 1010) + `/${width}/${height}`,
           oriUrl: GConst.ImageBaseUrl + repetition(imgId, 1010) + `/1920/1080`,
-        }
+        },
       },
       sentTime: Date.now(),
       isMine: isMine,
@@ -92,25 +104,46 @@ class Generation {
     };
     return img;
   };
+
+  generateDataOfUserMessage = () => {
+    const userMsgId = this.id.generateId();
+    const userMsg = {
+      itemId: 'itemId_' + userMsgId,
+      userName: FakeUserName[randomInclusive(1, FakeUserName.length)],
+      userAva: GConst.AvatarBaseUrl + `thumb/men/${repetition(userMsgId, 99)}.jpg`,
+      sentTime: Date.now(),
+      msgInfo: {
+        msgType: GConst.MessageTypes.UserMessage,
+        msgContent: {
+          message: FakeMessage[randomInclusive(0, FakeMessage.length - 1)],
+        },
+      },
+    };
+
+    return userMsg;
+  };
   //#endregion
 
 
   generateItem = (type, isMine, width?: number, height?: number) => {
     switch (type) {
       case GConst.MessageTypes.Message: {
-        return this.generateMessage(isMine);
+        return this.generateDataOfMessage(isMine);
       }
       case GConst.MessageTypes.ImageWithoutContent: {
-        return this.generateImageWithoutContent({
+        return this.generateDataOfImageWithoutContent({
           width: width,
-          height: height
+          height: height,
         }, isMine);
       }
       case GConst.MessageTypes.Image: {
-        return this.generateImage({
+        return this.generateDataOfImage({
           width: width,
-          height: height
+          height: height,
         }, isMine);
+      }
+      case GConst.MessageTypes.UserMessage: {
+        return this.generateDataOfUserMessage();
       }
       default: {
         return null;
@@ -126,17 +159,29 @@ class Generation {
         arrayItems.push(
           this.generateItem(
             msgType,
-            randomInclusive(0, 1) === 0
+            randomInclusive(0, 1) === 0,
           ));
-      } else {
+      }
+      else {
         arrayItems.push(
           this.generateItem(
             msgType,
             randomInclusive(0, 1) === 0,
             174,
-            368
+            368,
           ));
       }
+    }
+    return arrayItems;
+  }
+
+  generateIdenticalItems(num: number) {
+    let arrayItems = [];
+    for (let i = 0; i < num; i++) {
+      arrayItems.push(
+        this.generateItem(
+          5,
+        ));
     }
     return arrayItems;
   }

@@ -6,6 +6,7 @@ import isFunction from '../../vendors/isFunction';
 import Image from './Image';
 import NormalMessage from './NormalMessage';
 import GConst from '../utils/values';
+import UserMessage from './UserMessage';
 
 type OnRemoveItemCallback = any;
 
@@ -52,7 +53,7 @@ export default class Message extends React.PureComponent<MessageProps> {
         justifyContent: 'center',
         minWidth: '40px',
         height: '100%',
-        cursor: 'pointer'
+        cursor: 'pointer',
       }}>
         <div style={{
           display: 'flex',
@@ -81,7 +82,7 @@ export default class Message extends React.PureComponent<MessageProps> {
   };
 
   renderContent = () => {
-    const {userName, msgInfo, sentTime, isMine, sentStatus} = this.props;
+    const {userAva, userName, msgInfo, sentTime, isMine, sentStatus} = this.props;
     switch (msgInfo.msgType) {
       case 1: {
         return (
@@ -139,8 +140,8 @@ export default class Message extends React.PureComponent<MessageProps> {
              style={{
                display: 'flex',
                justifyContent: 'flex-end',
-               paddingTop: GConst.Spacing["0.5"],
-               paddingBottom: GConst.Spacing["0.5"],
+               paddingTop: GConst.Spacing['0.5'],
+               paddingBottom: GConst.Spacing['0.5'],
              }}>
           {this.renderContent()}
           <div style={{
