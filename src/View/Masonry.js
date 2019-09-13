@@ -295,14 +295,15 @@ class Masonry extends React.Component<Props> {
   onChildrenChangeHeight(itemId: string, oldHeight: number, newHeight: number) {
     const itemCache = this.viewModel.getCache();
     const {isVirtualized} = this.props;
+    const isRendered = itemCache.isRendered(itemId);
 
     if (
       itemId &&
       isNum(oldHeight) &&
       isNum(newHeight) &&
-      itemCache.getHeight(itemId) !== newHeight
+      // case defaultHeight = real height
+      (itemCache.getHeight(itemId) !== newHeight || !isRendered)
     ) {
-      const isRendered = itemCache.isRendered(itemId);
       // this.firstItemInViewportBefore = {
       //   itemId: this.curItemInViewPort,
       //   disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort),
