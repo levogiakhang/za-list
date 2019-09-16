@@ -6,9 +6,10 @@ import generation from './utils/Generation';
 import GConst from './utils/values';
 import throttle from '../vendors/throttle';
 import createMasonryViewModel from '../ViewModel/MasonryViewModel';
+import UserMessage from './Message/UserMessage';
 
-const DATA_TOTAL_NUMBER = 30;
-const DATA_UI_NUMBER = 10;
+const DATA_TOTAL_NUMBER = 100;
+const DATA_UI_NUMBER = 30;
 
 const lv1 = 'background-color: #3F51B5; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1.1rem; font-weight: 700l; font-style: italic';
 const lv2 = 'background-color: Maroon; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1rem; font-weight: 700';
@@ -44,6 +45,7 @@ class Demo extends React.Component {
     this.lookUpItem = this.lookUpItem.bind(this);
     this.lookUpItemToScrollTop = this.lookUpItemToScrollTop.bind(this);
     this.lookUpItemToScrollBottom = this.lookUpItemToScrollBottom.bind(this);
+    this.updateData = this.updateData.bind(this);
   }
 
   componentDidMount(): void {
@@ -56,6 +58,7 @@ class Demo extends React.Component {
 
     this.viewModel = createMasonryViewModel({
       data: this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER),
+      defaultHeight: 74,
     });
 
     //this.dataOnList.addEventListener('onDataChanged', this.viewModel.onDataChanged);
@@ -74,7 +77,7 @@ class Demo extends React.Component {
    Handle Changes
    ======================================================================== */
   handleChangeIndex(e) {
-    if (this._isInRange(e.target.value, 0, this.viewModel.getDataOnList.length)) {
+    if (this._isInRange(e.target.value, 0, this.viewModel.getDataUnfreeze().length)) {
       this.setState({indexToAddMore: e.target.value});
     }
     else {
@@ -87,7 +90,7 @@ class Demo extends React.Component {
   }
 
   handleChangeIndexToScroll(e) {
-    if (this._isInRange(e.target.value, 0, this.viewModel.getDataOnList.length - 1)) {
+    if (this._isInRange(e.target.value, 0, this.viewModel.getData().length - 1)) {
       this.setState({indexToScroll: e.target.value});
     }
     else {
@@ -174,7 +177,7 @@ class Demo extends React.Component {
    Create Data & Items
    ======================================================================== */
   _fakeDataList = () => {
-    return generation.generateItems(DATA_TOTAL_NUMBER);
+    return generation.generateIdenticalItems(DATA_TOTAL_NUMBER);
   };
 
   loadMoreTop(firstItemIdInCurrentUI) {
@@ -186,8 +189,8 @@ class Demo extends React.Component {
       return;
     }
 
-    const res = this._getDataFromDataTotal(index - 10, index - 1);
-    this.viewModel.loadTop(res);
+    const res = this._getDataFromDataTotal(index - 10, index - 1, this.dataTotal.length);
+    //this.viewModel.loadTop(res);
   }
 
   loadMoreBottom(lastItemIdInCurrentUI) {
@@ -199,26 +202,27 @@ class Demo extends React.Component {
       return;
     }
 
-    const res = this._getDataFromDataTotal(index + 1, index + 10);
-    console.log(res)
+    const res = this._getDataFromDataTotal(index + 1, index + 10, this.dataTotal.length);
     this.viewModel.loadBottom(res);
   }
 
   onAddItem = () => {
     const {indexToAddMore} = this.state;
-    let item = generation.generateItems(1)[0];
+    let item = generation.generateIdenticalItems(1)[0];
     if (this._isInRange(indexToAddMore, 0, this.viewModel.getData().length)) {
       this.viewModel.onAddItem(indexToAddMore, item);
     }
   };
 
   onAddItemTop = () => {
-    let item = generation.generateItems(10);
-    this.viewModel.addTop(item);
+    let items = generation.generateIdenticalItems(10);
+    for (let i = 0; i < items.length; i++) {
+      this.viewModel.addTop(items[i]);
+    }
   };
 
   onAddItemBottom = () => {
-    let item = generation.generateItems(10);
+    let item = generation.generateIdenticalItems(10);
     this.viewModel.addBottom(item);
   };
 
@@ -270,24 +274,45 @@ class Demo extends React.Component {
     });
   }
 
+  updateData() {
+    let arr = this.viewModel.getDataUnfreeze();
+    [arr[0], arr[1]] = [arr[1], arr[0]];
+
+    // const newArr = generation.generateIdenticalItems(30);
+    this.viewModel.updateData(arr);
+  }
+
 
   /* ========================================================================
    Graphics User Interface
    ======================================================================== */
   static cellRender({item, index, removeCallback}) {
-    return (
-      <Message itemId={item.itemId}
-               key={item.itemId}
-               index={index}
-               userId={item.userId}
-               userName={item.userName}
-               userAva={item.userAva}
-               msgInfo={item.msgInfo}
-               sentTime={item.sentTime}
-               isMine={item.isMine}
-               sentStatus={item.sentStatus}
-               onRemoveItem={removeCallback}/>
-    );
+    if (
+      item &&
+      item.msgInfo &&
+      item.msgInfo.msgType &&
+      item.msgInfo.msgType === 5
+    ) {
+      return <UserMessage userAvatarSrc={item.userAva}
+                          userName={item.userName}
+                          timestamp={item.sentTime}
+                          msgContent={item.msgInfo.msgContent}/>;
+    }
+    else {
+      return (
+        <Message itemId={item.itemId}
+                 key={item.itemId}
+                 index={index}
+                 userId={item.userId}
+                 userName={item.userName}
+                 userAva={item.userAva}
+                 msgInfo={item.msgInfo}
+                 sentTime={item.sentTime}
+                 isMine={item.isMine}
+                 sentStatus={item.sentStatus}
+                 onRemoveItem={removeCallback}/>
+      );
+    }
   }
 
   _renderHeader = () => {
@@ -831,6 +856,26 @@ class Demo extends React.Component {
               margin: GConst.Spacing[0],
               fontSize: GConst.Font.Size.Medium,
             }}
+            onClick={this.updateData}>
+            Updata outer data
+          </button>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+          marginTop: GConst.Spacing['0.5'],
+        }}>
+          <button
+            style={{
+              minWidth: '370px',
+              width: '100%',
+              minHeight: '40px',
+              height: 'auto',
+              maxHeight: '40px',
+              margin: GConst.Spacing[0],
+              fontSize: GConst.Font.Size.Medium,
+            }}
             onClick={() => {
               console.log(this.viewModel.masonry.current.getValues());
             }}>
@@ -852,13 +897,15 @@ class Demo extends React.Component {
                viewModel={this.viewModel}
                height={700}
                cellRenderer={Demo.cellRender}
-               isStartAtBottom={true}
+               isStartAtBottom={false}
                isItemScrollToInBottom={true}
                scrollToAnim={'highlighted zoomScaling'}
                additionAnim={'zoomIn'}
                removalAnim={'zoomOut'}
                timingResetAnimation={200}
                renderDirection={'BottomUp'}
+               isVirtualized={true}
+               numOfOverscan={3}
                noHScroll/>
     );
   };
