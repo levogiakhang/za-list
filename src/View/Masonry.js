@@ -342,9 +342,9 @@ class Masonry extends React.Component<Props> {
             if (itemCache.getIndex(this.curItemInViewPort) >= itemCache.getIndex(itemId)) {
               this.itemScrollBackWhenHavingNewItem = {
                 itemId: this.curItemInViewPort.toString(),
-                disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort) + newHeight - itemCache.getDefaultHeight
+                disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort) + newHeight - itemCache.getDefaultHeight,
               };
-              console.log(JSON.parse(JSON.stringify(this.state.scrollTop)),this.itemScrollBackWhenHavingNewItem.itemId, this.itemScrollBackWhenHavingNewItem.disparity, itemId);
+              console.log(JSON.parse(JSON.stringify(this.state.scrollTop)), this.itemScrollBackWhenHavingNewItem.itemId, this.itemScrollBackWhenHavingNewItem.disparity, itemId);
 
               this.needScrollBackWhenHavingNewItem = true;
             }
@@ -415,7 +415,7 @@ class Masonry extends React.Component<Props> {
     }
 
     // Add anim for the item has rendered but not in batch in virtualized list
-    if(itemId && this.itemNeedAddAnim === itemId) {
+    if (itemId && this.itemNeedAddAnim === itemId) {
       this.addAnimWhenScrollToSpecialItem(itemId, this.props.scrollToAnim);
       this.itemNeedAddAnim = null;
     }
