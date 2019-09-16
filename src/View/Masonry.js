@@ -992,6 +992,8 @@ class Masonry extends React.Component<Props> {
 
     this._checkScrollToBottomInFirstSight();
 
+    this._checkAndNotifyIfViewNotFull(height);
+
     this._checkEnableLoadTop(scrollTop);
 
     this._checkEnableLoadBottom(scrollTop, height);
@@ -999,8 +1001,6 @@ class Masonry extends React.Component<Props> {
     this._checkAndResetTriggerLoadTop(scrollTop);
 
     this._checkAndResetTriggerLoadBottom(scrollTop, height);
-
-    this._checkAndNotifyIfViewNotFull(height);
 
     this._checkScrollTopWithAnimation();
 
@@ -1047,6 +1047,13 @@ class Masonry extends React.Component<Props> {
     }
   }
 
+  _checkAndNotifyIfViewNotFull(height) {
+    // Notify if viewport is not full.
+    if (this.isFirstLoadingDone && this.estimateTotalHeight < height) {
+      this.viewModel.enableLoadTop();
+    }
+  }
+
   _checkEnableLoadTop(scrollTop) {
     if (
       scrollTop < LOAD_MORE_TOP_TRIGGER_POS &&
@@ -1081,13 +1088,6 @@ class Masonry extends React.Component<Props> {
   _checkAndResetTriggerLoadBottom(scrollTop, height) {
     if (scrollTop < this.estimateTotalHeight - height - 20 && this.isFirstLoadingDone) {
       this.preventLoadBottom = false;
-    }
-  }
-
-  _checkAndNotifyIfViewNotFull(height) {
-    // Notify if viewport is not full.
-    if (this.isFirstLoadingDone && this.estimateTotalHeight < height) {
-      this.viewModel.enableLoadTop();
     }
   }
 
