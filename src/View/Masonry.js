@@ -166,6 +166,7 @@ class Masonry extends React.Component<Props> {
     this.scrollToBottomAtCurrentUI = this.scrollToBottomAtCurrentUI.bind(this);
     this.scrollTo = this.scrollTo.bind(this);
     this.onRemoveItem = this.onRemoveItem.bind(this);
+    this.onRemoveItems = this.onRemoveItems.bind(this);
     this.updateUIWhenScrollToItem = this.updateUIWhenScrollToItem.bind(this);
     this.onAddItems = this.onAddItems.bind(this);
 
@@ -238,6 +239,7 @@ class Masonry extends React.Component<Props> {
     this.viewModel.addEventListener('viewScrollToBottomAtCurrentUI', this.scrollToBottomAtCurrentUI);
     this.viewModel.addEventListener('viewScrollTo', this.scrollTo);
     this.viewModel.addEventListener('viewOnRemoveItem', this.onRemoveItem);
+    this.viewModel.addEventListener('viewOnRemoveItems', this.onRemoveItems);
     this.viewModel.addEventListener('viewUpdateUIWhenScrollToItem', this.updateUIWhenScrollToItem);
     this.viewModel.addEventListener('viewOnAddItems', this.onAddItems);
 
@@ -627,6 +629,54 @@ class Masonry extends React.Component<Props> {
         }
 
         this._updateEstimatedHeight(-itemHeight);
+      }
+    }
+  }
+
+  onRemoveItems({removedItemsId, startIndex, removedLastItemIndex, deleteCount, removedItemsHeight, removedFirstItemPos}) {
+    console.log({
+      removedItemsId,
+      startIndex,
+      deleteCount,
+      removedItemsHeight,
+      removedFirstItemPos,
+    });
+    const {isVirtualized} = this.props;
+
+    this._removeStyleOfSpecialItem();
+
+    if (
+      removedItemsId &&
+      isNum(startIndex) &&
+      isNum(deleteCount) &&
+      removedItemsHeight &&
+      isNum(removedFirstItemPos)
+    ) {
+      const itemCache = this.viewModel.getCache();
+
+      let totalItemsHeight = 0;
+      if (Array.isArray(removedItemsHeight)) {
+        removedItemsHeight.forEach((height) => {
+          totalItemsHeight += height;
+        });
+      }
+
+      this.isRemoveItem = true;
+      if (
+        itemCache.getIndex(this.curItemInViewPort) !== NOT_FOUND &&
+        removedLastItemIndex - deleteCount <= itemCache.getIndex(this.curItemInViewPort)
+      ) {
+        this.needScrollBackWhenRemoveItem = true;
+        this.removedItemHeight = totalItemsHeight;
+      }
+
+      // Non-virtualized list
+      if (!isVirtualized) {
+
+      }
+      // Virtualized list
+      else {
+        this._updateEstimatedHeight(-totalItemsHeight);
       }
     }
   }
@@ -1162,9 +1212,9 @@ class Masonry extends React.Component<Props> {
   }
 
   _checkAndScrollBackWhenRemoveItem(isVirtualized, scrollTop) {
-    if(isVirtualized && this.isRemoveItem) {
+    if (isVirtualized && this.isRemoveItem) {
       this.isRemoveItem = false;
-      if(this.needScrollBackWhenRemoveItem) {
+      if (this.needScrollBackWhenRemoveItem) {
         this.needScrollBackWhenRemoveItem = false;
         this._scrollToOffset(scrollTop - this.removedItemHeight);
       }

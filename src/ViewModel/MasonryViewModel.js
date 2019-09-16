@@ -613,7 +613,61 @@ function createMasonryViewModel({data, defaultHeight}) {
   }
 
   function onRemoveItemsAt(startIndex: number, deleteCount: number = 1) {
+    const start = _getValidStartIndex(startIndex);
+    const removedItemsId: Array<string> = [];
+    let removedItemsHeight: Array = [];
+    const removedFirstItemPos = __itemCache__.getPosition(__itemCache__.getItemId(start));
 
+    if (isNum(deleteCount)) {
+      const removedLastItemIndex = start + deleteCount - 1;
+      for (let i = start; i < start + deleteCount; i++) {
+        const id = __itemCache__.getItemId(i);
+        if (id !== NOT_FOUND) {
+          removedItemsId.push(id);
+          const h = __itemCache__.getHeight(id);
+          if (h !== NOT_FOUND) {
+            removedItemsHeight.push(h);
+          }
+        }
+      }
+
+      const result = _deleteItemsAt(start, deleteCount);
+      if (result.hasDeleteSucceed) {
+        if (storageEvents['viewOnRemoveItems'] && isFunction(storageEvents['viewOnRemoveItems'][0])) {
+          storageEvents['viewOnRemoveItems'][0]({
+            removedItemsId,
+            startIndex: start,
+            removedLastItemIndex,
+            removedItemsHeight,
+            removedFirstItemPos,
+            deleteCount,
+          });
+          throttleRenderUI();
+        }
+
+        // Notify to outside to remove item.
+        if (
+          storageEvents['onRemoveItemsAtSucceed'] &&
+          isFunction(storageEvents['onRemoveItemsAtSucceed'][0])
+        ) {
+          storageEvents['onRemoveItemsAtSucceed'][0]({
+            fromIndex: start,
+            deletedItems: result.successValues.willDeleteItems,
+            beforeItem: result.successValues.beforeItem,
+            afterItem: result.successValues.afterItem,
+          });
+        }
+      }
+      else {
+        if (
+          storageEvents['onRemoveItemsAtFail'] &&
+          isFunction(storageEvents['onRemoveItemsAtFail'][0])
+        ) {
+          const msgError = 'Fail to remove items';
+          storageEvents['onRemoveItemsAtFail'][0](msgError);
+        }
+      }
+    }
   }
 
   function onUpdateItem(itemId: string, item: Object) {
