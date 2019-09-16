@@ -90,6 +90,7 @@ class Masonry extends React.Component<Props> {
     this.firstItemInViewportBefore = {};
     this.curItemInViewPort = undefined;
 
+    this.justLoadTop = false; // Prevent call scroll to current item (in last render curItem equals first item) when having new item. This conflict with scroll back when load top.
     this.isLoadMore = false;
     this.loadMoreTopCount = 0; // resolves remove incorrect item when removal animation end.
     this.needScrollTopWithAnim = false; // turn on this flag when remove an item in case after remove, list's height is greater than total items' height
@@ -894,6 +895,7 @@ class Masonry extends React.Component<Props> {
 
     const {scrollTop} = this.state;
 
+    //console.log('render', scrollTop)
     this.curItemInViewPort = this._getItemIdFromPosition(scrollTop);
 
     const {v2, noHScroll, noVScroll, compositeScroll, ...rest} = this.props;
@@ -1002,7 +1004,7 @@ class Masonry extends React.Component<Props> {
           id={id}
           onScroll={this._onScroll}
           style={{
-            backgroundColor: 'cornflowerblue',
+            backgroundColor: 'white',
             boxSizing: 'border-box',
             overflowX: 'hidden',
             overflowY: 'scroll',
@@ -1158,8 +1160,15 @@ class Masonry extends React.Component<Props> {
   }
 
   _checkAndScrollBackWhenHavingNewItem(isVirtualized) {
-    if (isVirtualized && this.needScrollBackWhenHavingNewItem && !this.isLoadingTop && this.isFirstLoadingDone) {
+    if (
+      isVirtualized &&
+      this.needScrollBackWhenHavingNewItem &&
+      !this.isLoadingTop &&
+      this.isFirstLoadingDone &&
+      !this.justLoadTop
+    ) {
       this.needScrollBackWhenHavingNewItem = false;
+      this.justLoadTop = false;
       const posNeedToScr =
         this.viewModel.getCache().getPosition(this.itemScrollBackWhenHavingNewItem.itemId) +
         this.itemScrollBackWhenHavingNewItem.disparity;
@@ -1179,9 +1188,15 @@ class Masonry extends React.Component<Props> {
   _checkAndScrollBackWhenLoadOrAddTop(isVirtualized) {
     if (this.needScrollBack) {
       if (isVirtualized && this.isLoadMore) {
-        console.log('load top', this.firstItemInViewportBefore.itemId, this.firstItemInViewportBefore.disparity);
-        //this.isLoadMore = false;
-        this._scrollToItem(this.firstItemInViewportBefore.itemId, this.firstItemInViewportBefore.disparity);
+        //console.log('load top', this.firstItemInViewportBefore.itemId, this.firstItemInViewportBefore.disparity);
+        this.isLoadMore = false;
+        this.justLoadTop = true;
+        const posNeedToScr =
+          this.viewModel.getCache().getPosition(this.firstItemInViewportBefore.itemId) +
+          this.firstItemInViewportBefore.disparity;
+        //console.log('load top 2', posNeedToScr, this.curItemInViewPort);
+        this._scrollToOffset(posNeedToScr);
+        //this._scrollToItem(this.firstItemInViewportBefore.itemId, this.firstItemInViewportBefore.disparity);
       }
       else if (this.isLoadNewItemsDone && this.isAddMore) {
         this.isAddMore = false;
@@ -1206,7 +1221,7 @@ class Masonry extends React.Component<Props> {
     // [Virtualized] Add items out range of batch
     else if (isVirtualized && this.isAddMore) {
       this.preventUpdateFirstItemInViewportWhenAdd = false;
-      console.log('aaaaaa');
+      //console.log('aaaaaa');
       this.isAddMore = false;
       this._scrollToItem(
         this.firstItemInViewportBefore.itemId,
@@ -1382,7 +1397,7 @@ class Masonry extends React.Component<Props> {
       const defaultHeight = this.viewModel.getCache().getDefaultHeight;
 
       // const index = this.itemCache.getIndex;
-      const removeCallback = this.viewModel.onRemoveItemsById;
+      const removeCallback = this.viewModel.onRemoveItemById;
       this.children.splice(index, 0,
         <CellMeasurer id={item.itemId}
                       key={item.itemId}
@@ -1409,6 +1424,7 @@ class Masonry extends React.Component<Props> {
 
   _removeStyleOfSpecialItem() {
     if (this.isStableAfterScrollToSpecialItem) {
+      console.log(this.itemAddedScrollToAnim.itemId);
       const el = this.masonry.firstChild.children.namedItem(this.itemAddedScrollToAnim.itemId);
       this.removeStyle(el, this.itemAddedScrollToAnim.anim);
       this.isStableAfterScrollToSpecialItem = false;
