@@ -444,7 +444,11 @@ class Masonry extends React.Component<Props> {
 
       const stateScrollTop = this.state.scrollTop;
 
-      if (this.props.isVirtualized && !this.preventUpdateFirstItemInViewportWhenAdd) {
+      if (
+        this.props.isVirtualized &&
+        !this.preventUpdateFirstItemInViewportWhenAdd &&
+        oldMap.get(this.curItemInViewPort)
+      ) {
         this.preventUpdateFirstItemInViewportWhenAdd = true;
         // Usage to scroll back, prevent flick view
         this.firstItemInViewportBefore = {
