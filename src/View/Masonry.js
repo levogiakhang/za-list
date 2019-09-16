@@ -105,6 +105,9 @@ class Masonry extends React.Component<Props> {
     this.initItemCount = 0;
     this.needScrollBackWhenHavingNewItem = false;
 
+    this.isRemoveItem = false;
+    this.needScrollBackWhenRemoveItem = false;
+
     this.isActiveAnimWhenScrollToItem = undefined;
     this.isScrollToSpecialItem = false;
     this.needScrollToSpecialItem = false;
@@ -460,38 +463,56 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  onRemoveItem({itemId, iIndex, iHeight, iPosition}) {
+  onRemoveItem({removedItemId, removedItemIndex, removedItemHeight, removedItemPos}) {
     const {height, isVirtualized, scrollToAnim, removalAnim} = this.props;
     const {scrollTop} = this.state;
 
     this._removeStyleOfSpecialItem();
 
-    console.log(itemId, iIndex, iHeight, iPosition);
     // ToNumber(null) = 0 => isNaN(null) = false
     if (
-      itemId &&
-      isNum(iIndex) &&
-      isNum(iHeight) &&
-      isNum(iPosition)
+      removedItemId &&
+      isNum(removedItemIndex) &&
+      isNum(removedItemHeight) &&
+      isNum(removedItemPos)
     ) {
-      const itemIndex = iIndex;
-      const itemHeight = iHeight;
-      const el = document.getElementById(itemId);
-      this.removeStyle(el, scrollToAnim);
-      requestAnimationFrame(function () {
-        el.style.position = 'absolute';
-        el.style.top = iPosition + 'px';
-      });
-      const parent = el.parentElement;
+      const itemIndex = removedItemIndex;
+      const itemHeight = removedItemHeight;
+      const itemCache = this.viewModel.getCache();
+
+      this.isRemoveItem = true;
+      if (itemCache.getIndex(this.curItemInViewPort) === NOT_FOUND) {
+        // flick view :)
+      }
+      else if (
+        itemCache.getIndex(this.curItemInViewPort) !== NOT_FOUND &&
+        removedItemIndex <= itemCache.getIndex(this.curItemInViewPort)
+      ) {
+        this.needScrollBackWhenRemoveItem = true;
+        this.removedItemHeight = itemHeight;
+      }
+
+      const el = document.getElementById(removedItemId);
+      let parent;
+      if (el) {
+        this.removeStyle(el, scrollToAnim);
+        requestAnimationFrame(function () {
+          el.style.position = 'absolute';
+          el.style.top = removedItemPos + 'px';
+        });
+        parent = el.parentElement;
+      }
 
       // Non-virtualized list
-      if (!isVirtualized) {
+      if (!isVirtualized && el) {
         const stuntman = document.createElement('DIV');
         requestAnimationFrame(function () {
-          stuntman.id = itemId + '_fake';
+          stuntman.id = removedItemId + '_fake';
           stuntman.setAttribute('style', `height: ${itemHeight}px; width:100%; clear:both; position: relative`);
         });
-        parent.insertBefore(stuntman, el);
+        if (parent) {
+          parent.insertBefore(stuntman, el);
+        }
 
         const oldChildrenLength = this.children.length;
         this.appendStyle(el, removalAnim);
@@ -504,11 +525,11 @@ class Masonry extends React.Component<Props> {
 
           // Check in case be loaded more
           if (oldChildrenLength !== this.children.length) {
-            console.log('el - diff', itemId, itemIndex);
+            console.log('el - diff', removedItemId, itemIndex);
             this.children.splice(itemIndex + this.loadMoreTopCount, 1);
           }
           else {
-            console.log('el - non', itemId, itemIndex);
+            console.log('el - non', removedItemId, itemIndex);
             this.children.splice(itemIndex, 1);
           }
 
@@ -573,35 +594,38 @@ class Masonry extends React.Component<Props> {
       }
       // Virtualized list
       else {
-        el.animate([
-          {
-            transform: 'scale(1)',
-            opacity: 1,
-            offset: 0,
-          },
-          {
-            transform: 'scale(.5)',
-            opacity: .5,
-            offset: .3,
-          },
-          {
-            transform: 'scale(.667)',
-            opacity: .667,
-            offset: .7875,
-          },
-          {
-            transform: 'scale(.6)',
-            opacity: .6,
-            offset: 1,
-          },
-        ], {
-          duration: 700, //milliseconds
-          easing: 'ease-in-out', //'linear', a bezier curve, etc.
-          delay: 10, //milliseconds
-          iterations: Infinity, //or a number
-          direction: 'alternate', //'normal', 'reverse', etc.
-          fill: 'forwards', //'backwards', 'both', 'none', 'auto'
-        });
+        if (el) {
+          el.animate([
+            {
+              transform: 'scale(1)',
+              opacity: 1,
+              offset: 0,
+            },
+            {
+              transform: 'scale(.5)',
+              opacity: .5,
+              offset: .3,
+            },
+            {
+              transform: 'scale(.667)',
+              opacity: .667,
+              offset: .7875,
+            },
+            {
+              transform: 'scale(.6)',
+              opacity: .6,
+              offset: 1,
+            },
+          ], {
+            duration: 700, //milliseconds
+            easing: 'ease-in-out', //'linear', a bezier curve, etc.
+            delay: 10, //milliseconds
+            iterations: Infinity, //or a number
+            direction: 'alternate', //'normal', 'reverse', etc.
+            fill: 'forwards', //'backwards', 'both', 'none', 'auto'
+          });
+        }
+
         this._updateEstimatedHeight(-itemHeight);
       }
     }
@@ -847,7 +871,7 @@ class Masonry extends React.Component<Props> {
       for (let i = 0; i < this.itemsInBatch.length; i++) {
         const index = this.viewModel.getCache().getIndex(this.itemsInBatch[i]);
         const item = this.viewModel.getDataUnfreeze()[index];
-        const removeCallback = this.viewModel.onRemoveItemsById;
+        const removeCallback = this.viewModel.onRemoveItemById;
         const position = {
           top: this.viewModel.getCache().getPosition(this.itemsInBatch[i]),
           left: 0,
@@ -984,6 +1008,8 @@ class Masonry extends React.Component<Props> {
 
     // Check scroll to old position when load more top.
     this._checkAndScrollBackWhenLoadOrAddTop(isVirtualized);
+
+    this._checkAndScrollBackWhenRemoveItem(isVirtualized, scrollTop);
 
     this._checkAndScrollTopWhenAddItem(scrollTop);
 
@@ -1132,6 +1158,16 @@ class Masonry extends React.Component<Props> {
         this.firstItemInViewportBefore.itemId,
         this.firstItemInViewportBefore.disparity,
       );
+    }
+  }
+
+  _checkAndScrollBackWhenRemoveItem(isVirtualized, scrollTop) {
+    if(isVirtualized && this.isRemoveItem) {
+      this.isRemoveItem = false;
+      if(this.needScrollBackWhenRemoveItem) {
+        this.needScrollBackWhenRemoveItem = false;
+        this._scrollToOffset(scrollTop - this.removedItemHeight);
+      }
     }
   }
 

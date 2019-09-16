@@ -525,7 +525,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function onRemoveItemById(itemId: string,) {
+  function onRemoveItemById(itemId: string) {
     if (_hasAlreadyId(itemId)) {
       const iIndex = __itemCache__.getIndex(itemId);
       const iHeight = __itemCache__.getHeight(itemId);
@@ -569,18 +569,18 @@ function createMasonryViewModel({data, defaultHeight}) {
   }
 
   function onRemoveItemAt(index: number) {
-    const itemId = __itemCache__.getItemId(index);
-    if (_hasAlreadyId(itemId)) {
-      const iIndex = _getValidStartIndex(index);
-      const removedItemHeight = __itemCache__.getHeight(itemId);
-      const removedItemPos = __itemCache__.getPosition(itemId);
-      const result = _deleteItemsAt(iIndex, 1);
+    const removedItemId = __itemCache__.getItemId(index);
+    if (removedItemId !== NOT_FOUND && _hasAlreadyId(removedItemId)) {
+      const removedItemIndex = _getValidStartIndex(index);
+      const removedItemHeight = __itemCache__.getHeight(removedItemId);
+      const removedItemPos = __itemCache__.getPosition(removedItemId);
+      const result = _deleteItemsAt(removedItemIndex, 1);
 
       if (result.hasDeleteSucceed) {
         if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
           storageEvents['viewOnRemoveItem'][0]({
-            itemId,
-            iIndex,
+            removedItemId,
+            removedItemIndex,
             removedItemHeight,
             removedItemPos,
           });
