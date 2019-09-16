@@ -4,6 +4,7 @@ import ItemCache from '../utils/ItemCache';
 import { NOT_FOUND } from '../utils/value';
 import isFunction from '../vendors/isFunction';
 import throttle from '../vendors/throttle';
+import isNum from '../utils/isNum';
 
 type EventTypes =
 /* ========================================================================
@@ -131,7 +132,8 @@ function createMasonryViewModel({data, defaultHeight}) {
     // CRUD
     onAddItem,
     onAddItems,
-    onRemoveItemsById,
+    onRemoveItemById,
+    onRemoveItemAt,
     onRemoveItemsAt,
     onUpdateItem,
     addTop,
@@ -523,12 +525,12 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function onRemoveItemsById(itemId: string, deleteCount: number = 1) {
+  function onRemoveItemById(itemId: string,) {
     if (_hasAlreadyId(itemId)) {
       const iIndex = __itemCache__.getIndex(itemId);
       const iHeight = __itemCache__.getHeight(itemId);
       const iPosition = __itemCache__.getPosition(itemId);
-      const result = _deleteItemsById(itemId, deleteCount);
+      const result = _deleteItemsById(itemId, 1);
 
       if (result.hasDeleteSucceed) {
         if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
@@ -543,12 +545,11 @@ function createMasonryViewModel({data, defaultHeight}) {
 
         // Notify to outside to remove item.
         if (
-          storageEvents['onRemoveItemsByIdSucceed'] &&
-          isFunction(storageEvents['onRemoveItemsByIdSucceed'][0])
+          storageEvents['onRemoveItemByIdSucceed'] &&
+          isFunction(storageEvents['onRemoveItemByIdSucceed'][0])
         ) {
-          storageEvents['onRemoveItemsByIdSucceed'][0]({
+          storageEvents['onRemoveItemByIdSucceed'][0]({
             fromItemId: itemId,
-            deleteCount,
             deletedItems: result.successValues.willDeleteItems,
             beforeItem: result.successValues.beforeItem,
             afterItem: result.successValues.afterItem,
@@ -567,33 +568,32 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function onRemoveItemsAt(index: number, deleteCount: number = 1) {
+  function onRemoveItemAt(index: number) {
     const itemId = __itemCache__.getItemId(index);
     if (_hasAlreadyId(itemId)) {
       const iIndex = _getValidStartIndex(index);
-      const iHeight = __itemCache__.getHeight(itemId);
-      const iPosition = __itemCache__.getPosition(itemId);
-      const result = _deleteItemsAt(iIndex, deleteCount);
+      const removedItemHeight = __itemCache__.getHeight(itemId);
+      const removedItemPos = __itemCache__.getPosition(itemId);
+      const result = _deleteItemsAt(iIndex, 1);
 
       if (result.hasDeleteSucceed) {
         if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
           storageEvents['viewOnRemoveItem'][0]({
             itemId,
             iIndex,
-            iHeight,
-            iPosition,
+            removedItemHeight,
+            removedItemPos,
           });
           throttleRenderUI();
         }
 
         // Notify to outside to remove item.
         if (
-          storageEvents['onRemoveItemsAtSucceed'] &&
-          isFunction(storageEvents['onRemoveItemsAtSucceed'][0])
+          storageEvents['onRemoveItemAtSucceed'] &&
+          isFunction(storageEvents['onRemoveItemAtSucceed'][0])
         ) {
-          storageEvents['onRemoveItemsAtSucceed'][0]({
+          storageEvents['onRemoveItemAtSucceed'][0]({
             fromIndex: index,
-            deleteCount,
             deletedItems: result.successValues.willDeleteItems,
             beforeItem: result.successValues.beforeItem,
             afterItem: result.successValues.afterItem,
@@ -602,14 +602,18 @@ function createMasonryViewModel({data, defaultHeight}) {
       }
       else {
         if (
-          storageEvents['onRemoveItemsAtFail'] &&
-          isFunction(storageEvents['onRemoveItemsAtFail'][0])
+          storageEvents['onRemoveItemAtFail'] &&
+          isFunction(storageEvents['onRemoveItemAtFail'][0])
         ) {
           const msgError = 'Can not find itemId';
-          storageEvents['onRemoveItemsAtFail'][0](msgError);
+          storageEvents['onRemoveItemAtFail'][0](msgError);
         }
       }
     }
+  }
+
+  function onRemoveItemsAt(startIndex: number, deleteCount: number = 1) {
+
   }
 
   function onUpdateItem(itemId: string, item: Object) {
@@ -915,9 +919,9 @@ function createMasonryViewModel({data, defaultHeight}) {
   }
 
   function updateData(newData: Array) {
-    if(!Array.isArray(newData)) {
-        console.error('New data is NOT array');
-        return;
+    if (!Array.isArray(newData)) {
+      console.error('New data is NOT array');
+      return;
     }
 
     _updateOldDataIds();
