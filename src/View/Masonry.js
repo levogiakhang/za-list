@@ -10,13 +10,11 @@ import {
 import CellMeasurer from '../CellMeasurer/CellMeasurer.js';
 import isFunction from '../vendors/isFunction';
 import debounce from '../vendors/debounce.js';
-import hasWhiteSpace from '../utils/hasWhiteSpace';
-import removeClass from '../utils/removeClass';
-import addClass from '../utils/addClass';
 import { Scrollbars } from 'react-custom-scrollbars';
 import * as Lodash from 'lodash/core';
 import createMasonryViewModel from '../ViewModel/MasonryViewModel';
 import isNum from '../utils/isNum.js';
+import { AnimExecution } from './AnimationExecution';
 
 type RenderDirection = 'TopDown' | 'BottomUp';
 
@@ -332,9 +330,9 @@ class Masonry extends React.Component<Props> {
 
         if (!isRendered && this.isFirstLoadingDone) {
           const {additionAnim, timingResetAnimation} = this.props;
-          this.appendStyle(this.getElementFromId(itemId), additionAnim);
+          AnimExecution.appendStyle(this.getElementFromId(itemId), additionAnim);
           setTimeout(() => {
-            this.removeStyle(this.getElementFromId(itemId), additionAnim);
+            AnimExecution.removeStyle(this.getElementFromId(itemId), additionAnim);
           }, timingResetAnimation);
         }
 
@@ -347,7 +345,7 @@ class Masonry extends React.Component<Props> {
                 itemId: this.curItemInViewPort.toString(),
                 disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort) + newHeight - itemCache.getDefaultHeight,
               };
-              console.log(JSON.parse(JSON.stringify(this.state.scrollTop)), this.itemScrollBackWhenHavingNewItem.itemId, this.itemScrollBackWhenHavingNewItem.disparity, itemId);
+              //console.log(JSON.parse(JSON.stringify(this.state.scrollTop)), this.itemScrollBackWhenHavingNewItem.itemId, this.itemScrollBackWhenHavingNewItem.disparity, itemId);
 
               this.needScrollBackWhenHavingNewItem = true;
             }
@@ -857,7 +855,7 @@ class Masonry extends React.Component<Props> {
     if (itemId) {
       const el = this.getElementFromId(itemId);
       if (el !== null) {
-        this.appendStyle(el, animationNames);
+        AnimExecution.appendStyle(el, animationNames);
       }
       else {
         this.itemNeedAddAnim = itemId;
@@ -874,36 +872,6 @@ class Masonry extends React.Component<Props> {
       );
     }
   }
-
-  appendStyle = (el, animationNames) => {
-    const arrAnim = hasWhiteSpace(animationNames) ?
-      animationNames.split(' ') :
-      animationNames;
-
-    if (typeof arrAnim === 'string') {
-      addClass(el, arrAnim);
-    }
-    else {
-      for (let i = 0; i < arrAnim.length; i++) {
-        addClass(el, arrAnim[i]);
-      }
-    }
-  };
-
-  removeStyle = (el, animationNames) => {
-    const arrAnim = hasWhiteSpace(animationNames) ?
-      animationNames.split(' ') :
-      animationNames;
-
-    if (typeof arrAnim === 'string') {
-      removeClass(el, arrAnim);
-    }
-    else {
-      for (let i = 0; i < arrAnim.length; i++) {
-        removeClass(el, arrAnim[i]);
-      }
-    }
-  };
 
   getElementFromId(itemId) {
     if (itemId) {
@@ -1475,7 +1443,7 @@ class Masonry extends React.Component<Props> {
     if (this.isStableAfterScrollToSpecialItem) {
       // console.log(this.itemAddedScrollToAnim.itemId);
       const el = this.masonry.firstChild.children.namedItem(this.itemAddedScrollToAnim.itemId);
-      this.removeStyle(el, this.itemAddedScrollToAnim.anim);
+      AnimExecution.removeStyle(el, this.itemAddedScrollToAnim.anim);
       this.isStableAfterScrollToSpecialItem = false;
     }
   }
