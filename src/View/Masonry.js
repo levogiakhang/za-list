@@ -41,6 +41,7 @@ type Props = {
   renderDirection?: RenderDirection,
   isVirtualized?: boolean,
   numOfOverscan?: number,
+  forChatBoxView?: boolean,
 };
 
 const LOAD_MORE_TOP_TRIGGER_POS = 50;
@@ -63,6 +64,7 @@ class Masonry extends React.Component<Props> {
     isItemScrollToInBottom: false,
     timingResetAnimation: 1000,
     renderDirection: 'TopDown',
+    forChatBoxView: true,
   };
 
   constructor(props) {
@@ -744,6 +746,7 @@ class Masonry extends React.Component<Props> {
       height,
       isItemScrollToInBottom,
       scrollToAnim,
+      forChatBoxView,
     } = this.props;
 
     this._clearIntervalId();
@@ -757,34 +760,80 @@ class Masonry extends React.Component<Props> {
     const itemHeight = itemCache.getHeight(itemId);
     let scrollTop = 0;
 
-    if (
-      itemHeight > height ||
-      itemPos + itemHeight < height ||
-      !isItemScrollToInBottom
-    ) {
-      scrollTop = itemPos;
+    if (forChatBoxView) {
+      // for chat box view scroll to item
+      if (
+        itemHeight > height ||
+        itemPos + itemHeight < height ||
+        !isItemScrollToInBottom
+      ) {
+        scrollTop = itemPos;
+      }
+      else {
+        scrollTop = itemPos + itemHeight - height;
+      }
+
+      if (withAnim) {
+        if (this.estimateTotalHeight < height) {
+          this._removeStyleOfSpecialItem();
+          this._removeScrollBackItemTrigger();
+          this.addAnimWhenScrollToSpecialItem(itemId, scrollToAnim);
+        }
+        else if (scrollTop < this.state.scrollTop) {
+          this._scrollToItemWithAnimUp(scrollTop, itemId, scrollToAnim);
+        }
+        else {
+          this._scrollToItemWithAnimDown(scrollTop, itemId, scrollToAnim);
+        }
+      }
+      else {
+        this._removeScrollBackItemTrigger();
+        this._scrollToOffset(scrollTop);
+        this.addAnimWhenScrollToSpecialItem(itemId, scrollToAnim);
+      }
     }
     else {
-      scrollTop = itemPos + itemHeight - height;
-    }
-
-    if (withAnim) {
-      if (this.estimateTotalHeight < height) {
-        this._removeStyleOfSpecialItem();
+      // for msg chat scroll to item
+      const rangeView = {
+        start: this.state.scrollTop,
+        end: this.state.scrollTop + height,
+      };
+      if (itemPos + itemHeight <= rangeView.start || itemPos >= rangeView.end) {
+        // OUT of view
+        if (itemPos < rangeView.start) {
+          // above
+          scrollTop = itemPos;
+          this._removeScrollBackItemTrigger();
+          this._scrollToOffset(scrollTop);
+          this.addAnimWhenScrollToSpecialItem(itemId, scrollToAnim);
+        }
+        else {
+          // under
+          scrollTop = itemPos + itemHeight - height;
+          this._removeScrollBackItemTrigger();
+          this._scrollToOffset(scrollTop);
+          this.addAnimWhenScrollToSpecialItem(itemId, scrollToAnim);
+        }
+      }
+      else if (itemPos < rangeView.start && itemPos + itemHeight > rangeView.start) {
+        // half of top
+        scrollTop = itemPos;
+        this._removeScrollBackItemTrigger();
+        this._scrollToOffset(scrollTop);
+        this.addAnimWhenScrollToSpecialItem(itemId, scrollToAnim);
+      }
+      else if (itemPos < rangeView.end && itemPos + itemHeight > rangeView.end) {
+        // half of bottom
+        scrollTop = itemPos + itemHeight - height;
+        this._removeScrollBackItemTrigger();
+        this._scrollToOffset(scrollTop);
+        this.addAnimWhenScrollToSpecialItem(itemId, scrollToAnim);
+      }
+      else {
+        // in viewport
         this._removeScrollBackItemTrigger();
         this.addAnimWhenScrollToSpecialItem(itemId, scrollToAnim);
       }
-      else if (scrollTop < this.state.scrollTop) {
-        this._scrollToItemWithAnimUp(scrollTop, itemId, scrollToAnim);
-      }
-      else {
-        this._scrollToItemWithAnimDown(scrollTop, itemId, scrollToAnim);
-      }
-    }
-    else {
-      this._removeScrollBackItemTrigger();
-      this._scrollToOffset(scrollTop);
-      this.addAnimWhenScrollToSpecialItem(itemId, scrollToAnim);
     }
   }
 
@@ -1424,7 +1473,7 @@ class Masonry extends React.Component<Props> {
 
   _removeStyleOfSpecialItem() {
     if (this.isStableAfterScrollToSpecialItem) {
-      console.log(this.itemAddedScrollToAnim.itemId);
+      // console.log(this.itemAddedScrollToAnim.itemId);
       const el = this.masonry.firstChild.children.namedItem(this.itemAddedScrollToAnim.itemId);
       this.removeStyle(el, this.itemAddedScrollToAnim.anim);
       this.isStableAfterScrollToSpecialItem = false;
@@ -1615,7 +1664,7 @@ class Masonry extends React.Component<Props> {
     if (!!data.length && isNum(scrollTop)) {
       const currentItemId = this._getItemIdFromPosition(scrollTop);
       const currentIndex = this.viewModel.getCache().getIndex(currentItemId);
-      const numOfItemInViewport = this._getItemsInViewport(scrollTop, height, currentItemId).length;
+      const numOfItemInViewport = this._getItemsInViewport(scrollTop, height, currentItemId, data.length).length;
 
       const startIndex = Math.max(0, currentIndex - numOfOverscan);
       const endIndex = Math.min(currentIndex + numOfItemInViewport + numOfOverscan, data.length);
@@ -1638,8 +1687,7 @@ class Masonry extends React.Component<Props> {
    *
    *  @return {Array<string>} - Stores all items' id in viewport. Can be empty.
    */
-  _getItemsInViewport(scrollTop: number, viewportHeight: number, firstItemIdInViewport: string): Array<string> {
-    const dataLength = this.viewModel.getDataUnfreeze().length;
+  _getItemsInViewport(scrollTop: number, viewportHeight: number, firstItemIdInViewport: string, dataLength: number): Array<string> {
     const results = [];
 
     if (!!dataLength && firstItemIdInViewport) {
