@@ -723,6 +723,14 @@ function createMasonryViewModel({data, defaultHeight}) {
           beforeItem = temp.beforeItem;
           afterItem = temp.afterItem;
 
+          for (let i = 0; i < items.length; i++) {
+            if (items[i] || items[i].itemId || _hasAlreadyId(items[i].itemId)) {
+              console.error('Insert item(s) failed');
+              hasInsertSucceed = false;
+              return hasInsertSucceed;
+            }
+          }
+
           data.splice(validIndex, 0, items);
           data = data.flat();
 
