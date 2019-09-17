@@ -724,7 +724,7 @@ function createMasonryViewModel({data, defaultHeight}) {
           afterItem = temp.afterItem;
 
           for (let i = 0; i < items.length; i++) {
-            if (items[i] || items[i].itemId || _hasAlreadyId(items[i].itemId)) {
+            if (!items[i] || !items[i].itemId || _hasAlreadyId(items[i].itemId)) {
               console.error('Insert item(s) failed');
               hasInsertSucceed = false;
               return hasInsertSucceed;
