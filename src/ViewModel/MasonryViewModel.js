@@ -77,7 +77,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   // Stores all be added events to dispatch a specialized callback
   let storageEvents = {};
 
-  const throttleRenderUI = throttle(reRenderUI, 200);
+  const throttleRenderUI = throttle(reRenderUI, 150);
 
   /* ========================================================================
    Initialize
