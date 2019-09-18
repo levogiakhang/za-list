@@ -111,6 +111,9 @@ class Masonry extends React.Component<Props> {
 
     this.isRemoveItem = false;
     this.needScrollBackWhenRemoveItem = false;
+    this.needHoldItemToExecuteRemovalAnim = false;
+    this.elToExecuteRemovalAnim = undefined;
+    this.removedItemIndexToExecuteRemovalAnim = 0;
 
     this.isActiveAnimWhenScrollToItem = undefined;
     this.isScrollToSpecialItem = false;
@@ -602,6 +605,18 @@ class Masonry extends React.Component<Props> {
       // Virtualized list
       else {
         if (el) {
+          const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
+          if (
+            rangeIndexInViewport &&
+            removedItemIndex >= rangeIndexInViewport.firstItemIndex &&
+            removedItemIndex <= rangeIndexInViewport.lastItemIndex
+          ) {
+            console.log('need hold');
+            console.log(el);
+            this.needHoldItemToExecuteRemovalAnim = true;
+            this.elToExecuteRemovalAnim = el;
+            this.removedItemIndexToExecuteRemovalAnim = removedItemIndex;
+          }
           el.animate([
             {
               transform: 'scale(1)',
@@ -911,6 +926,89 @@ class Masonry extends React.Component<Props> {
     this.setState(this.state);
   }
 
+  updateChildrenInVirtualized(scrollTop) {
+    this.itemsInBatch = this._getItemsInBatch(scrollTop);
+
+    this.children = [];
+
+    for (let i = 0; i < this.itemsInBatch.length; i++) {
+      const index = this.viewModel.getCache().getIndex(this.itemsInBatch[i]);
+      const item = this.viewModel.getDataUnfreeze()[index];
+      const removeCallback = this.viewModel.onRemoveItemById;
+      const position = {
+        top: this.viewModel.getCache().getPosition(this.itemsInBatch[i]),
+        left: 0,
+      };
+      if (!!item) {
+        this.children.push(
+          <CellMeasurer
+            id={this.viewModel.getCache().getItemId(index)}
+            key={this.viewModel.getCache().getItemId(index)}
+            isVirtualized={this.props.isVirtualized}
+            defaultHeight={this.viewModel.getCache().getDefaultHeight}
+            onChangedHeight={this.onChildrenChangeHeight}
+            position={position}>
+            {
+              isFunction(this.props.cellRenderer) ?
+                this.props.cellRenderer({
+                  item,
+                  index,
+                  removeCallback,
+                }) :
+                null
+            }
+          </CellMeasurer>,
+        );
+      }
+    }
+
+    if (this.needHoldItemToExecuteRemovalAnim) {
+      console.log(this.children);
+      //this.children.splice(this.removedItemIndexToExecuteRemovalAnim, 0 , this.elToExecuteRemovalAnim);
+    }
+    else {
+
+    }
+
+    // if (!Lodash.isEqual(this.itemsInBatch, this.oldItemsInBatch) || this.needReRenderChildrenChangedHeight) {
+    //   this.oldItemsInBatch = [...this.itemsInBatch];
+    //   this.children = [];
+    //   this.needReRenderChildrenChangedHeight = false;
+    //
+    //   for (let i = 0; i < this.itemsInBatch.length; i++) {
+    //     const itemCache = this.viewModel.getCache();
+    //     const index = itemCache.getIndex(this.itemsInBatch[i]);
+    //     const item = this.viewModel.getDataUnfreeze()[index];
+    //     const removeCallback = this.viewModel.onRemoveItemById;
+    //     const position = {
+    //       top: itemCache.getPosition(this.itemsInBatch[i]),
+    //       left: 0,
+    //     };
+    //     if (!!item) {
+    //       this.children.push(
+    //         <CellMeasurer
+    //           id={itemCache.getItemId(index)}
+    //           key={itemCache.getItemId(index)}
+    //           isVirtualized={this.props.isVirtualized}
+    //           defaultHeight={itemCache.getDefaultHeight}
+    //           onChangedHeight={this.onChildrenChangeHeight}
+    //           position={position}>
+    //           {
+    //             isFunction(this.props.cellRenderer) ?
+    //               this.props.cellRenderer({
+    //                 item,
+    //                 index,
+    //                 removeCallback,
+    //               }) :
+    //               null
+    //           }
+    //         </CellMeasurer>,
+    //       );
+    //     }
+    //   }
+    // }
+  }
+
   render() {
     const {
       className,
@@ -953,78 +1051,7 @@ class Masonry extends React.Component<Props> {
     }
 
     if (isVirtualized) {
-      this.itemsInBatch = this._getItemsInBatch(scrollTop);
-
-      this.children = [];
-
-      for (let i = 0; i < this.itemsInBatch.length; i++) {
-        const index = this.viewModel.getCache().getIndex(this.itemsInBatch[i]);
-        const item = this.viewModel.getDataUnfreeze()[index];
-        const removeCallback = this.viewModel.onRemoveItemById;
-        const position = {
-          top: this.viewModel.getCache().getPosition(this.itemsInBatch[i]),
-          left: 0,
-        };
-        if (!!item) {
-          this.children.push(
-            <CellMeasurer
-              id={this.viewModel.getCache().getItemId(index)}
-              key={this.viewModel.getCache().getItemId(index)}
-              isVirtualized={this.props.isVirtualized}
-              defaultHeight={this.viewModel.getCache().getDefaultHeight}
-              onChangedHeight={this.onChildrenChangeHeight}
-              position={position}>
-              {
-                isFunction(this.props.cellRenderer) ?
-                  this.props.cellRenderer({
-                    item,
-                    index,
-                    removeCallback,
-                  }) :
-                  null
-              }
-            </CellMeasurer>,
-          );
-        }
-      }
-
-      // if (!Lodash.isEqual(this.itemsInBatch, this.oldItemsInBatch) || this.needReRenderChildrenChangedHeight) {
-      //   this.oldItemsInBatch = [...this.itemsInBatch];
-      //   this.children = [];
-      //   this.needReRenderChildrenChangedHeight = false;
-      //
-      //   for (let i = 0; i < this.itemsInBatch.length; i++) {
-      //     const itemCache = this.viewModel.getCache();
-      //     const index = itemCache.getIndex(this.itemsInBatch[i]);
-      //     const item = this.viewModel.getDataUnfreeze()[index];
-      //     const removeCallback = this.viewModel.onRemoveItemsById;
-      //     const position = {
-      //       top: itemCache.getPosition(this.itemsInBatch[i]),
-      //       left: 0,
-      //     };
-      //     if (!!item) {
-      //       this.children.push(
-      //         <CellMeasurer
-      //           id={itemCache.getItemId(index)}
-      //           key={itemCache.getItemId(index)}
-      //           isVirtualized={this.props.isVirtualized}
-      //           defaultHeight={itemCache.getDefaultHeight}
-      //           onChangedHeight={this.onChildrenChangeHeight}
-      //           position={position}>
-      //           {
-      //             isFunction(this.props.cellRenderer) ?
-      //               this.props.cellRenderer({
-      //                 item,
-      //                 index,
-      //                 removeCallback,
-      //               }) :
-      //               null
-      //           }
-      //         </CellMeasurer>,
-      //       );
-      //     }
-      //   }
-      // }
+      this.updateChildrenInVirtualized(scrollTop);
     }
 
     return (

@@ -57,14 +57,14 @@ class Demo extends React.Component {
     this.masonry = React.createRef();
 
     this.viewModel = createMasonryViewModel({
-      data: this._getDataFromDataTotal(DATA_TOTAL_NUMBER - DATA_UI_NUMBER, DATA_TOTAL_NUMBER, DATA_TOTAL_NUMBER),
+      data: this._getDataFromDataTotal(0, DATA_UI_NUMBER, DATA_TOTAL_NUMBER),
       defaultHeight: 74,
     });
 
     //this.dataOnList.addEventListener('onDataChanged', this.viewModel.onDataChanged);
     this.viewModel.addEventListener('onAddItemsSucceed', this.addItemToDataTotal);
-    this.viewModel.addEventListener('onRemoveItemsByIdSucceed', this.removeItemFromDataTotal);
-    this.viewModel.addEventListener('onRemoveItemsAtSucceed', this.removeItemFromDataTotal);
+    this.viewModel.addEventListener('onRemoveItemByIdSucceed', this.removeItemFromDataTotal);
+    this.viewModel.addEventListener('onRemoveItemAtSucceed', this.removeItemFromDataTotal);
     this.viewModel.addEventListener('loadTopStart', this.enableLoadMoreTop);
     this.viewModel.addEventListener('loadBottomStart', this.enableLoadMoreBottom);
     this.viewModel.addEventListener('onLookForItemToScroll', this.lookUpItem);
@@ -190,7 +190,7 @@ class Demo extends React.Component {
     }
 
     const res = this._getDataFromDataTotal(index - 10, index - 1, this.dataTotal.length);
-    //this.viewModel.loadTop(res);
+    this.viewModel.loadTop(res);
   }
 
   loadMoreBottom(lastItemIdInCurrentUI) {
@@ -276,7 +276,13 @@ class Demo extends React.Component {
 
   updateData() {
     let arr = this.viewModel.getDataUnfreeze();
-    [arr[0], arr[1]] = [arr[1], arr[0]];
+    [
+      arr[0],
+      arr[1],
+    ] = [
+      arr[1],
+      arr[0],
+    ];
 
     // const newArr = generation.generateIdenticalItems(30);
     this.viewModel.updateData(arr);
@@ -879,7 +885,32 @@ class Demo extends React.Component {
               fontSize: GConst.Font.Size.Medium,
             }}
             onClick={() => {
-              console.log(this.viewModel.masonry.current.getValues());
+              this.viewModel.onRemoveItemsAt(2, 3);
+            }}>
+            Remove 3 items from 2
+          </button>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+          marginTop: GConst.Spacing['0.5'],
+        }}>
+          <button
+            style={{
+              minWidth: '370px',
+              width: '100%',
+              minHeight: '40px',
+              height: 'auto',
+              maxHeight: '40px',
+              margin: GConst.Spacing[0],
+              fontSize: GConst.Font.Size.Medium,
+            }}
+            onClick={() => {
+              const item = this.viewModel.getItemAt(1);
+              const gId = generation.generateId();
+              const newItem = {...item, userName: gId};
+              this.viewModel.updateItemAt(1, newItem);
             }}>
             Log scroll bar values
           </button>
@@ -908,6 +939,7 @@ class Demo extends React.Component {
                renderDirection={'BottomUp'}
                isVirtualized={true}
                numOfOverscan={3}
+               forChatBoxView={false}
                noHScroll/>
     );
   };
