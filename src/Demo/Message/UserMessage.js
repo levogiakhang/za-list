@@ -77,6 +77,7 @@ class UserMessage extends React.PureComponent<UserMessageProps> {
              alt={'Avatar'}
              style={{
                borderRadius: '50%',
+               cursor: 'pointer'
              }}
              onClick={this._onRemove.bind(this)}/>
       </div>
