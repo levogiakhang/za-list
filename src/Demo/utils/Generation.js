@@ -185,6 +185,10 @@ class Generation {
     }
     return arrayItems;
   }
+
+  generateId() {
+    return this.id.generateId();
+  }
 }
 
 const generation = new Generation();
