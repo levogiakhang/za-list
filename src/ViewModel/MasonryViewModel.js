@@ -535,10 +535,10 @@ function createMasonryViewModel({data, defaultHeight}) {
       if (result.hasDeleteSucceed) {
         if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
           storageEvents['viewOnRemoveItem'][0]({
-            itemId,
-            iIndex,
-            iHeight,
-            iPosition,
+            removedItemId: itemId,
+            removedItemIndex: iIndex,
+            removedItemHeight: iHeight,
+            removedItemPos: iPosition,
           });
           throttleRenderUI();
         }
