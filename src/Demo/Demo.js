@@ -293,10 +293,12 @@ class Demo extends React.Component {
       item.msgInfo.msgType &&
       item.msgInfo.msgType === 5
     ) {
-      return <UserMessage userAvatarSrc={item.userAva}
+      return <UserMessage itemId={item.itemId}
+                          userAvatarSrc={item.userAva}
                           userName={item.userName}
                           timestamp={item.sentTime}
-                          msgContent={item.msgInfo.msgContent}/>;
+                          msgContent={item.msgInfo.msgContent}
+                          onRemoveCallback={removeCallback}/>;
     }
     else {
       return (

@@ -4,12 +4,15 @@ import React from 'react';
 import GConst from '../utils/values';
 import isNum from '../../utils/isNum';
 import { convertTime } from '../utils/Converter';
+import isFunction from '../../vendors/isFunction';
 
 type UserMessageProps = {
+  itemId: string,
   userAvatarSrc: string,
   userName: string,
   timestamp: string,
   msgContent: string,
+  onRemoveCallback: any,
 };
 
 class UserMessage extends React.PureComponent<UserMessageProps> {
@@ -18,6 +21,8 @@ class UserMessage extends React.PureComponent<UserMessageProps> {
     userName: 'Jaka',
     timestamp: '1568363819',
     msgContent: 'I love you',
+    onRemoveCallback: () => {
+    },
   };
 
   _getDisplayTime(time) {
@@ -72,7 +77,8 @@ class UserMessage extends React.PureComponent<UserMessageProps> {
              alt={'Avatar'}
              style={{
                borderRadius: '50%',
-             }}/>
+             }}
+             onClick={this._onRemove.bind(this)}/>
       </div>
     );
   };
@@ -171,6 +177,13 @@ class UserMessage extends React.PureComponent<UserMessageProps> {
         </div>
       </div>
     );
+  }
+
+  _onRemove() {
+    const {itemId, onRemoveCallback} = this.props;
+    if (isFunction(onRemoveCallback)) {
+      onRemoveCallback(itemId);
+    }
   }
 }
 
