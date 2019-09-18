@@ -502,7 +502,7 @@ class Masonry extends React.Component<Props> {
       const el = document.getElementById(removedItemId);
       let parent;
       if (el) {
-        this.removeStyle(el, scrollToAnim);
+        AnimExecution.removeStyle(el, scrollToAnim);
         requestAnimationFrame(function () {
           el.style.position = 'absolute';
           el.style.top = removedItemPos + 'px';
@@ -522,7 +522,7 @@ class Masonry extends React.Component<Props> {
         }
 
         const oldChildrenLength = this.children.length;
-        this.appendStyle(el, removalAnim);
+        AnimExecution.appendStyle(el, removalAnim);
 
         el.addEventListener('animationend', () => {
           this._updateEstimatedHeight(-itemHeight);
@@ -577,7 +577,7 @@ class Masonry extends React.Component<Props> {
           });
           parent.prepend(topEl);
 
-          this.appendStyle(topEl, 'makeBigger');
+          AnimExecution.appendStyle(topEl, 'makeBigger');
           topEl.addEventListener('animationend', () => {
             parent.removeChild(topEl);
           });
@@ -589,7 +589,7 @@ class Masonry extends React.Component<Props> {
         requestAnimationFrame(function () {
           stuntman.style.setProperty('--itemHeight', itemHeight + 'px');
         });
-        this.appendStyle(stuntman, 'makeInvisible');
+        AnimExecution.appendStyle(stuntman, 'makeInvisible');
         stuntman.addEventListener('animationend', () => {
           // remove from UI
           parent.removeChild(stuntman);
@@ -1028,7 +1028,6 @@ class Masonry extends React.Component<Props> {
     }
 
     return (
-
       <div
         className={'masonry-parent'}
         ref={this.parentRef}>
