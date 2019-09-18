@@ -142,6 +142,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     // Update
     updateItemsPositionFromSpecifiedItem,
     updateData,
+    updateItemAt,
     reRenderUI,
 
     // Get - Set
@@ -152,6 +153,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     getCache,
     getNumOfNewItems,
     setNumOfNewItems,
+    getItemAt,
   });
 
 
@@ -1008,6 +1010,24 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
+  function updateItemAt(index: number, newItem: Object): boolean {
+    const validIndex = _getValidStartIndex(index);
+
+    if (validIndex === index && newItem && newItem.itemId) {
+      const oldItemId = __itemCache__.getItemId(index);
+      data.splice(index, 1, newItem);
+      dataMap.set(newItem.itemId, newItem);
+      if (newItem.itemId !== oldItemId) {
+        dataMap.delete(oldItemId);
+      }
+      __itemCache__.getIndexMap.set(index, newItem.itemId);
+      __itemCache__.updateItemId(newItem.itemId, oldItemId);
+      throttleRenderUI();
+      return true;
+    }
+    return false;
+  }
+
   function reRenderUI() {
     if (storageEvents['viewReRender']) {
       if (isFunction(storageEvents['viewReRender'][0])) {
@@ -1144,6 +1164,13 @@ function createMasonryViewModel({data, defaultHeight}) {
 
   function setNumOfNewItems(newValue: number) {
     numOfNewItems = newValue;
+  }
+
+  function getItemAt(index: number) {
+    const validIndex = _getValidStartIndex(index);
+    if (validIndex === index) {
+      return data[index];
+    }
   }
 }
 
