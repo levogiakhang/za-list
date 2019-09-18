@@ -14,7 +14,10 @@ import { Scrollbars } from 'react-custom-scrollbars';
 import * as Lodash from 'lodash/core';
 import createMasonryViewModel from '../ViewModel/MasonryViewModel';
 import isNum from '../utils/isNum.js';
-import { AnimExecution } from './AnimationExecution';
+import {
+  AnimExecution,
+  AnimName,
+} from './AnimationExecution';
 
 type RenderDirection = 'TopDown' | 'BottomUp';
 
@@ -330,10 +333,7 @@ class Masonry extends React.Component<Props> {
 
         if (!isRendered && this.isFirstLoadingDone) {
           const {additionAnim, timingResetAnimation} = this.props;
-          AnimExecution.appendStyle(this.getElementFromId(itemId), additionAnim);
-          setTimeout(() => {
-            AnimExecution.removeStyle(this.getElementFromId(itemId), additionAnim);
-          }, timingResetAnimation);
+          this.addAnimWhenAppearance(additionAnim, timingResetAnimation);
         }
 
         this._updateItemsOnChangedHeight(itemId, newHeight, true);
@@ -848,6 +848,22 @@ class Masonry extends React.Component<Props> {
           this.zoomToItem(itemId);
         }
       }
+    }
+  }
+
+  addAnimWhenAppearance(itemId, additionAnim, timingResetAnimation = 200) {
+    const el = this.getElementFromId(itemId);
+    if (additionAnim) {
+      AnimExecution.appendStyle(el, additionAnim);
+      setTimeout(() => {
+        AnimExecution.removeStyle(el, additionAnim);
+      }, timingResetAnimation);
+    }
+    else {
+      AnimExecution.executeDefaultAnim(el, AnimName.zoomIn);
+      setTimeout(() => {
+        AnimExecution.removeStyle(el, AnimName.zoomIn);
+      }, timingResetAnimation);
     }
   }
 

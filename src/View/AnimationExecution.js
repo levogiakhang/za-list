@@ -1,8 +1,40 @@
+import { defaultAnim } from './anim/DefaultAnimation';
+
 export const AnimExecution = {
   appendStyle,
   removeStyle,
-  toggleClass
+  toggleClass,
+  executeDefaultAnim,
 };
+
+export const AnimName = {
+  zoomOut: 1,
+  zoomIn: 2,
+};
+
+function executeDefaultAnim(el, animName) {
+  if (
+    animName !== undefined &&
+    animName !== null &&
+    el
+  ) {
+    switch (animName) {
+      case AnimName.zoomOut: {
+        defaultAnim.zoomOut(el);
+        break;
+      }
+
+      case AnimName.zoomIn: {
+        defaultAnim.zoomIn(el);
+        break;
+      }
+
+      default: {
+        break;
+      }
+    }
+  }
+}
 
 function appendStyle(el, animationNames) {
   const arrAnim = hasWhiteSpace(animationNames) ?
@@ -106,12 +138,14 @@ function toggleClass(el, className) {
   if (
     el &&
     el.classList &&
-    typeof el.classList.toggle === "function"
+    typeof el.classList.toggle === 'function'
   ) {
     el.classList.toggle(className);
-  } else if (hasClass(el, className)) {
+  }
+  else if (hasClass(el, className)) {
     removeClass(el, className);
-  } else {
+  }
+  else {
     addClass(el, className);
   }
 }
