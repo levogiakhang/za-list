@@ -1547,6 +1547,26 @@ class Masonry extends React.Component<Props> {
     }
   }
 
+  _isItemInViewport(itemId: string, scrollTop: number, viewHeight: number): boolean {
+    // Another way is check from '_getItemsInViewport' but may be the cost is higher.
+    // This solution is getting index of item first and last in viewport,
+    //  after that return item's index is between or not.
+    const getIndex = this.viewModel.getCache().getIndex.bind(this.viewModel.getCache());
+    const itemIndex = getIndex(itemId);
+
+    const firstItem = this._getItemIdFromPosition(scrollTop);
+    const lastItem = this._getItemIdFromPosition(scrollTop + viewHeight);
+
+    const fItemIndex = getIndex(firstItem);
+    const lItemIndex = getIndex(lastItem);
+
+    return itemIndex !== NOT_FOUND &&
+      fItemIndex !== NOT_FOUND &&
+      lItemIndex !== NOT_FOUND &&
+      itemIndex >= fItemIndex &&
+      itemIndex <= lItemIndex;
+  }
+
   /**
    *  Get itemId of a item in _positionMaps by position.
    *
