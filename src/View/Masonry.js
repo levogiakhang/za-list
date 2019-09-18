@@ -1566,6 +1566,18 @@ class Masonry extends React.Component<Props> {
       itemIndex <= lItemIndex;
   }
 
+  _getItemsIndexInViewport(scrollTop: number, viewHeight: number): Object {
+    const getIndex = this.viewModel.getCache().getIndex.bind(this.viewModel.getCache());
+    const firstItemIndex = getIndex(this._getItemIdFromPosition(scrollTop));
+    const lastItemIndex = getIndex(this._getItemIdFromPosition(scrollTop + viewHeight));
+
+    // Can be return NOT_FOUND (-1)
+    return {
+      firstItemIndex,
+      lastItemIndex,
+    };
+  }
+
   /**
    *  Get itemId of a item in _positionMaps by position.
    *
