@@ -119,6 +119,7 @@ class Masonry extends React.Component<Props> {
     this.needToExecuteRemovalAnim = false;
     this.heightOfElemToExecuteRemovalAnim = undefined;
     this.removedItemIndexToExecuteRemovalAnim = 0;
+    this.removedElement = undefined;
 
     // For addition anim in Virtualized
     this.needToExecuteAdditionAnim = false;
@@ -483,7 +484,7 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  onRemoveItem({removedItemId, removedItemIndex, removedItemHeight, removedItemPos}) {
+  onRemoveItem({removedItemId, removedItemIndex, removedItemHeight, removedItemPos, removedItem}) {
     const {height, isVirtualized, scrollToAnim, removalAnim} = this.props;
     const {scrollTop} = this.state;
 
@@ -624,6 +625,7 @@ class Masonry extends React.Component<Props> {
             this.needToExecuteRemovalAnim = true;
             this.heightOfElemToExecuteRemovalAnim = removedItemHeight;
             this.removedItemIndexToExecuteRemovalAnim = removedItemIndex;
+            this.removedElement = removedItem;
             this._executeRemovalAnimInVirtualized(removedItemHeight, TIMING_REMOVAL_ANIM_VIRTUALIZED);
           }
           el.animate([
@@ -990,6 +992,32 @@ class Masonry extends React.Component<Props> {
       }
     }
 
+    if (this.needToExecuteRemovalAnim) {
+      const item = this.removedElement;
+      const removedItemIndex = this.removedItemIndexToExecuteRemovalAnim;
+      const position = {
+        top: itemCache.getPosition(removedItemIndex),
+        left: 0,
+      };
+      this.children.push(
+        <CellMeasurer
+          id={item.itemId}
+          key={item.itemId}
+          isVirtualized={this.props.isVirtualized}
+          defaultHeight={itemCache.getDefaultHeight}
+          onChangedHeight={this.onChildrenChangeHeight}
+          position={position}>
+          {
+            isFunction(this.props.cellRenderer) ?
+              this.props.cellRenderer({
+                item,
+                removedItemIndex,
+              }) :
+              null
+          }
+        </CellMeasurer>,
+      );
+    }
     // if (!Lodash.isEqual(this.itemsInBatch, this.oldItemsInBatch) || this.needReRenderChildrenChangedHeight) {
     //   this.oldItemsInBatch = [...this.itemsInBatch];
     //   this.children = [];
@@ -1387,7 +1415,7 @@ class Masonry extends React.Component<Props> {
     const numOfPixel = removedItemHeight * 16.66 / removalTiming;
     this.removalAnimId = setInterval(() => {
       if (this.needToExecuteRemovalAnim) {
-        console.log('ex re anim')
+        console.log('ex re anim');
         if (this.heightOfElemToExecuteRemovalAnim > 0) {
           this.heightOfElemToExecuteRemovalAnim -= numOfPixel;
           if (this.heightOfElemToExecuteRemovalAnim <= 0) {
@@ -1690,7 +1718,8 @@ class Masonry extends React.Component<Props> {
           itemCache.getHeight(lastItem)) {
           // some cases positionTop is higher than last item's position
           result = lastItem;
-        } else {
+        }
+        else {
           for (let key of itemCache.getItemsMap.keys()) {
             if (positionTop >= itemCache.getPosition(key) &&
               positionTop < itemCache.getPosition(key) + itemCache.getHeight(key)) {

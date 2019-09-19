@@ -532,6 +532,7 @@ function createMasonryViewModel({data, defaultHeight}) {
       const iIndex = __itemCache__.getIndex(itemId);
       const iHeight = __itemCache__.getHeight(itemId);
       const iPosition = __itemCache__.getPosition(itemId);
+      const removedItem = dataMap.get(itemId);
       const result = _deleteItemsById(itemId, 1);
 
       if (result.hasDeleteSucceed) {
@@ -541,6 +542,7 @@ function createMasonryViewModel({data, defaultHeight}) {
             removedItemIndex: iIndex,
             removedItemHeight: iHeight,
             removedItemPos: iPosition,
+            removedItem
           });
           throttleRenderUI();
         }
