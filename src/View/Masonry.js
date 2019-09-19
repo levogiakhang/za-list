@@ -49,6 +49,7 @@ const LOAD_MORE_TOP_TRIGGER_POS = 50;
 let LOAD_MORE_BOTTOM_TRIGGER_POS = 0;
 const NEED_TO_SCROLL_TOP_POS = 300;
 const NEED_TO_SCROLL_BOTTOM_POS = 600;
+const TIMING_REMOVAL_ANIM_VIRTUALIZED = 180;
 
 class Masonry extends React.Component<Props> {
   static defaultProps = {
@@ -83,6 +84,7 @@ class Masonry extends React.Component<Props> {
     this.scrTopTimeOutId = undefined;
     this.scrUpTimeOutId = undefined;
     this.scrDownTimeOutId = undefined;
+    this.removalAnimId = undefined;
 
     /* Scroll to bottom when the first loading */
     this.isFirstLoadingDone = false;
@@ -111,8 +113,10 @@ class Masonry extends React.Component<Props> {
 
     this.isRemoveItem = false;
     this.needScrollBackWhenRemoveItem = false;
-    this.needHoldItemToExecuteRemovalAnim = false;
-    this.elToExecuteRemovalAnim = undefined;
+
+    // For removal anim in Virtualized
+    this.needToExecuteRemovalAnim = false;
+    this.heightOfElemToExecuteRemovalAnim = undefined;
     this.removedItemIndexToExecuteRemovalAnim = 0;
 
     this.isActiveAnimWhenScrollToItem = undefined;
@@ -611,11 +615,10 @@ class Masonry extends React.Component<Props> {
             removedItemIndex >= rangeIndexInViewport.firstItemIndex &&
             removedItemIndex <= rangeIndexInViewport.lastItemIndex
           ) {
-            console.log('need hold');
-            console.log(el);
-            this.needHoldItemToExecuteRemovalAnim = true;
-            this.elToExecuteRemovalAnim = el;
+            this.needToExecuteRemovalAnim = true;
+            this.heightOfElemToExecuteRemovalAnim = removedItemHeight;
             this.removedItemIndexToExecuteRemovalAnim = removedItemIndex;
+            this._executeRemovalAnimInVirtualized(removedItemHeight, TIMING_REMOVAL_ANIM_VIRTUALIZED);
           }
           el.animate([
             {
@@ -661,7 +664,8 @@ class Masonry extends React.Component<Props> {
       removedItemsHeight,
       removedFirstItemPos,
     });
-    const {isVirtualized} = this.props;
+    const {height, isVirtualized} = this.props;
+    const {scrollTop} = this.state;
 
     this._removeStyleOfSpecialItem();
 
@@ -696,6 +700,17 @@ class Masonry extends React.Component<Props> {
       }
       // Virtualized list
       else {
+        const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
+        if (
+          rangeIndexInViewport &&
+          removedLastItemIndex >= rangeIndexInViewport.firstItemIndex &&
+          removedLastItemIndex <= rangeIndexInViewport.lastItemIndex
+        ) {
+          this.needToExecuteRemovalAnim = true;
+          this.heightOfElemToExecuteRemovalAnim = totalItemsHeight;
+          this.removedItemIndexToExecuteRemovalAnim = startIndex;
+          this._executeRemovalAnimInVirtualized(totalItemsHeight, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+        }
         this._updateEstimatedHeight(-totalItemsHeight);
       }
     }
@@ -928,24 +943,28 @@ class Masonry extends React.Component<Props> {
 
   updateChildrenInVirtualized(scrollTop) {
     this.itemsInBatch = this._getItemsInBatch(scrollTop);
+    const itemCache = this.viewModel.getCache();
 
     this.children = [];
 
     for (let i = 0; i < this.itemsInBatch.length; i++) {
-      const index = this.viewModel.getCache().getIndex(this.itemsInBatch[i]);
+      const index = itemCache.getIndex(this.itemsInBatch[i]);
       const item = this.viewModel.getDataUnfreeze()[index];
       const removeCallback = this.viewModel.onRemoveItemById;
       const position = {
-        top: this.viewModel.getCache().getPosition(this.itemsInBatch[i]),
+        top: itemCache.getPosition(this.itemsInBatch[i]),
         left: 0,
       };
+      if (this.needToExecuteRemovalAnim && index >= this.removedItemIndexToExecuteRemovalAnim) {
+        position.top += this.heightOfElemToExecuteRemovalAnim;
+      }
       if (!!item) {
         this.children.push(
           <CellMeasurer
-            id={this.viewModel.getCache().getItemId(index)}
-            key={this.viewModel.getCache().getItemId(index)}
+            id={itemCache.getItemId(index)}
+            key={itemCache.getItemId(index)}
             isVirtualized={this.props.isVirtualized}
-            defaultHeight={this.viewModel.getCache().getDefaultHeight}
+            defaultHeight={itemCache.getDefaultHeight}
             onChangedHeight={this.onChildrenChangeHeight}
             position={position}>
             {
@@ -960,14 +979,6 @@ class Masonry extends React.Component<Props> {
           </CellMeasurer>,
         );
       }
-    }
-
-    if (this.needHoldItemToExecuteRemovalAnim) {
-      console.log(this.children);
-      //this.children.splice(this.removedItemIndexToExecuteRemovalAnim, 0 , this.elToExecuteRemovalAnim);
-    }
-    else {
-
     }
 
     // if (!Lodash.isEqual(this.itemsInBatch, this.oldItemsInBatch) || this.needReRenderChildrenChangedHeight) {
@@ -1292,7 +1303,7 @@ class Masonry extends React.Component<Props> {
   _checkAndScrollBackWhenRemoveItem(isVirtualized, scrollTop) {
     if (isVirtualized && this.isRemoveItem) {
       this.isRemoveItem = false;
-      if (this.needScrollBackWhenRemoveItem) {
+      if (this.needScrollBackWhenRemoveItem && !this.needToExecuteRemovalAnim) {
         this.needScrollBackWhenRemoveItem = false;
         this._scrollToOffset(scrollTop - this.removedItemHeight);
       }
@@ -1352,6 +1363,28 @@ class Masonry extends React.Component<Props> {
     clearInterval(this.scrTopTimeOutId);
     clearInterval(this.scrUpTimeOutId);
     clearInterval(this.scrDownTimeOutId);
+    this._resetRemovalAnim();
+  _executeRemovalAnimInVirtualized(removedItemHeight, removalTiming) {
+    const numOfPixel = removedItemHeight * 16.66 / removalTiming;
+    this.removalAnimId = setInterval(() => {
+      if (this.needToExecuteRemovalAnim) {
+        console.log('ex re anim')
+        if (this.heightOfElemToExecuteRemovalAnim > 0) {
+          this.heightOfElemToExecuteRemovalAnim -= numOfPixel;
+          if (this.heightOfElemToExecuteRemovalAnim <= 0) {
+            this.heightOfElemToExecuteRemovalAnim = 0;
+            this.needToExecuteRemovalAnim = false;
+            clearInterval(this.removalAnimId);
+          }
+          this.reRender();
+        }
+      }
+    }, 16.66);
+  }
+
+  _resetRemovalAnim() {
+    this.needToExecuteRemovalAnim = false;
+    clearInterval(this.removalAnimId);
   }
 
   _scrollTopWithAnim(
