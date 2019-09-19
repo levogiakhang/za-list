@@ -6,7 +6,6 @@ import isFunction from '../../vendors/isFunction';
 import Image from './Image';
 import NormalMessage from './NormalMessage';
 import GConst from '../utils/values';
-import UserMessage from './UserMessage';
 
 type OnRemoveItemCallback = any;
 
@@ -82,7 +81,7 @@ export default class Message extends React.PureComponent<MessageProps> {
   };
 
   renderContent = () => {
-    const {userAva, userName, msgInfo, sentTime, isMine, sentStatus} = this.props;
+    const {userName, msgInfo, sentTime, isMine, sentStatus} = this.props;
     switch (msgInfo.msgType) {
       case 1: {
         return (
