@@ -85,6 +85,7 @@ class Masonry extends React.Component<Props> {
     this.scrUpTimeOutId = undefined;
     this.scrDownTimeOutId = undefined;
     this.removalAnimId = undefined;
+    this.additionAnimId = undefined;
 
     /* Scroll to bottom when the first loading */
     this.isFirstLoadingDone = false;
@@ -118,6 +119,11 @@ class Masonry extends React.Component<Props> {
     this.needToExecuteRemovalAnim = false;
     this.heightOfElemToExecuteRemovalAnim = undefined;
     this.removedItemIndexToExecuteRemovalAnim = 0;
+
+    // For addition anim in Virtualized
+    this.needToExecuteAdditionAnim = false;
+    this.heightOfElemToExecuteAdditionAnim = undefined;
+    this.addedItemIndexToExecuteRemovalAnim = 0;
 
     this.isActiveAnimWhenScrollToItem = undefined;
     this.isScrollToSpecialItem = false;
@@ -958,6 +964,9 @@ class Masonry extends React.Component<Props> {
       if (this.needToExecuteRemovalAnim && index >= this.removedItemIndexToExecuteRemovalAnim) {
         position.top += this.heightOfElemToExecuteRemovalAnim;
       }
+      else if (this.needToExecuteAdditionAnim && index >= this.addedItemIndexToExecuteRemovalAnim) {
+        position.top -= this.heightOfElemToExecuteAdditionAnim;
+      }
       if (!!item) {
         this.children.push(
           <CellMeasurer
@@ -1366,7 +1375,14 @@ class Masonry extends React.Component<Props> {
     clearInterval(this.scrTopTimeOutId);
     clearInterval(this.scrUpTimeOutId);
     clearInterval(this.scrDownTimeOutId);
+    this._resetAdditionAnim();
     this._resetRemovalAnim();
+  }
+
+  _executeAdditionAnimForVirtualized() {
+
+  }
+
   _executeRemovalAnimInVirtualized(removedItemHeight, removalTiming) {
     const numOfPixel = removedItemHeight * 16.66 / removalTiming;
     this.removalAnimId = setInterval(() => {
@@ -1383,6 +1399,11 @@ class Masonry extends React.Component<Props> {
         }
       }
     }, 16.66);
+  }
+
+  _resetAdditionAnim() {
+    this.needToExecuteAdditionAnim = false;
+    clearInterval(this.additionAnimId);
   }
 
   _resetRemovalAnim() {
