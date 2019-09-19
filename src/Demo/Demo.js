@@ -247,7 +247,7 @@ class Demo extends React.Component {
     }
   };
 
-  removeItemFromDataTotal = ({fromItemId, deleteCount, deletedItems, beforeItem, afterItem}) => {
+  removeItemFromDataTotal = ({fromItemId, deletedItems, beforeItem, afterItem}) => {
     if (Array.isArray(this.dataTotal)) {
       const beforeItemId = beforeItem ?
         beforeItem.itemId :
@@ -257,10 +257,10 @@ class Demo extends React.Component {
         null;
 
       if (beforeItemId !== null) {
-        this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, deleteCount);
+        this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, deletedItems.length);
       }
       else {
-        this.dataTotal.splice(this.dataTotalMap.get(afterItemId) - 1, deleteCount);
+        this.dataTotal.splice(this.dataTotalMap.get(afterItemId) - 1, deletedItems.length);
       }
       this.updateDataIndexMap();
       this.dataTotalMap.delete(fromItemId);
