@@ -1176,6 +1176,7 @@ class Masonry extends React.Component<Props> {
   _checkAndNotifyIfViewNotFull(height) {
     // Notify if viewport is not full.
     if (this.isFirstLoadingDone && this.estimateTotalHeight < height) {
+      console.log('notify not full');
       this.viewModel.enableLoadTop();
     }
   }
@@ -1200,6 +1201,7 @@ class Masonry extends React.Component<Props> {
       this.isFirstLoadingDone &&
       !this.preventLoadBottom
     ) {
+      console.log('enable load bottom');
       this.viewModel.enableLoadBottom();
     }
   }
@@ -1304,6 +1306,7 @@ class Masonry extends React.Component<Props> {
     if (isVirtualized && this.isRemoveItem) {
       this.isRemoveItem = false;
       if (this.needScrollBackWhenRemoveItem && !this.needToExecuteRemovalAnim) {
+        console.log('scroll back remove');
         this.needScrollBackWhenRemoveItem = false;
         this._scrollToOffset(scrollTop - this.removedItemHeight);
       }
