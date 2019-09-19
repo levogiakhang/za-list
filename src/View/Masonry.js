@@ -1654,13 +1654,6 @@ class Masonry extends React.Component<Props> {
         return itemCache.getItemId(data.length - 1);
       }
 
-      // for (let key of itemCache.getItemsMap.keys()) {
-      //   if (positionTop >= itemCache.getPosition(key) &&
-      //     positionTop < itemCache.getPosition(key) + itemCache.getHeight(key)) {
-      //     return key;
-      //   }
-      // }
-
       let result = this._ternarySearch(0, data.length, positionTop);
       if (!result) {
         const lastItem = itemCache.getItemId(data.length - 1);
@@ -1673,6 +1666,13 @@ class Masonry extends React.Component<Props> {
           itemCache.getHeight(lastItem)) {
           // some cases positionTop is higher than last item's position
           result = lastItem;
+        } else {
+          for (let key of itemCache.getItemsMap.keys()) {
+            if (positionTop >= itemCache.getPosition(key) &&
+              positionTop < itemCache.getPosition(key) + itemCache.getHeight(key)) {
+              return key;
+            }
+          }
         }
       }
 
