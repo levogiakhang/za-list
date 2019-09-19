@@ -120,6 +120,8 @@ class Masonry extends React.Component<Props> {
     this.heightOfElemToExecuteRemovalAnim = undefined;
     this.removedItemIndexToExecuteRemovalAnim = 0;
     this.removedElement = undefined;
+    this.isRemovedItemHeightGreaterThan = false;
+    this.isBottomWhenRemoveItemVirtualized = false;
 
     // For addition anim in Virtualized
     this.needToExecuteAdditionAnim = false;
@@ -619,44 +621,23 @@ class Masonry extends React.Component<Props> {
           const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
           if (
             rangeIndexInViewport &&
-            removedItemIndex >= rangeIndexInViewport.firstItemIndex &&
-            removedItemIndex <= rangeIndexInViewport.lastItemIndex
+            itemIndex >= rangeIndexInViewport.firstItemIndex &&
+            itemIndex <= rangeIndexInViewport.lastItemIndex + 1
           ) {
             this.needToExecuteRemovalAnim = true;
-            this.heightOfElemToExecuteRemovalAnim = removedItemHeight;
+            this.heightOfElemToExecuteRemovalAnim = itemHeight;
             this.removedItemIndexToExecuteRemovalAnim = removedItemIndex;
             this.removedElement = removedItem;
-            this._executeRemovalAnimInVirtualized(removedItemHeight, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+            this._executeRemovalAnimInVirtualized(itemHeight, TIMING_REMOVAL_ANIM_VIRTUALIZED);
           }
-          el.animate([
-            {
-              transform: 'scale(1)',
-              opacity: 1,
-              offset: 0,
-            },
-            {
-              transform: 'scale(.5)',
-              opacity: .5,
-              offset: .3,
-            },
-            {
-              transform: 'scale(.667)',
-              opacity: .667,
-              offset: .7875,
-            },
-            {
-              transform: 'scale(.6)',
-              opacity: .6,
-              offset: 1,
-            },
-          ], {
-            duration: 700, //milliseconds
-            easing: 'ease-in-out', //'linear', a bezier curve, etc.
-            delay: 10, //milliseconds
-            iterations: Infinity, //or a number
-            direction: 'alternate', //'normal', 'reverse', etc.
-            fill: 'forwards', //'backwards', 'both', 'none', 'auto'
-          });
+          AnimExecution.executeDefaultAnim(el, AnimName.zoomOut);
+        }
+
+        if (scrollTop + height >= this.estimateTotalHeight - 2) {
+          this.isBottomWhenRemoveItemVirtualized = true;
+        }
+        else if (scrollTop + height > this.estimateTotalHeight - itemHeight) {
+          this.isRemovedItemHeightGreaterThan = true;
         }
 
         this._updateEstimatedHeight(-itemHeight);
@@ -963,8 +944,26 @@ class Masonry extends React.Component<Props> {
         top: itemCache.getPosition(this.itemsInBatch[i]),
         left: 0,
       };
-      if (this.needToExecuteRemovalAnim && index >= this.removedItemIndexToExecuteRemovalAnim) {
-        position.top += this.heightOfElemToExecuteRemovalAnim;
+      if (this.needToExecuteRemovalAnim) {
+        if (this.isBottomWhenRemoveItemVirtualized) {
+          if (index < this.removedItemIndexToExecuteRemovalAnim) {
+            position.top -= this.heightOfElemToExecuteRemovalAnim;
+          }
+        }
+        else if (this.isRemovedItemHeightGreaterThan) {
+          // Be removed item's height is greater than distance from scrollTop to totalHeight
+          if (index < this.removedItemIndexToExecuteRemovalAnim) {
+            position.top -= this.heightOfElemToExecuteRemovalAnim / 2;
+          }
+          else {
+            position.top += this.heightOfElemToExecuteRemovalAnim / 2;
+          }
+        }
+        else {
+          if (index >= this.removedItemIndexToExecuteRemovalAnim) {
+            position.top += this.heightOfElemToExecuteRemovalAnim;
+          }
+        }
       }
       else if (this.needToExecuteAdditionAnim && index >= this.addedItemIndexToExecuteRemovalAnim) {
         position.top -= this.heightOfElemToExecuteAdditionAnim;
@@ -992,6 +991,7 @@ class Masonry extends React.Component<Props> {
       }
     }
 
+    // Prevent removed item is disappeared.
     if (this.needToExecuteRemovalAnim) {
       const item = this.removedElement;
       const removedItemIndex = this.removedItemIndexToExecuteRemovalAnim;
@@ -999,24 +999,31 @@ class Masonry extends React.Component<Props> {
         top: itemCache.getPosition(removedItemIndex),
         left: 0,
       };
-      this.children.push(
-        <CellMeasurer
-          id={item.itemId}
-          key={item.itemId}
-          isVirtualized={this.props.isVirtualized}
-          defaultHeight={itemCache.getDefaultHeight}
-          onChangedHeight={this.onChildrenChangeHeight}
-          position={position}>
-          {
-            isFunction(this.props.cellRenderer) ?
-              this.props.cellRenderer({
-                item,
-                removedItemIndex,
-              }) :
-              null
-          }
-        </CellMeasurer>,
-      );
+      if (
+        item &&
+        item.itemId &&
+        isNum(removedItemIndex) &&
+        position.top !== NOT_FOUND
+      ) {
+        this.children.push(
+          <CellMeasurer
+            id={item.itemId}
+            key={item.itemId}
+            isVirtualized={this.props.isVirtualized}
+            defaultHeight={itemCache.getDefaultHeight}
+            onChangedHeight={this.onChildrenChangeHeight}
+            position={position}>
+            {
+              isFunction(this.props.cellRenderer) ?
+                this.props.cellRenderer({
+                  item,
+                  removedItemIndex,
+                }) :
+                null
+            }
+          </CellMeasurer>,
+        );
+      }
     }
     // if (!Lodash.isEqual(this.itemsInBatch, this.oldItemsInBatch) || this.needReRenderChildrenChangedHeight) {
     //   this.oldItemsInBatch = [...this.itemsInBatch];
@@ -1421,6 +1428,8 @@ class Masonry extends React.Component<Props> {
           if (this.heightOfElemToExecuteRemovalAnim <= 0) {
             this.heightOfElemToExecuteRemovalAnim = 0;
             this.needToExecuteRemovalAnim = false;
+            this.isRemovedItemHeightGreaterThan = false;
+            this.isBottomWhenRemoveItemVirtualized = false;
             clearInterval(this.removalAnimId);
           }
           this.reRender();
@@ -1436,6 +1445,8 @@ class Masonry extends React.Component<Props> {
 
   _resetRemovalAnim() {
     this.needToExecuteRemovalAnim = false;
+    this.isRemovedItemHeightGreaterThan = false;
+    this.isBottomWhenRemoveItemVirtualized = false;
     clearInterval(this.removalAnimId);
   }
 
