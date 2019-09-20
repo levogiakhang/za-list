@@ -645,13 +645,14 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  onRemoveItems({removedItemsId, startIndex, removedLastItemIndex, deleteCount, removedItemsHeight, removedFirstItemPos}) {
+  onRemoveItems({removedItemsId, startIndex, removedLastItemIndex, deleteCount, removedItemsHeight, removedFirstItemPos, removedItems}) {
     console.log({
       removedItemsId,
       startIndex,
       deleteCount,
       removedItemsHeight,
       removedFirstItemPos,
+      removedItems,
     });
     const {height, isVirtualized} = this.props;
     const {scrollTop} = this.state;
@@ -690,17 +691,32 @@ class Masonry extends React.Component<Props> {
       // Virtualized list
       else {
         const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
+        let remainHeight = 0;
         if (
           rangeIndexInViewport &&
           removedLastItemIndex >= rangeIndexInViewport.firstItemIndex &&
-          removedLastItemIndex <= rangeIndexInViewport.lastItemIndex
+          removedLastItemIndex <= rangeIndexInViewport.lastItemIndex + 1
         ) {
           this.needToExecuteRemovalAnim = true;
           this.heightOfElemToExecuteRemovalAnim = totalItemsHeight;
           this.removedItemIndexToExecuteRemovalAnim = startIndex;
           this._executeRemovalAnimInVirtualized(totalItemsHeight, TIMING_REMOVAL_ANIM_VIRTUALIZED);
         }
+        if (scrollTop + height >= this.estimateTotalHeight - 2) {
+          this.isBottomWhenRemoveItemVirtualized = true;
+        }
+        else if (scrollTop + height > this.estimateTotalHeight - totalItemsHeight) {
+          this.isRemovedItemHeightGreaterThan = true;
+          console.log('abc', scrollTop);
+
+          this.disparityFromLastItemInVPToVPHeight = scrollTop + height - itemCache.getPosition(itemCache.getItemId(startIndex)) + totalItemsHeight;
+        }
+
+        const oldEst = this.estimateTotalHeight;
         this._updateEstimatedHeight(-totalItemsHeight);
+        remainHeight = oldEst - scrollTop - height;
+        const deltaScrTop = totalItemsHeight - remainHeight;
+        console.log(deltaScrTop)
       }
     }
   }
