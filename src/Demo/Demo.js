@@ -8,8 +8,8 @@ import throttle from '../vendors/throttle';
 import createMasonryViewModel from '../ViewModel/MasonryViewModel';
 import UserMessage from './Message/UserMessage';
 
-const DATA_TOTAL_NUMBER = 100;
-const DATA_UI_NUMBER = 30;
+const DATA_TOTAL_NUMBER = 30;
+const DATA_UI_NUMBER = 15;
 
 const lv1 = 'background-color: #3F51B5; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1.1rem; font-weight: 700l; font-style: italic';
 const lv2 = 'background-color: Maroon; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1rem; font-weight: 700';
@@ -64,6 +64,7 @@ class Demo extends React.Component {
     //this.dataOnList.addEventListener('onDataChanged', this.viewModel.onDataChanged);
     this.viewModel.addEventListener('onAddItemsSucceed', this.addItemToDataTotal);
     this.viewModel.addEventListener('onRemoveItemByIdSucceed', this.removeItemFromDataTotal);
+    this.viewModel.addEventListener('onRemoveItemsAtSucceed', this.removeItemsFromDataTotal);
     this.viewModel.addEventListener('onRemoveItemAtSucceed', this.removeItemFromDataTotal);
     this.viewModel.addEventListener('loadTopStart', this.enableLoadMoreTop);
     this.viewModel.addEventListener('loadBottomStart', this.enableLoadMoreBottom);
@@ -264,6 +265,28 @@ class Demo extends React.Component {
       }
       this.updateDataIndexMap();
       this.dataTotalMap.delete(fromItemId);
+    }
+  };
+
+  removeItemsFromDataTotal = ({fromIndex, deletedItems, beforeItem, afterItem}) => {
+    if (Array.isArray(this.dataTotal)) {
+      const beforeItemId = beforeItem ?
+        beforeItem.itemId :
+        null;
+      const afterItemId = afterItem ?
+        afterItem.itemId :
+        null;
+
+      if (beforeItemId !== null) {
+        this.dataTotal.splice(this.dataTotalMap.get(beforeItemId) + 1, deletedItems.length);
+      }
+      else {
+        this.dataTotal.splice(this.dataTotalMap.get(afterItemId) - 1, deletedItems.length);
+      }
+      this.updateDataIndexMap();
+      deletedItems.forEach(item => {
+        this.dataTotalMap.delete(item.itemId);
+      })
     }
   };
 
@@ -885,7 +908,7 @@ class Demo extends React.Component {
               fontSize: GConst.Font.Size.Medium,
             }}
             onClick={() => {
-              this.viewModel.onRemoveItemsAt(2, 3);
+              this.viewModel.onRemoveItemsAt(25, 3);
             }}>
             Remove 3 items from 2
           </button>
@@ -909,7 +932,10 @@ class Demo extends React.Component {
             onClick={() => {
               const item = this.viewModel.getItemAt(1);
               const gId = generation.generateId();
-              const newItem = {...item, userName: gId};
+              const newItem = {
+                ...item,
+                userName: gId,
+              };
               this.viewModel.updateItemAt(1, newItem);
             }}>
             Log scroll bar values
