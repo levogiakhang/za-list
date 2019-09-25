@@ -31,7 +31,7 @@ function executeDefaultAnim(el, animName, fromPos, toPos, duration) {
       }
 
       case AnimName.verticalSlide: {
-        defaultAnim.verticalSlide(el, fromPos, toPos, duration);
+        defaultAnim.verticalSlide(el, fromPos, toPos, duration, 0, 1,'ease-in');
         break;
       }
 
