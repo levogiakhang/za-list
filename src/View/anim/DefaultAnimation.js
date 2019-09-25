@@ -1,8 +1,10 @@
 import isFunction from '../../vendors/isFunction';
+import isNum from '../../utils/isNum';
 
 export const defaultAnim = {
   zoomOut,
   zoomIn,
+  verticalSlide
 };
 
 function zoomOut(el) {
@@ -42,11 +44,19 @@ function zoomOut(el) {
   }
 }
 
-function zoomIn(el) {
+function zoomIn(el,  duration: number = 300, iterationCount: number = 1) {
   if (
     el &&
     isFunction(el.animate)
   ) {
+    const _iterationCount = isNum(iterationCount) ?
+      iterationCount :
+      0;
+
+    const _duration = isNum(duration) ?
+      duration :
+      0;
+
     el.animate([
         {
           opacity: 0.5,
@@ -58,8 +68,52 @@ function zoomIn(el) {
         },
       ],
       {
-        duration: 150,
+        duration: _duration,
+        iterations: _iterationCount,
         easing: 'linear',
+      },
+    );
+  }
+}
+
+function verticalSlide(el, fromY: number, toY: number, duration: number = 300, delay: number = 0, iterationCount: number = 1, easing: string = 'linear') {
+  const _fromY = isNum(fromY) ?
+    fromY :
+    0;
+
+  const _toY = isNum(toY) ?
+    toY :
+    0;
+
+  const _delay = isNum(delay) ?
+    delay :
+    0;
+
+  const _iterationCount = isNum(iterationCount) ?
+    iterationCount :
+    0;
+
+  const _duration = isNum(duration) ?
+    duration :
+    0;
+
+  if (
+    el &&
+    isFunction(el.animate)
+  ) {
+    el.animate([
+        {
+          transform: `translatey(${_fromY}px)`,
+        },
+        {
+          transform: `translatey(${_toY}px)`,
+        },
+      ],
+      {
+        duration: _duration,
+        delay: _delay,
+        iterations: _iterationCount,
+        easing: easing,
       },
     );
   }

@@ -26,7 +26,7 @@ function executeDefaultAnim(el, animName, fromPos, toPos, duration) {
       }
 
       case AnimName.zoomIn: {
-        defaultAnim.zoomIn(el);
+        defaultAnim.zoomIn(el, duration);
         break;
       }
 
