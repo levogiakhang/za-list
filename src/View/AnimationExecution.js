@@ -10,9 +10,10 @@ export const AnimExecution = {
 export const AnimName = {
   zoomOut: 1,
   zoomIn: 2,
+  verticalSlide: 3
 };
 
-function executeDefaultAnim(el, animName) {
+function executeDefaultAnim(el, animName, fromPos, toPos, duration) {
   if (
     animName !== undefined &&
     animName !== null &&
@@ -26,6 +27,11 @@ function executeDefaultAnim(el, animName) {
 
       case AnimName.zoomIn: {
         defaultAnim.zoomIn(el);
+        break;
+      }
+
+      case AnimName.verticalSlide: {
+        defaultAnim.verticalSlide(el, fromPos, toPos, duration);
         break;
       }
 
