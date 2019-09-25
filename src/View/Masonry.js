@@ -49,7 +49,8 @@ const LOAD_MORE_TOP_TRIGGER_POS = 50;
 let LOAD_MORE_BOTTOM_TRIGGER_POS = 0;
 const NEED_TO_SCROLL_TOP_POS = 300;
 const NEED_TO_SCROLL_BOTTOM_POS = 600;
-const TIMING_REMOVAL_ANIM_VIRTUALIZED = 180;
+const TIMING_ADDITION_ANIM_VIRTUALIZED = 100;
+const TIMING_REMOVAL_ANIM_VIRTUALIZED = 150;
 
 class Masonry extends React.Component<Props> {
   static defaultProps = {
@@ -84,8 +85,6 @@ class Masonry extends React.Component<Props> {
     this.scrTopTimeOutId = undefined;
     this.scrUpTimeOutId = undefined;
     this.scrDownTimeOutId = undefined;
-    this.removalAnimId = undefined;
-    this.additionAnimId = undefined;
 
     /* Scroll to bottom when the first loading */
     this.isFirstLoadingDone = false;
@@ -150,6 +149,7 @@ class Masonry extends React.Component<Props> {
     this.estimateTotalHeight = 0;
     this.oldEstimateTotalHeight = 0;
 
+    this.oldMap = new Map();
     this.children = [];
     this.needReRenderChildrenChangedHeight = true; // Reload children when item change height.
     this.oldItemsInBatch = undefined;
@@ -320,7 +320,8 @@ class Masonry extends React.Component<Props> {
 
   onChildrenChangeHeight(itemId: string, oldHeight: number, newHeight: number) {
     const itemCache = this.viewModel.getCache();
-    const {isVirtualized} = this.props;
+    const {height, isVirtualized, scrollToAnim} = this.props;
+    const {scrollTop} = this.state;
     const isRendered = itemCache.isRendered(itemId);
 
     if (
@@ -359,11 +360,36 @@ class Masonry extends React.Component<Props> {
             if (itemCache.getIndex(this.curItemInViewPort) >= itemCache.getIndex(itemId)) {
               this.itemScrollBackWhenHavingNewItem = {
                 itemId: this.curItemInViewPort.toString(),
-                disparity: this.state.scrollTop - itemCache.getPosition(this.curItemInViewPort) + newHeight - itemCache.getDefaultHeight,
+                disparity: scrollTop - itemCache.getPosition(this.curItemInViewPort) + newHeight - itemCache.getDefaultHeight,
               };
               //console.log(JSON.parse(JSON.stringify(this.state.scrollTop)), this.itemScrollBackWhenHavingNewItem.itemId, this.itemScrollBackWhenHavingNewItem.disparity, itemId);
 
               this.needScrollBackWhenHavingNewItem = true;
+            }
+
+            // Animation for new item
+            const itemsIndex = this._getItemsIndexInViewport(scrollTop, height);
+            if (itemCache.getIndex(itemId) >= itemsIndex.firstItemIndex &&
+              itemCache.getIndex(itemId) <= itemsIndex.lastItemIndex) {
+              const el = document.getElementById(itemId);
+              let parent;
+              if (el) {
+                AnimExecution.executeDefaultAnim(el, AnimName.zoomIn, 0, 0, TIMING_ADDITION_ANIM_VIRTUALIZED);
+                parent = el.parentElement;
+                if (parent && parent.children) {
+                  for (let i = 0; i < parent.children.length; i++) {
+                    if (parent.children[i]) {
+                      const id = parent.children[i].id;
+                      if (id !== itemId && this.oldMap.get(id) !== undefined) {
+                        if (itemCache.getIndex(id) > itemCache.getIndex(itemId)) {
+                          const fromPos = -newHeight / 1.2;
+                          AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_ADDITION_ANIM_VIRTUALIZED);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
           if (!this.isFirstLoadingDone && !this.props.isStartAtBottom && itemCache.getIndex(itemId) === 0) {
@@ -446,6 +472,7 @@ class Masonry extends React.Component<Props> {
     ) {
       this.isAddMore = true;
       this.numOfNewLoading = items.length;
+      this.oldMap = oldMap;
 
       this._removeStyleOfSpecialItem();
 
@@ -486,7 +513,7 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  onRemoveItem({removedItemId, removedItemIndex, removedItemHeight, removedItemPos, removedItem}) {
+  onRemoveItem({removedItemId, removedItemIndex, removedItemHeight, removedItemPos, removedItem, oldMap}) {
     const {height, isVirtualized, scrollToAnim, removalAnim} = this.props;
     const {scrollTop} = this.state;
 
@@ -617,27 +644,56 @@ class Masonry extends React.Component<Props> {
       }
       // Virtualized list
       else {
+        const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
+        if (
+          rangeIndexInViewport &&
+          itemIndex >= rangeIndexInViewport.firstItemIndex &&
+          itemIndex <= rangeIndexInViewport.lastItemIndex + 1
+        ) {
+          this.needToExecuteRemovalAnim = true;
+          this.heightOfElemToExecuteRemovalAnim = itemHeight;
+          this.removedItemIndexToExecuteRemovalAnim = removedItemIndex;
+          this.removedElement = removedItem;
+        }
         if (el) {
-          const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
-          if (
-            rangeIndexInViewport &&
-            itemIndex >= rangeIndexInViewport.firstItemIndex &&
-            itemIndex <= rangeIndexInViewport.lastItemIndex + 1
-          ) {
-            this.needToExecuteRemovalAnim = true;
-            this.heightOfElemToExecuteRemovalAnim = itemHeight;
-            this.removedItemIndexToExecuteRemovalAnim = removedItemIndex;
-            this.removedElement = removedItem;
-            this._executeRemovalAnimInVirtualized(itemHeight, TIMING_REMOVAL_ANIM_VIRTUALIZED);
-          }
           AnimExecution.executeDefaultAnim(el, AnimName.zoomOut);
+          setTimeout(() => {
+            this.needToExecuteRemovalAnim = false;
+            this.reRender();
+          }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
         }
 
         if (scrollTop + height >= this.estimateTotalHeight - 2) {
-          this.isBottomWhenRemoveItemVirtualized = true;
+          // At bottom
+          if (parent && parent.children) {
+            for (let i = 0; i < parent.children.length; i++) {
+              if (parent.children[i]) {
+                const id = parent.children[i].id;
+                if (id !== removedItemId && oldMap.get(id) !== undefined) {
+                  if (itemCache.getIndex(id) < removedItemIndex) {
+                    const fromPos = -removedItemHeight;
+                    AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                  }
+                }
+              }
+            }
+          }
         }
         else if (scrollTop + height > this.estimateTotalHeight - itemHeight) {
-          this.isRemovedItemHeightGreaterThan = true;
+//TODO:
+        }
+        else {
+          if (parent && parent.children) {
+            for (let i = 0; i < parent.children.length; i++) {
+              if (parent.children[i]) {
+                const id = parent.children[i].id;
+                if (id !== removedItemId && oldMap.get(id) !== undefined) {
+                  const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
+                  AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                }
+              }
+            }
+          }
         }
 
         this._updateEstimatedHeight(-itemHeight);
@@ -645,7 +701,7 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  onRemoveItems({removedItemsId, startIndex, removedLastItemIndex, deleteCount, removedItemsHeight, removedFirstItemPos, removedItems}) {
+  onRemoveItems({removedItemsId, startIndex, removedLastItemIndex, deleteCount, removedItemsHeight, removedFirstItemPos, removedItems, oldMap}) {
     console.log({
       removedItemsId,
       startIndex,
@@ -700,7 +756,6 @@ class Masonry extends React.Component<Props> {
           this.needToExecuteRemovalAnim = true;
           this.heightOfElemToExecuteRemovalAnim = totalItemsHeight;
           this.removedItemIndexToExecuteRemovalAnim = startIndex;
-          this._executeRemovalAnimInVirtualized(totalItemsHeight, TIMING_REMOVAL_ANIM_VIRTUALIZED);
         }
         if (scrollTop + height >= this.estimateTotalHeight - 2) {
           this.isBottomWhenRemoveItemVirtualized = true;
@@ -716,7 +771,7 @@ class Masonry extends React.Component<Props> {
         this._updateEstimatedHeight(-totalItemsHeight);
         remainHeight = oldEst - scrollTop - height;
         const deltaScrTop = totalItemsHeight - remainHeight;
-        console.log(deltaScrTop)
+        console.log(deltaScrTop);
       }
     }
   }
@@ -960,30 +1015,6 @@ class Masonry extends React.Component<Props> {
         top: itemCache.getPosition(this.itemsInBatch[i]),
         left: 0,
       };
-      if (this.needToExecuteRemovalAnim) {
-        if (this.isBottomWhenRemoveItemVirtualized) {
-          if (index < this.removedItemIndexToExecuteRemovalAnim) {
-            position.top -= this.heightOfElemToExecuteRemovalAnim;
-          }
-        }
-        else if (this.isRemovedItemHeightGreaterThan) {
-          // Be removed item's height is greater than distance from scrollTop to totalHeight
-          if (index < this.removedItemIndexToExecuteRemovalAnim) {
-            position.top -= this.heightOfElemToExecuteRemovalAnim / 2;
-          }
-          else {
-            position.top += this.heightOfElemToExecuteRemovalAnim / 2;
-          }
-        }
-        else {
-          if (index >= this.removedItemIndexToExecuteRemovalAnim) {
-            position.top += this.heightOfElemToExecuteRemovalAnim;
-          }
-        }
-      }
-      else if (this.needToExecuteAdditionAnim && index >= this.addedItemIndexToExecuteRemovalAnim) {
-        position.top -= this.heightOfElemToExecuteAdditionAnim;
-      }
       if (!!item) {
         this.children.push(
           <CellMeasurer
@@ -1012,13 +1043,14 @@ class Masonry extends React.Component<Props> {
       const item = this.removedElement;
       const removedItemIndex = this.removedItemIndexToExecuteRemovalAnim;
       const position = {
-        top: itemCache.getPosition(removedItemIndex),
+        top: itemCache.getPosition(itemCache.getItemId(removedItemIndex)),
         left: 0,
       };
+
       if (
         item &&
         item.itemId &&
-        isNum(removedItemIndex) &&
+        isNum(position.top) &&
         position.top !== NOT_FOUND
       ) {
         this.children.push(
@@ -1326,11 +1358,12 @@ class Masonry extends React.Component<Props> {
         const posNeedToScr =
           this.viewModel.getCache().getPosition(this.firstItemInViewportBefore.itemId) +
           this.firstItemInViewportBefore.disparity;
-        //console.log('load top 2', posNeedToScr, this.curItemInViewPort);
+        console.log('load top 2', posNeedToScr, this.curItemInViewPort);
         this._scrollToOffset(posNeedToScr);
         //this._scrollToItem(this.firstItemInViewportBefore.itemId, this.firstItemInViewportBefore.disparity);
       }
       else if (this.isLoadNewItemsDone && this.isAddMore) {
+        console.log('lalala');
         this.isAddMore = false;
         this.isLoadNewItemsDone = false;
         this._scrollToItem(
@@ -1341,6 +1374,7 @@ class Masonry extends React.Component<Props> {
       else {
         clearInterval(this.scrTopTimeOutId);
         if (!this.isScrollToSpecialItem && this.isLoadNewItemsDone) {
+          console.log('hahaa');
           this.isLoadNewItemsDone = false;
           this._scrollToItem(
             this.firstItemInViewportBefore.itemId,
@@ -1353,7 +1387,7 @@ class Masonry extends React.Component<Props> {
     // [Virtualized] Add items out range of batch
     else if (isVirtualized && this.isAddMore) {
       this.preventUpdateFirstItemInViewportWhenAdd = false;
-      //console.log('aaaaaa');
+      console.log('aaaaaa');
       this.isAddMore = false;
       this._scrollToItem(
         this.firstItemInViewportBefore.itemId,
@@ -1388,6 +1422,7 @@ class Masonry extends React.Component<Props> {
       this.needScrollBottom = false;
       if (scrollTop >= this.estimateTotalHeight - this.newLastItemsTotalHeight - height - NEED_TO_SCROLL_BOTTOM_POS) {
         //TODO: conflict with "resize" after add bottom
+        console.log('scr bottom add item');
         this.scrollToBottomAtCurrentUI();
       }
       this.newLastItemsTotalHeight = 0;
@@ -1426,44 +1461,6 @@ class Masonry extends React.Component<Props> {
     clearInterval(this.scrTopTimeOutId);
     clearInterval(this.scrUpTimeOutId);
     clearInterval(this.scrDownTimeOutId);
-    this._resetAdditionAnim();
-    this._resetRemovalAnim();
-  }
-
-  _executeAdditionAnimForVirtualized() {
-
-  }
-
-  _executeRemovalAnimInVirtualized(removedItemHeight, removalTiming) {
-    const numOfPixel = removedItemHeight * 16.66 / removalTiming;
-    this.removalAnimId = setInterval(() => {
-      if (this.needToExecuteRemovalAnim) {
-        console.log('ex re anim');
-        if (this.heightOfElemToExecuteRemovalAnim > 0) {
-          this.heightOfElemToExecuteRemovalAnim -= numOfPixel;
-          if (this.heightOfElemToExecuteRemovalAnim <= 0) {
-            this.heightOfElemToExecuteRemovalAnim = 0;
-            this.needToExecuteRemovalAnim = false;
-            this.isRemovedItemHeightGreaterThan = false;
-            this.isBottomWhenRemoveItemVirtualized = false;
-            clearInterval(this.removalAnimId);
-          }
-          this.reRender();
-        }
-      }
-    }, 16.66);
-  }
-
-  _resetAdditionAnim() {
-    this.needToExecuteAdditionAnim = false;
-    clearInterval(this.additionAnimId);
-  }
-
-  _resetRemovalAnim() {
-    this.needToExecuteRemovalAnim = false;
-    this.isRemovedItemHeightGreaterThan = false;
-    this.isBottomWhenRemoveItemVirtualized = false;
-    clearInterval(this.removalAnimId);
   }
 
   _scrollTopWithAnim(
