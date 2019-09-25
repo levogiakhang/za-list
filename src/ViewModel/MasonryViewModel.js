@@ -533,6 +533,7 @@ function createMasonryViewModel({data, defaultHeight}) {
       const iHeight = __itemCache__.getHeight(itemId);
       const iPosition = __itemCache__.getPosition(itemId);
       const removedItem = dataMap.get(itemId);
+      const oldMap = new Map(__itemCache__.getItemsMap);
       const result = _deleteItemsById(itemId, 1);
 
       if (result.hasDeleteSucceed) {
@@ -543,6 +544,7 @@ function createMasonryViewModel({data, defaultHeight}) {
             removedItemHeight: iHeight,
             removedItemPos: iPosition,
             removedItem,
+            oldMap
           });
           throttleRenderUI();
         }
@@ -579,6 +581,7 @@ function createMasonryViewModel({data, defaultHeight}) {
       const removedItemHeight = __itemCache__.getHeight(removedItemId);
       const removedItemPos = __itemCache__.getPosition(removedItemId);
       const removedItem = dataMap.get(removedItemId);
+      const oldMap = new Map(__itemCache__.getItemsMap);
       const result = _deleteItemsAt(removedItemIndex, 1);
 
       if (result.hasDeleteSucceed) {
@@ -589,6 +592,7 @@ function createMasonryViewModel({data, defaultHeight}) {
             removedItemHeight,
             removedItemPos,
             removedItem,
+            oldMap
           });
           throttleRenderUI();
         }
@@ -643,6 +647,7 @@ function createMasonryViewModel({data, defaultHeight}) {
         }
       }
 
+      const oldMap = new Map(__itemCache__.getItemsMap);
       const result = _deleteItemsAt(start, deleteCount);
       if (result.hasDeleteSucceed) {
         if (storageEvents['viewOnRemoveItems'] && isFunction(storageEvents['viewOnRemoveItems'][0])) {
@@ -653,7 +658,8 @@ function createMasonryViewModel({data, defaultHeight}) {
             removedItemsHeight,
             removedFirstItemPos,
             deleteCount: removedItemsId.length,
-            removedItems
+            removedItems,
+            oldMap
           });
           throttleRenderUI();
         }
