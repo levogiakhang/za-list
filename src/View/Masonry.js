@@ -51,6 +51,7 @@ const NEED_TO_SCROLL_TOP_POS = 300;
 const NEED_TO_SCROLL_BOTTOM_POS = 600;
 const TIMING_ADDITION_ANIM_VIRTUALIZED = 100;
 const TIMING_REMOVAL_ANIM_VIRTUALIZED = 200;
+const TIMING_RAISE_ANIM_VIRTUALIZED = 250;
 
 class Masonry extends React.Component<Props> {
   static defaultProps = {
@@ -189,6 +190,7 @@ class Masonry extends React.Component<Props> {
     this.onRemoveItems = this.onRemoveItems.bind(this);
     this.updateUIWhenScrollToItem = this.updateUIWhenScrollToItem.bind(this);
     this.onAddItems = this.onAddItems.bind(this);
+    this.onRaiseItem = this.onRaiseItem.bind(this);
 
     this._removeStyleOfSpecialItem = this._removeStyleOfSpecialItem.bind(this);
     this._removeScrollBackItemTrigger = this._removeScrollBackItemTrigger.bind(this);
@@ -262,6 +264,7 @@ class Masonry extends React.Component<Props> {
     this.viewModel.addEventListener('viewOnRemoveItems', this.onRemoveItems);
     this.viewModel.addEventListener('viewUpdateUIWhenScrollToItem', this.updateUIWhenScrollToItem);
     this.viewModel.addEventListener('viewOnAddItems', this.onAddItems);
+    this.viewModel.addEventListener('viewOnRaiseItem', this.onRaiseItem);
 
     if (
       this.parentRef !== undefined &&
@@ -862,6 +865,20 @@ class Masonry extends React.Component<Props> {
 
       this._updateEstimatedHeight(this.viewModel.getCache().getDefaultHeight * items.length);
     }
+  }
+
+  onRaiseItem(beRaisedItem, oldMap) {
+    const {scrollToAnim} = this.props;
+    const itemCache = this.viewModel.getCache();
+
+    const itemId = itemCache.getItemId(beRaisedItem);
+    console.log(oldMap.get(itemId).position, itemCache.getPosition(itemId))
+    const el = document.getElementById(itemId);
+    if (el && itemId !== NOT_FOUND && oldMap && oldMap.get(itemId)) {
+      AnimExecution.removeStyle(el, scrollToAnim);
+      AnimExecution.executeDefaultAnim(el, AnimName.verticalSlide, oldMap.get(itemId).position, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+    }
+    this.reRender();
   }
 
   zoomToItem(itemId: string, withAnim: boolean = true) {
