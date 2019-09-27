@@ -138,6 +138,8 @@ function createMasonryViewModel({data, defaultHeight}) {
     onUpdateItem,
     addTop,
     addBottom,
+    raiseItemByIndex,
+    raiseItemById,
 
     // Update
     updateItemsPositionFromSpecifiedItem,
@@ -441,7 +443,7 @@ function createMasonryViewModel({data, defaultHeight}) {
    ======================================================================== */
   function onAddItem(index: number, item: Object) {
     if (item) {
-      const start = _getValidStartIndex(index);
+      const start = _getValidIndex(index);
       if (!Array.isArray(item)) {
         item = _convertToArray(item);
       }
@@ -485,7 +487,7 @@ function createMasonryViewModel({data, defaultHeight}) {
 
   function onAddItems(startIndex: number, items: Array) {
     if (items) {
-      const start = _getValidStartIndex(startIndex);
+      const start = _getValidIndex(startIndex);
       if (!Array.isArray(items)) {
         items = _convertToArray(items);
       }
@@ -544,7 +546,7 @@ function createMasonryViewModel({data, defaultHeight}) {
             removedItemHeight: iHeight,
             removedItemPos: iPosition,
             removedItem,
-            oldMap
+            oldMap,
           });
           throttleRenderUI();
         }
@@ -577,7 +579,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   function onRemoveItemAt(index: number) {
     const removedItemId = __itemCache__.getItemId(index);
     if (removedItemId !== NOT_FOUND && _hasAlreadyId(removedItemId)) {
-      const removedItemIndex = _getValidStartIndex(index);
+      const removedItemIndex = _getValidIndex(index);
       const removedItemHeight = __itemCache__.getHeight(removedItemId);
       const removedItemPos = __itemCache__.getPosition(removedItemId);
       const removedItem = dataMap.get(removedItemId);
@@ -592,7 +594,7 @@ function createMasonryViewModel({data, defaultHeight}) {
             removedItemHeight,
             removedItemPos,
             removedItem,
-            oldMap
+            oldMap,
           });
           throttleRenderUI();
         }
@@ -623,8 +625,8 @@ function createMasonryViewModel({data, defaultHeight}) {
   }
 
   function onRemoveItemsAt(startIndex: number, deleteCount: number = 1) {
-    let start = _getValidStartIndex(startIndex);
-    if(start === data.length){
+    let start = _getValidIndex(startIndex);
+    if (start === data.length) {
       start = data.length - 1;
     }
 
@@ -659,7 +661,7 @@ function createMasonryViewModel({data, defaultHeight}) {
             removedFirstItemPos,
             deleteCount: removedItemsId.length,
             removedItems,
-            oldMap
+            oldMap,
           });
           throttleRenderUI();
         }
@@ -707,12 +709,27 @@ function createMasonryViewModel({data, defaultHeight}) {
     onAddItems(data.length, items);
   }
 
+  function raiseItemByIndex(index: number) {
+    if(isNum(index)){
+      _raiseItemInData(index);
+      _raiseItemInCache(index);
+    }
+     throttleRenderUI();
+  }
+
+  function raiseItemById(itemId: string) {
+    const index = __itemCache__.getIndex(itemId);
+    if (index !== NOT_FOUND) {
+      _raiseItemInData(index);
+      _raiseItemInCache(index);
+    }
+  }
 
   /* ========================================================================
    Interaction with list data & cache
    ======================================================================== */
   function _insertItems(startIndex: number, items: Array) {
-    let validIndex = _getValidStartIndex(startIndex);
+    let validIndex = _getValidIndex(startIndex);
     let positionStartOfNewItems = 0;
     let hasInsertSucceed = undefined;
     let beforeItem, afterItem = undefined;
@@ -824,7 +841,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   }
 
   function _deleteItemsAt(index: number, deleteCount: number = 1) {
-    let startIndex = _getValidStartIndex(index);
+    let startIndex = _getValidIndex(index);
     if (data && startIndex === data.length) {
       startIndex = data.length - 1;
     }
@@ -857,7 +874,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   }
 
   function _deleteItems(index: number, deleteCount: number = 1) {
-    let startIndex = _getValidStartIndex(index);
+    let startIndex = _getValidIndex(index);
     if (data && startIndex === data.length) {
       startIndex = data.length - 1;
     }
@@ -1028,7 +1045,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   }
 
   function updateItemAt(index: number, newItem: Object): boolean {
-    const validIndex = _getValidStartIndex(index);
+    const validIndex = _getValidIndex(index);
 
     if (validIndex === index && newItem && newItem.itemId) {
       const oldItemId = __itemCache__.getItemId(index);
@@ -1044,6 +1061,79 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
     return false;
   }
+
+  function _raiseItemInData(index: number) {
+    if (Array.isArray(data)) {
+      const validIndex = _getValidIndex(index) === data.length ?
+        data.length - 1 :
+        _getValidIndex(index);
+      const arrRaisedItem = data.splice(validIndex, 1);
+      data.unshift(arrRaisedItem[0]);
+    }
+  }
+
+  function _raiseItemInCache(index: number) {
+    if (Array.isArray(data)) {
+      const validIndex = _getValidIndex(index) === data.length ?
+        data.length - 1 :
+        _getValidIndex(index);
+      let tempId = undefined;
+
+      for (let i = 0; i < validIndex; i++) {
+        tempId = __itemCache__.getItemId(i + 1);
+        __itemCache__.updateIndexItem(i + 1, __itemCache__.getItemId(0));
+        __itemCache__.updateIndexItem(0, tempId);
+      }
+
+      for (let i = 0; i <= validIndex; i++) {
+        if (i === 0) {
+          __itemCache__.updateItemIndex(__itemCache__.getItemId(0), 0);
+        }
+        else {
+          __itemCache__.updateItemIndex(__itemCache__.getItemId(i), i);
+        }
+      }
+
+      _updateItemsPositionAfterRaise(validIndex);
+    }
+  }
+
+  function _updateItemsPositionAfterRaise(endIndex: number) {
+    if (Array.isArray(data)) {
+      const validEndIndex = _getValidIndex(endIndex) === data.length ?
+        data.length - 1 :
+        _getValidIndex(endIndex);
+      let currentItemId = __itemCache__.getItemId(0);
+
+      if (currentItemId !== NOT_FOUND) {
+        __itemCache__.updateItemPosition(currentItemId, 0, __itemCache__.isRendered(currentItemId));
+
+        for (let i = 0; i < validEndIndex; i++) {
+          const currentItemPosition = __itemCache__.getPosition(currentItemId);
+          const currentItemHeight = __itemCache__.getHeight(currentItemId);
+          const followingItemId = __itemCache__.getItemId(i + 1);
+
+          if (currentItemPosition === NOT_FOUND) {
+            console.log(`Could not get position of: ${currentItemId}`);
+          }
+          else if (currentItemHeight === NOT_FOUND) {
+            console.log(`Could not get height of: ${currentItemId}`);
+          }
+          else if (followingItemId !== NOT_FOUND) {
+            __itemCache__.updateItemOnMap(
+              followingItemId,
+              __itemCache__.getIndex(followingItemId),
+              __itemCache__.getHeight(followingItemId),
+              currentItemPosition + currentItemHeight,
+              __itemCache__.isRendered(followingItemId),
+            );
+            currentItemId = followingItemId;
+          }
+        }
+      }
+    }
+  }
+
 
   function reRenderUI() {
     if (storageEvents['viewReRender']) {
@@ -1126,7 +1216,7 @@ function createMasonryViewModel({data, defaultHeight}) {
    If startIndex is greater than dataLength return dataLength.
    Else return itself.
    */
-  function _getValidStartIndex(startIndex: number) {
+  function _getValidIndex(startIndex: number) {
     const validStartIndex = parseInt(startIndex);
     let start = undefined;
 
@@ -1184,7 +1274,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   }
 
   function getItemAt(index: number) {
-    const validIndex = _getValidStartIndex(index);
+    const validIndex = _getValidIndex(index);
     if (validIndex === index) {
       return data[index];
     }
