@@ -178,7 +178,11 @@ class Demo extends React.Component {
    Create Data & Items
    ======================================================================== */
   _fakeDataList = () => {
-    return generation.generateIdenticalItems(DATA_TOTAL_NUMBER);
+    // Dynamic height
+    return generation.generateItems(DATA_TOTAL_NUMBER);
+
+    // Equal height
+    //return generation.generateIdenticalItems(DATA_TOTAL_NUMBER);
   };
 
   loadMoreTop(firstItemIdInCurrentUI) {
@@ -908,7 +912,7 @@ class Demo extends React.Component {
               fontSize: GConst.Font.Size.Medium,
             }}
             onClick={() => {
-              this.viewModel.onRemoveItemsAt(25, 3);
+              this.viewModel.onRemoveItemsAt(2, 3);
             }}>
             Remove 3 items from 2
           </button>
@@ -936,9 +940,9 @@ class Demo extends React.Component {
                 ...item,
                 userName: gId,
               };
-              this.viewModel.updateItemAt(1, newItem);
+              this.viewModel.raiseItemByIndex('2');
             }}>
-            Log scroll bar values
+            Test xàm xàm 
           </button>
         </div>
       </div>
