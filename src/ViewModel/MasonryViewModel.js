@@ -79,6 +79,9 @@ function createMasonryViewModel({data, defaultHeight}) {
 
   const throttleRenderUI = throttle(reRenderUI, 150);
 
+  // Store selected item in view, this variable be passed from outside
+  let selectedItem = -1;
+
   /* ========================================================================
    Initialize
    ======================================================================== */
@@ -156,6 +159,9 @@ function createMasonryViewModel({data, defaultHeight}) {
     getNumOfNewItems,
     setNumOfNewItems,
     getItemAt,
+    getSelectedItem,
+    setSelectedItem,
+    resetSelectedItem,
   });
 
 
@@ -710,18 +716,20 @@ function createMasonryViewModel({data, defaultHeight}) {
   }
 
   function raiseItemByIndex(index: number) {
-    if(isNum(index)){
+    if (isNum(index)) {
+      const oldMap = new Map(__itemCache__.getItemsMap);
       _raiseItemInData(index);
       _raiseItemInCache(index);
+      if (storageEvents['viewOnRaiseItem'] && isFunction(storageEvents['viewOnRaiseItem'][0])) {
+        storageEvents['viewOnRaiseItem'][0](0, oldMap);
+      }
     }
-     throttleRenderUI();
   }
 
   function raiseItemById(itemId: string) {
     const index = __itemCache__.getIndex(itemId);
     if (index !== NOT_FOUND) {
-      _raiseItemInData(index);
-      _raiseItemInCache(index);
+      raiseItemByIndex(index);
     }
   }
 
@@ -1278,6 +1286,26 @@ function createMasonryViewModel({data, defaultHeight}) {
     if (validIndex === index) {
       return data[index];
     }
+  }
+
+  function getSelectedItem() {
+    return selectedItem;
+  }
+
+  function setSelectedItem(index: number) {
+    const validIndex = _getValidIndex(index);
+    if (Array.isArray(data)) {
+      if (validIndex === data.length) {
+        selectedItem = validIndex - 1;
+      }
+      else {
+        selectedItem = validIndex;
+      }
+    }
+  }
+
+  function resetSelectedItem() {
+    setSelectedItem(-1);
   }
 }
 
