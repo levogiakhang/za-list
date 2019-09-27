@@ -75,6 +75,16 @@ class ItemCache {
     }
   }
 
+  updateItemIndex(itemId: string, newIndex: number) {
+    this.updateItemOnMap(
+      itemId,
+      newIndex,
+      this.getHeight(itemId),
+      this.getPosition(itemId),
+      this.isRendered(itemId),
+    );
+  }
+
   updateItemHeight(itemId: string, newHeight, isRendered: boolean = true) {
     this.updateItemOnMap(
       itemId,
