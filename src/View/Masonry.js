@@ -553,7 +553,8 @@ class Masonry extends React.Component<Props> {
           el.style.position = 'absolute';
           if (scrollTop + height >= estimateTotalHeight && estimateTotalHeight >= height) {
             el.style.top = removedItemPos - removedItemHeight + 'px';
-          } else {
+          }
+          else {
             el.style.top = removedItemPos + 'px';
           }
         });
@@ -1099,8 +1100,11 @@ class Masonry extends React.Component<Props> {
     if (this.needToExecuteRemovalAnim) {
       const item = this.removedElement;
       const removedItemIndex = this.removedItemIndexToExecuteRemovalAnim;
+      const getTopPos = removedItemIndex === this.viewModel.getDataUnfreeze().length ?
+        itemCache.getPosition(itemCache.getItemId(removedItemIndex - 1)) :
+        itemCache.getPosition(itemCache.getItemId(removedItemIndex));
       const position = {
-        top: itemCache.getPosition(itemCache.getItemId(removedItemIndex)),
+        top: getTopPos,
         left: 0,
       };
 
