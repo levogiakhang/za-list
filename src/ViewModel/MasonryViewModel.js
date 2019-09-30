@@ -161,7 +161,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     getItemAt,
     getSelectedItem,
     setSelectedItem,
-    resetSelectedItem,
+    clearSelectedItem,
   });
 
 
@@ -1082,7 +1082,6 @@ function createMasonryViewModel({data, defaultHeight}) {
       const validIndex = _getValidIndex(index) === data.length ?
         data.length - 1 :
         _getValidIndex(index);
-      console.log(validIndex)
 
       const arrRaisedItem = data.splice(validIndex, 1);
       data.unshift(arrRaisedItem[0]);
@@ -1314,11 +1313,12 @@ function createMasonryViewModel({data, defaultHeight}) {
       else {
         selectedItem = validIndex;
       }
+      throttleRenderUI();
     }
   }
 
-  function resetSelectedItem() {
-    setSelectedItem(-1);
+  function clearSelectedItem() {
+    selectedItem = -1;
   }
 }
 
