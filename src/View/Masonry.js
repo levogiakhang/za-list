@@ -475,7 +475,7 @@ class Masonry extends React.Component<Props> {
       this.needToExcuteRaiseAnimOutside &&
       this.beRaisedItemId === itemId &&
       itemCache.getIndex(itemId) >= rangeIndexInViewport.firstItemIndex &&
-      itemCache.getIndex(itemId) <= rangeIndexInViewport.lastItemIndex ) {
+      itemCache.getIndex(itemId) <= rangeIndexInViewport.lastItemIndex) {
       this.needToExcuteRaiseAnimOutside = false;
       const el = document.getElementById(itemId);
       if (el) {
@@ -498,7 +498,6 @@ class Masonry extends React.Component<Props> {
     else if (this.needToExcuteRaiseAnimOutside) {
       this.needToExcuteRaiseAnimOutside = false;
       this.needScrollBackWhenRaiseItem = true;
-      console.log(this.needScrollBackWhenRaiseItem, this.itemScrollBackWhenRaiseOutside, itemId);
       this.reRender();
     }
   }
@@ -920,17 +919,19 @@ class Masonry extends React.Component<Props> {
       oldMap.get(beRaisedItemId)) {
 
       const _beforeBeRaisedIndex = parseInt(beforeBeRaisedIndex);
-      if (this.viewModel.getSelectedItem() === _beforeBeRaisedIndex) {
-        this.viewModel.setSelectedItem(0);
-        AnimExecution.appendStyle(el, 'highlighted');
-        if (scrollTop !== 0) {
-          isScrollToTop = true;
+      if (this.viewModel.getSelectedItem() !== -1) {
+        if (this.viewModel.getSelectedItem() === _beforeBeRaisedIndex) {
+          this.viewModel.setSelectedItem(0);
+          AnimExecution.appendStyle(el, 'highlighted');
+          if (scrollTop !== 0) {
+            isScrollToTop = true;
+          }
+        }
+        else if (_beforeBeRaisedIndex >= this.viewModel.getSelectedItem()) {
+          this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
         }
       }
-      else if (_beforeBeRaisedIndex >= this.viewModel.getSelectedItem()) {
-        this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
-      }
-
+      
       const rangeCurrentViewport = {
         top: scrollTop,
         bottom: scrollTop + height,
@@ -989,7 +990,35 @@ class Masonry extends React.Component<Props> {
         }
       }
     }
-    // item's start position out of view
+    // out of view but in batch both start and end position => not call onChangedHeight
+    else if (
+      el &&
+      beRaisedItemId !== NOT_FOUND &&
+      isNum(beforeBeRaisedIndex) &&
+      oldMap &&
+      oldMap.get(beRaisedItemId)) {
+
+      this.needScrollBackWhenRaiseItem = true;
+
+      let dis = 0;
+      if (oldMap.get(this.curItemInViewPort)) {
+        dis = scrollTop - oldMap.get(this.curItemInViewPort).position;
+      }
+      this.itemScrollBackWhenRaiseOutside = {
+        itemId: this.curItemInViewPort,
+        disparity: dis,
+      };
+
+      if (this.viewModel.getSelectedItem() !== -1) {
+        if (this.viewModel.getSelectedItem() === parseInt(beforeBeRaisedIndex)) {
+          this.viewModel.setSelectedItem(0);
+        }
+        else if (parseInt(beforeBeRaisedIndex) >= this.viewModel.getSelectedItem()) {
+          this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
+        }
+      }
+    }
+    // item's start position out of view and call onChangedHeight
     else if (beRaisedItemId !== NOT_FOUND && isNum(beforeBeRaisedIndex) && oldMap && oldMap.get(beRaisedItemId)) {
       this.beRaisedItemId = beRaisedItemId;
       this.needToExcuteRaiseAnimOutside = true;
@@ -1002,12 +1031,13 @@ class Masonry extends React.Component<Props> {
         itemId: this.curItemInViewPort,
         disparity: dis,
       };
-
-      if (this.viewModel.getSelectedItem() === parseInt(beforeBeRaisedIndex)) {
-        this.viewModel.setSelectedItem(0);
-      }
-      else if (parseInt(beforeBeRaisedIndex) >= this.viewModel.getSelectedItem()) {
-        this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
+      if (this.viewModel.getSelectedItem() !== -1) {
+        if (this.viewModel.getSelectedItem() === parseInt(beforeBeRaisedIndex)) {
+          this.viewModel.setSelectedItem(0);
+        }
+        else if (parseInt(beforeBeRaisedIndex) >= this.viewModel.getSelectedItem()) {
+          this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
+        }
       }
     }
 
@@ -1680,7 +1710,7 @@ class Masonry extends React.Component<Props> {
   }
 
   _checkAndScrollBackWhenRaiseItem() {
-    if(this.needScrollBackWhenRaiseItem) {
+    if (this.needScrollBackWhenRaiseItem) {
       this.needScrollBackWhenRaiseItem = false;
       this._scrollToItem(this.itemScrollBackWhenRaiseOutside.itemId, this.itemScrollBackWhenRaiseOutside.disparity);
     }
