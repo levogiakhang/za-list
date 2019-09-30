@@ -51,7 +51,7 @@ const NEED_TO_SCROLL_TOP_POS = 300;
 const NEED_TO_SCROLL_BOTTOM_POS = 600;
 const TIMING_ADDITION_ANIM_VIRTUALIZED = 100;
 const TIMING_REMOVAL_ANIM_VIRTUALIZED = 200;
-const TIMING_RAISE_ANIM_VIRTUALIZED = 250;
+const TIMING_RAISE_ANIM_VIRTUALIZED = 230;
 
 class Masonry extends React.Component<Props> {
   static defaultProps = {
@@ -116,17 +116,13 @@ class Masonry extends React.Component<Props> {
     this.needScrollBackWhenRemoveItem = false;
 
     // For removal anim in Virtualized
-    this.needToExecuteRemovalAnim = false;
-    this.heightOfElemToExecuteRemovalAnim = undefined;
+    this.needHoldItemToExcuteRemovalAnim = false;
     this.removedItemIndexToExecuteRemovalAnim = 0;
     this.removedElement = undefined;
-    this.isRemovedItemHeightGreaterThan = false;
-    this.isBottomWhenRemoveItemVirtualized = false;
 
-    // For addition anim in Virtualized
-    this.needToExecuteAdditionAnim = false;
-    this.heightOfElemToExecuteAdditionAnim = undefined;
-    this.addedItemIndexToExecuteRemovalAnim = 0;
+    // Raise Item
+    this.needHoldItemToExcuteRaiseAnim = false;
+    this.needToExcuteRaiseAnimOutside = false;
 
     this.isActiveAnimWhenScrollToItem = undefined;
     this.isScrollToSpecialItem = false;
@@ -467,6 +463,31 @@ class Masonry extends React.Component<Props> {
       this.addAnimWhenScrollToSpecialItem(itemId, this.props.scrollToAnim);
       this.itemNeedAddAnim = null;
     }
+
+    if (
+      itemId &&
+      isNum(oldHeight) &&
+      isNum(newHeight) &&
+      this.needToExcuteRaiseAnimOutside) {
+      this.needToExcuteRaiseAnimOutside = false;
+      const el = document.getElementById(itemId);
+      if (el) {
+        const parent = el.parentElement;
+        if (parent && parent.children) {
+          for (let i = 0; i < parent.children.length; i++) {
+            if (parent.children[i] && parent.children[i].id) {
+              const id = parent.children[i].id;
+              if (id !== itemId) {
+                parent.children[i].style.willChange = 'transform';
+                AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, -itemCache.getHeight(itemId)/1.5, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+                parent.children[i].style.willChange = 'auto';
+              }
+            }
+          }
+        }
+        AnimExecution.executeDefaultAnim(el, AnimName.zoomIn, 0, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+      }
+    }
   }
 
   onAddItems(startIndex, items, oldMap) {
@@ -661,15 +682,14 @@ class Masonry extends React.Component<Props> {
           itemIndex >= rangeIndexInViewport.firstItemIndex &&
           itemIndex <= rangeIndexInViewport.lastItemIndex + 1
         ) {
-          this.needToExecuteRemovalAnim = true;
-          this.heightOfElemToExecuteRemovalAnim = itemHeight;
+          this.needHoldItemToExcuteRemovalAnim = true;
           this.removedItemIndexToExecuteRemovalAnim = removedItemIndex;
           this.removedElement = removedItem;
         }
         if (el) {
           AnimExecution.executeDefaultAnim(el, AnimName.zoomOut);
           setTimeout(() => {
-            this.needToExecuteRemovalAnim = false;
+            this.needHoldItemToExcuteRemovalAnim = false;
             this.reRender();
           }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
         }
@@ -814,8 +834,7 @@ class Masonry extends React.Component<Props> {
           removedLastItemIndex >= rangeIndexInViewport.firstItemIndex &&
           removedLastItemIndex <= rangeIndexInViewport.lastItemIndex + 1
         ) {
-          this.needToExecuteRemovalAnim = true;
-          this.heightOfElemToExecuteRemovalAnim = totalItemsHeight;
+          this.needHoldItemToExcuteRemovalAnim = true;
           this.removedItemIndexToExecuteRemovalAnim = startIndex;
         }
         if (scrollTop + height >= this.estimateTotalHeight - 2) {
@@ -867,16 +886,57 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  onRaiseItem(beRaisedItem, oldMap) {
-    const {scrollToAnim} = this.props;
+  onRaiseItem(beRaisedItem, beforeBeRaisedIndex, oldMap) {
+    const {height, scrollToAnim} = this.props;
+    const scrollTop = this.state.scrollTop;
     const itemCache = this.viewModel.getCache();
+    const beRaisedItemId = itemCache.getItemId(beRaisedItem);
 
-    const itemId = itemCache.getItemId(beRaisedItem);
-    console.log(oldMap.get(itemId).position, itemCache.getPosition(itemId))
-    const el = document.getElementById(itemId);
-    if (el && itemId !== NOT_FOUND && oldMap && oldMap.get(itemId)) {
+    const el = document.getElementById(beRaisedItemId);
+    if (el && beRaisedItemId !== NOT_FOUND && isNum(beforeBeRaisedIndex) && oldMap && oldMap.get(beRaisedItemId)) {
+      const rangeCurrentViewport = {
+        top: scrollTop,
+        bottom: scrollTop + height,
+      };
+
+      let oldPos = 0;
+      if (oldMap.get(beRaisedItemId)) {
+        oldPos = oldMap.get(beRaisedItemId).position;
+      }
+
+      if (oldPos >= rangeCurrentViewport.top && oldPos <= rangeCurrentViewport.bottom) {
+        // start position of beRaisedItem in current viewport and the other is outside of batch.
+        const itemsInBatch = this._getItemsInBatch(scrollTop);
+        if (!itemsInBatch.includes(beRaisedItemId)) {
+          this.needHoldItemToExcuteRaiseAnim = true;
+        }
+      }
       AnimExecution.removeStyle(el, scrollToAnim);
-      AnimExecution.executeDefaultAnim(el, AnimName.verticalSlide, oldMap.get(itemId).position, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+      el.style.zIndex = 2;
+      AnimExecution.executeDefaultAnim(el, AnimName.verticalSlide, oldMap.get(beRaisedItemId).position, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+      setTimeout(() => {
+        this.needHoldItemToExcuteRaiseAnim = false;
+        el.style.zIndex = 1;
+        this.reRender();
+      }, TIMING_RAISE_ANIM_VIRTUALIZED);
+
+      const parent = el.parentElement;
+      if (parent && parent.children) {
+        for (let i = 0; i < parent.children.length; i++) {
+          if (parent.children[i] && parent.children[i].id) {
+            const id = parent.children[i].id;
+            if (parent.children[i].id !== beRaisedItemId && itemCache.getIndex(id) <= beforeBeRaisedIndex) {
+              parent.children[i].style.willChange = 'transform';
+              AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, -itemCache.getHeight(beRaisedItemId), 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+              parent.children[i].style.willChange = 'auto';
+            }
+          }
+        }
+      }
+    }
+    // item's start position out of view
+    else if (el === null && beRaisedItemId !== NOT_FOUND && isNum(beforeBeRaisedIndex) && oldMap && oldMap.get(beRaisedItemId)) {
+      this.needToExcuteRaiseAnimOutside = true;
     }
     this.reRender();
   }
@@ -1114,7 +1174,7 @@ class Masonry extends React.Component<Props> {
     }
 
     // Prevent removed item is disappeared.
-    if (this.needToExecuteRemovalAnim) {
+    if (this.needHoldItemToExcuteRemovalAnim) {
       const item = this.removedElement;
       const removedItemIndex = this.removedItemIndexToExecuteRemovalAnim;
       const getTopPos = removedItemIndex === this.viewModel.getDataUnfreeze().length ?
@@ -1151,6 +1211,51 @@ class Masonry extends React.Component<Props> {
         );
       }
     }
+
+    if (this.needHoldItemToExcuteRaiseAnim && this.children) {
+      const item = this.viewModel.getDataUnfreeze()[0];
+      let isDup = false;
+      this.itemsInBatch.forEach((itemId) => {
+        if (itemId === item.itemId) {
+          isDup = true;
+        }
+      });
+      const itemIndex = 0;
+      const removeCallback = this.viewModel.onRemoveItemById;
+      const position = {
+        top: 0,
+        left: 0,
+      };
+
+      if (
+        item &&
+        item.itemId &&
+        isNum(position.top) &&
+        position.top !== NOT_FOUND &&
+        !isDup
+      ) {
+        this.children.push(
+          <CellMeasurer
+            id={item.itemId}
+            key={item.itemId}
+            isVirtualized={this.props.isVirtualized}
+            defaultHeight={itemCache.getDefaultHeight}
+            onChangedHeight={this.onChildrenChangeHeight}
+            position={position}>
+            {
+              isFunction(this.props.cellRenderer) ?
+                this.props.cellRenderer({
+                  item,
+                  itemIndex,
+                  removeCallback,
+                }) :
+                null
+            }
+          </CellMeasurer>,
+        );
+      }
+    }
+
     // if (!Lodash.isEqual(this.itemsInBatch, this.oldItemsInBatch) || this.needReRenderChildrenChangedHeight) {
     //   this.oldItemsInBatch = [...this.itemsInBatch];
     //   this.children = [];
@@ -1477,7 +1582,7 @@ class Masonry extends React.Component<Props> {
   _checkAndScrollBackWhenRemoveItem(isVirtualized, scrollTop) {
     if (isVirtualized && this.isRemoveItem) {
       this.isRemoveItem = false;
-      if (this.needScrollBackWhenRemoveItem && !this.needToExecuteRemovalAnim) {
+      if (this.needScrollBackWhenRemoveItem && !this.needHoldItemToExcuteRemovalAnim) {
         console.log('scroll back remove');
         this.needScrollBackWhenRemoveItem = false;
         this._scrollToOffset(scrollTop - this.removedItemHeight);
@@ -1894,7 +1999,7 @@ class Masonry extends React.Component<Props> {
     if (!!data.length && isNum(scrollTop)) {
       const currentItemId = this._getItemIdFromPosition(scrollTop);
       const currentIndex = this.viewModel.getCache().getIndex(currentItemId);
-      const numOfItemInViewport = this._getItemsInViewport(scrollTop, height, currentItemId, data.length).length;
+      const numOfItemInViewport = this._getItemsInViewport(scrollTop, currentItemId, data.length).length;
 
       const startIndex = Math.max(0, currentIndex - numOfOverscan);
       const endIndex = Math.min(currentIndex + numOfItemInViewport + numOfOverscan, data.length);
@@ -1917,7 +2022,8 @@ class Masonry extends React.Component<Props> {
    *
    *  @return {Array<string>} - Stores all items' id in viewport. Can be empty.
    */
-  _getItemsInViewport(scrollTop: number, viewportHeight: number, firstItemIdInViewport: string, dataLength: number): Array<string> {
+  _getItemsInViewport(scrollTop: number, firstItemIdInViewport: string, dataLength: number): Array<string> {
+    const viewportHeight = this.props.height;
     const results = [];
 
     if (!!dataLength && firstItemIdInViewport) {

@@ -718,10 +718,17 @@ function createMasonryViewModel({data, defaultHeight}) {
   function raiseItemByIndex(index: number) {
     if (isNum(index)) {
       const oldMap = new Map(__itemCache__.getItemsMap);
-      _raiseItemInData(index);
-      _raiseItemInCache(index);
-      if (storageEvents['viewOnRaiseItem'] && isFunction(storageEvents['viewOnRaiseItem'][0])) {
-        storageEvents['viewOnRaiseItem'][0](0, oldMap);
+      const raiseData = _raiseItemInData(index);
+      const raiseCache = _raiseItemInCache(index);
+
+      if(raiseData && raiseCache) {
+        if (storageEvents['viewOnRaiseItem'] && isFunction(storageEvents['viewOnRaiseItem'][0])) {
+          storageEvents['viewOnRaiseItem'][0](0, index, oldMap);
+        }
+
+        if(storageEvents['raiseItemSucceed'] && isFunction(storageEvents['raiseItemSucceed'][0])) {
+          storageEvents['raiseItemSucceed'][0]({oldIndex: index});
+        }
       }
     }
   }
@@ -1075,9 +1082,13 @@ function createMasonryViewModel({data, defaultHeight}) {
       const validIndex = _getValidIndex(index) === data.length ?
         data.length - 1 :
         _getValidIndex(index);
+      console.log(validIndex)
+
       const arrRaisedItem = data.splice(validIndex, 1);
       data.unshift(arrRaisedItem[0]);
+      return true;
     }
+    return false;
   }
 
   function _raiseItemInCache(index: number) {
@@ -1103,7 +1114,9 @@ function createMasonryViewModel({data, defaultHeight}) {
       }
 
       _updateItemsPositionAfterRaise(validIndex);
+      return true;
     }
+    return false;
   }
 
   function _updateItemsPositionAfterRaise(endIndex: number) {
