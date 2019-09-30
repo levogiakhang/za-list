@@ -568,7 +568,14 @@ class Masonry extends React.Component<Props> {
       const itemHeight = removedItemHeight;
       const itemCache = this.viewModel.getCache();
 
-      this.viewModel.clearSelectedItem();
+      const selectedItemIndex = this.viewModel.getSelectedItem();
+      if (removedItemIndex === selectedItemIndex) {
+        this.viewModel.clearSelectedItem();
+      }
+      else if (removedItemIndex < selectedItemIndex) {
+        this.viewModel.setSelectedItem(selectedItemIndex - 1);
+      }
+
       this.isRemoveItem = true;
 
       if (itemCache.getIndex(this.curItemInViewPort) === NOT_FOUND) {
@@ -931,7 +938,7 @@ class Masonry extends React.Component<Props> {
           this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
         }
       }
-      
+
       const rangeCurrentViewport = {
         top: scrollTop,
         bottom: scrollTop + height,
