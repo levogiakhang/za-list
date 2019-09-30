@@ -308,9 +308,9 @@ class Demo extends React.Component {
 
   raiseItemSucceed({oldIndex}) {
     if (Array.isArray(this.dataTotal)) {
-      const validIndex = oldIndex === 0 ?
-        0 :
-        oldIndex - 1;
+      const validIndex = oldIndex === this.dataTotal.length ?
+        this.dataTotal.length - 1 :
+        oldIndex;
       this.dataTotal.unshift(this.dataTotal.splice(validIndex, 1)[0]);
       this.updateDataIndexMap();
     }
