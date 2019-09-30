@@ -4,7 +4,8 @@ import isNum from '../../utils/isNum';
 export const defaultAnim = {
   zoomOut,
   zoomIn,
-  verticalSlide
+  verticalSlide,
+  scrollTop,
 };
 
 function zoomOut(el) {
@@ -44,7 +45,7 @@ function zoomOut(el) {
   }
 }
 
-function zoomIn(el,  duration: number = 300, iterationCount: number = 1) {
+function zoomIn(el, duration: number = 300, iterationCount: number = 1) {
   if (
     el &&
     isFunction(el.animate)
@@ -113,6 +114,41 @@ function verticalSlide(el, fromY: number, toY: number, duration: number = 300, d
         duration: _duration,
         delay: _delay,
         iterations: _iterationCount,
+        easing: easing,
+      },
+    );
+  }
+}
+
+function scrollTop(el, currentScrollTop: number, duration: number = 500, delay: number = 0, easing: string = 'linear') {
+  const _currentScrollTop = isNum(currentScrollTop) ?
+    currentScrollTop :
+    0;
+
+  const _duration = isNum(duration) ?
+    duration :
+    0;
+
+  const _delay = isNum(delay) ?
+    delay :
+    0;
+
+  if (
+    el &&
+    isFunction(el.animate)
+  ) {
+    console.log(el, duration)
+    el.animate([
+        {
+          scrollTop: _currentScrollTop,
+        },
+        {
+          scrollTop: 0,
+        },
+      ],
+      {
+        duration: _duration,
+        delay: _delay,
         easing: easing,
       },
     );

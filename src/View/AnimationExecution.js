@@ -10,7 +10,8 @@ export const AnimExecution = {
 export const AnimName = {
   zoomOut: 1,
   zoomIn: 2,
-  verticalSlide: 3
+  verticalSlide: 3,
+  scrollTop: 4,
 };
 
 function executeDefaultAnim(el, animName, fromPos, toPos, duration) {
@@ -31,8 +32,12 @@ function executeDefaultAnim(el, animName, fromPos, toPos, duration) {
       }
 
       case AnimName.verticalSlide: {
-        defaultAnim.verticalSlide(el, fromPos, toPos, duration, 0, 1,'ease-in');
+        defaultAnim.verticalSlide(el, fromPos, toPos, duration, 0, 1, 'ease-in');
         break;
+      }
+
+      case AnimName.scrollTop : {
+        defaultAnim.scrollTop(el, fromPos, duration, 0, 'ease-in');
       }
 
       default: {
