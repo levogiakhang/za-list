@@ -104,7 +104,7 @@ class Demo extends React.Component {
   }
 
   handleChangeRaiseIndex(e) {
-    if (this._isInRange(e.target.value, 0, this.viewModel.getDataUnfreeze().length)) {
+    if (this._isInRange(e.target.value, 0, this.viewModel.getDataUnfreeze().length - 1)) {
       this.setState({raiseIndex: e.target.value});
     }
     else {
@@ -950,9 +950,9 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.onRemoveItemsAt(2, 3);
+                this.viewModel.onRemoveItemsAt(4, 3);
               }}>
-              Remove 3 items from 2
+              Remove 3 items from 4
             </button>
           </div>
         </div>
@@ -1067,7 +1067,7 @@ class Demo extends React.Component {
                 ...item,
                 userName: gId,
               };
-              this.viewModel.raiseItemByIndex(16);
+              console.log(this.viewModel.getSelectedItem());
             }}>
             Test xàm xàm
           </button>
