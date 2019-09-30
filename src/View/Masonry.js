@@ -123,6 +123,9 @@ class Masonry extends React.Component<Props> {
     // Raise Item
     this.needHoldItemToExcuteRaiseAnim = false;
     this.needToExcuteRaiseAnimOutside = false;
+    this.beRaisedItemId = undefined;
+    this.needScrollBackWhenRaiseItem = false;
+    this.itemScrollBackWhenRaiseOutside = {};
 
     this.isActiveAnimWhenScrollToItem = undefined;
     this.isScrollToSpecialItem = false;
@@ -464,11 +467,15 @@ class Masonry extends React.Component<Props> {
       this.itemNeedAddAnim = null;
     }
 
+    const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
     if (
       itemId &&
       isNum(oldHeight) &&
       isNum(newHeight) &&
-      this.needToExcuteRaiseAnimOutside) {
+      this.needToExcuteRaiseAnimOutside &&
+      this.beRaisedItemId === itemId &&
+      itemCache.getIndex(itemId) >= rangeIndexInViewport.firstItemIndex &&
+      itemCache.getIndex(itemId) <= rangeIndexInViewport.lastItemIndex ) {
       this.needToExcuteRaiseAnimOutside = false;
       const el = document.getElementById(itemId);
       if (el) {
@@ -479,7 +486,7 @@ class Masonry extends React.Component<Props> {
               const id = parent.children[i].id;
               if (id !== itemId) {
                 parent.children[i].style.willChange = 'transform';
-                AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, -itemCache.getHeight(itemId)/1.5, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+                AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, -itemCache.getHeight(itemId) / 1.5, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
                 parent.children[i].style.willChange = 'auto';
               }
             }
@@ -487,6 +494,12 @@ class Masonry extends React.Component<Props> {
         }
         AnimExecution.executeDefaultAnim(el, AnimName.zoomIn, 0, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
       }
+    }
+    else if (this.needToExcuteRaiseAnimOutside) {
+      this.needToExcuteRaiseAnimOutside = false;
+      this.needScrollBackWhenRaiseItem = true;
+      console.log(this.needScrollBackWhenRaiseItem, this.itemScrollBackWhenRaiseOutside, itemId);
+      this.reRender();
     }
   }
 
@@ -556,7 +569,9 @@ class Masonry extends React.Component<Props> {
       const itemHeight = removedItemHeight;
       const itemCache = this.viewModel.getCache();
 
+      this.viewModel.clearSelectedItem();
       this.isRemoveItem = true;
+
       if (itemCache.getIndex(this.curItemInViewPort) === NOT_FOUND) {
         // flick view :)
       }
@@ -891,9 +906,31 @@ class Masonry extends React.Component<Props> {
     const scrollTop = this.state.scrollTop;
     const itemCache = this.viewModel.getCache();
     const beRaisedItemId = itemCache.getItemId(beRaisedItem);
+    let isScrollToTop = false;
+    const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
 
     const el = document.getElementById(beRaisedItemId);
-    if (el && beRaisedItemId !== NOT_FOUND && isNum(beforeBeRaisedIndex) && oldMap && oldMap.get(beRaisedItemId)) {
+    if (
+      el &&
+      beRaisedItemId !== NOT_FOUND &&
+      isNum(beforeBeRaisedIndex) &&
+      beforeBeRaisedIndex >= rangeIndexInViewport.firstItemIndex &&
+      beforeBeRaisedIndex <= rangeIndexInViewport.lastItemIndex &&
+      oldMap &&
+      oldMap.get(beRaisedItemId)) {
+
+      const _beforeBeRaisedIndex = parseInt(beforeBeRaisedIndex);
+      if (this.viewModel.getSelectedItem() === _beforeBeRaisedIndex) {
+        this.viewModel.setSelectedItem(0);
+        AnimExecution.appendStyle(el, 'highlighted');
+        if (scrollTop !== 0) {
+          isScrollToTop = true;
+        }
+      }
+      else if (_beforeBeRaisedIndex >= this.viewModel.getSelectedItem()) {
+        this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
+      }
+
       const rangeCurrentViewport = {
         top: scrollTop,
         bottom: scrollTop + height,
@@ -925,7 +962,7 @@ class Masonry extends React.Component<Props> {
         for (let i = 0; i < parent.children.length; i++) {
           if (parent.children[i] && parent.children[i].id) {
             const id = parent.children[i].id;
-            if (parent.children[i].id !== beRaisedItemId && itemCache.getIndex(id) <= beforeBeRaisedIndex) {
+            if (parent.children[i].id !== beRaisedItemId && itemCache.getIndex(id) <= _beforeBeRaisedIndex) {
               parent.children[i].style.willChange = 'transform';
               AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, -itemCache.getHeight(beRaisedItemId), 0, TIMING_RAISE_ANIM_VIRTUALIZED);
               parent.children[i].style.willChange = 'auto';
@@ -933,11 +970,47 @@ class Masonry extends React.Component<Props> {
           }
         }
       }
+
+      if (isScrollToTop) {
+        if (this.props.id) {
+          const masonry = document.getElementById('innerScrollContainerId');
+          if (masonry) {
+            if (scrollTop >= 1120) {
+              setTimeout(() => {
+                this._scrollToOffset(1120);
+                this._scrollTopWithAnim(TIMING_RAISE_ANIM_VIRTUALIZED);
+              }, TIMING_RAISE_ANIM_VIRTUALIZED / 2);
+            }
+            else {
+              this._scrollTopWithAnim(TIMING_RAISE_ANIM_VIRTUALIZED);
+            }
+            //AnimExecution.executeDefaultAnim(masonry, AnimName.scrollTop, scrollTop, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+          }
+        }
+      }
     }
     // item's start position out of view
-    else if (el === null && beRaisedItemId !== NOT_FOUND && isNum(beforeBeRaisedIndex) && oldMap && oldMap.get(beRaisedItemId)) {
+    else if (beRaisedItemId !== NOT_FOUND && isNum(beforeBeRaisedIndex) && oldMap && oldMap.get(beRaisedItemId)) {
+      this.beRaisedItemId = beRaisedItemId;
       this.needToExcuteRaiseAnimOutside = true;
+
+      let dis = 0;
+      if (oldMap.get(this.curItemInViewPort)) {
+        dis = scrollTop - oldMap.get(this.curItemInViewPort).position;
+      }
+      this.itemScrollBackWhenRaiseOutside = {
+        itemId: this.curItemInViewPort,
+        disparity: dis,
+      };
+
+      if (this.viewModel.getSelectedItem() === parseInt(beforeBeRaisedIndex)) {
+        this.viewModel.setSelectedItem(0);
+      }
+      else if (parseInt(beforeBeRaisedIndex) >= this.viewModel.getSelectedItem()) {
+        this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
+      }
     }
+
     this.reRender();
   }
 
@@ -1139,7 +1212,7 @@ class Masonry extends React.Component<Props> {
   updateChildrenInVirtualized(scrollTop) {
     this.itemsInBatch = this._getItemsInBatch(scrollTop);
     const itemCache = this.viewModel.getCache();
-
+    const becomeSelectedItemCallback = this.viewModel.setSelectedItem;
     this.children = [];
 
     for (let i = 0; i < this.itemsInBatch.length; i++) {
@@ -1150,6 +1223,17 @@ class Masonry extends React.Component<Props> {
         top: itemCache.getPosition(this.itemsInBatch[i]),
         left: 0,
       };
+      const el = document.getElementById(itemCache.getItemId(index));
+
+      if (el) {
+        if (index === this.viewModel.getSelectedItem()) {
+          this.beforeItemHighlight = el;
+          AnimExecution.appendStyle(el, 'highlighted');
+        }
+        else {
+          AnimExecution.removeStyle(el, 'highlighted');
+        }
+      }
       if (!!item) {
         this.children.push(
           <CellMeasurer
@@ -1165,6 +1249,7 @@ class Masonry extends React.Component<Props> {
                   item,
                   index,
                   removeCallback,
+                  becomeSelectedItemCallback,
                 }) :
                 null
             }
@@ -1248,6 +1333,7 @@ class Masonry extends React.Component<Props> {
                   item,
                   itemIndex,
                   removeCallback,
+                  becomeSelectedItemCallback,
                 }) :
                 null
             }
@@ -1367,6 +1453,7 @@ class Masonry extends React.Component<Props> {
             className={`${innerScrollClassName ?
               innerScrollClassName :
               'innerScrollContainer'}`}
+            id={'innerScrollContainerId'}
             style={{
               width: '100%',
               height: this.estimateTotalHeight,
@@ -1411,6 +1498,8 @@ class Masonry extends React.Component<Props> {
     this._checkAndScrollBackWhenLoadOrAddTop(isVirtualized);
 
     this._checkAndScrollBackWhenRemoveItem(isVirtualized, scrollTop);
+
+    this._checkAndScrollBackWhenRaiseItem();
 
     this._checkAndScrollTopWhenAddItem(scrollTop);
 
@@ -1590,6 +1679,13 @@ class Masonry extends React.Component<Props> {
     }
   }
 
+  _checkAndScrollBackWhenRaiseItem() {
+    if(this.needScrollBackWhenRaiseItem) {
+      this.needScrollBackWhenRaiseItem = false;
+      this._scrollToItem(this.itemScrollBackWhenRaiseOutside.itemId, this.itemScrollBackWhenRaiseOutside.disparity);
+    }
+  }
+
   _checkAndScrollTopWhenAddItem(scrollTop) {
     if (this.needScrollTop) {
       console.log('scrolltop');
@@ -1647,8 +1743,10 @@ class Masonry extends React.Component<Props> {
   }
 
   _scrollTopWithAnim(
-    stepInPixel: number = 30,
-    msDelayInEachStep: number = 16.66) {
+    duration: number,
+    msDelayInEachStep: number = 16.67) {
+    const distance = this.state.scrollTop;
+    const stepInPixel = distance * msDelayInEachStep / duration;
 
     this.scrTopTimeOutId = setInterval(() => {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
@@ -2072,6 +2170,14 @@ class Masonry extends React.Component<Props> {
 
   _removeScrollBackItemTrigger() {
     this.isScrollToSpecialItem = false;
+  }
+
+  _isAtTop(): boolean {
+    return this.state.scrollTop === 0;
+  }
+
+  _isAtBottom() {
+    return this.state.scrollTop === this.estimateTotalHeight - this.props.height;
   }
 
   /* ========================================================================
