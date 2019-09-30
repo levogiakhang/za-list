@@ -13,6 +13,7 @@ type UserMessageProps = {
   timestamp: string,
   msgContent: string,
   onRemoveCallback: any,
+  setSelectedItem: any,
 };
 
 class UserMessage extends React.PureComponent<UserMessageProps> {
@@ -22,6 +23,8 @@ class UserMessage extends React.PureComponent<UserMessageProps> {
     timestamp: '1568363819',
     msgContent: 'I love you',
     onRemoveCallback: () => {
+    },
+    setSelectedItem: () => {
     },
   };
 
@@ -77,7 +80,7 @@ class UserMessage extends React.PureComponent<UserMessageProps> {
              alt={'Avatar'}
              style={{
                borderRadius: '50%',
-               cursor: 'pointer'
+               cursor: 'pointer',
              }}
              onClick={this._onRemove.bind(this)}/>
       </div>
@@ -95,7 +98,8 @@ class UserMessage extends React.PureComponent<UserMessageProps> {
           ${GConst.Spacing[0]}
           ${GConst.Spacing[1]}
           `,
-           }}>
+           }}
+      onClick={this._onSelectedIndex.bind(this)}>
         <div className={'item-title'}
              style={{
                minHeight: '33px',
@@ -184,6 +188,13 @@ class UserMessage extends React.PureComponent<UserMessageProps> {
     const {itemId, onRemoveCallback} = this.props;
     if (isFunction(onRemoveCallback)) {
       onRemoveCallback(itemId);
+    }
+  }
+
+  _onSelectedIndex() {
+    const {index, setSelectedItem} = this.props;
+    if(isFunction(setSelectedItem)) {
+      setSelectedItem(index);
     }
   }
 }

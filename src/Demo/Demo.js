@@ -341,7 +341,7 @@ class Demo extends React.Component {
   /* ========================================================================
    Graphics User Interface
    ======================================================================== */
-  static cellRender({item, index, removeCallback}) {
+  static cellRender({item, index, removeCallback, becomeSelectedItemCallback}) {
     if (
       item &&
       item.msgInfo &&
@@ -349,11 +349,13 @@ class Demo extends React.Component {
       item.msgInfo.msgType === 5
     ) {
       return <UserMessage itemId={item.itemId}
+                          index={index}
                           userAvatarSrc={item.userAva}
                           userName={item.userName}
                           timestamp={item.sentTime}
                           msgContent={item.msgInfo.msgContent}
-                          onRemoveCallback={removeCallback}/>;
+                          onRemoveCallback={removeCallback}
+                          setSelectedItem={becomeSelectedItemCallback}/>;
     }
     else {
       return (
