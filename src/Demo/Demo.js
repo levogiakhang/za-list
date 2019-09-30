@@ -21,6 +21,7 @@ class Demo extends React.Component {
     this.state = {
       isLoading: true,
       indexToAddMore: 0,
+      raiseIndex: 0,
       itemIdToScroll: 0,
       indexToScroll: 0,
     };
@@ -38,6 +39,7 @@ class Demo extends React.Component {
     this.handleChangeIndex = this.handleChangeIndex.bind(this);
     this.handleChangeItemIdToScroll = this.handleChangeItemIdToScroll.bind(this);
     this.handleChangeIndexToScroll = this.handleChangeIndexToScroll.bind(this);
+    this.handleChangeRaiseIndex = this.handleChangeRaiseIndex.bind(this);
     this.loadMoreTop = this.loadMoreTop.bind(this);
     this.loadMoreBottom = this.loadMoreBottom.bind(this);
     this.enableLoadMoreTop = this.enableLoadMoreTop.bind(this);
@@ -46,6 +48,7 @@ class Demo extends React.Component {
     this.lookUpItemToScrollTop = this.lookUpItemToScrollTop.bind(this);
     this.lookUpItemToScrollBottom = this.lookUpItemToScrollBottom.bind(this);
     this.updateData = this.updateData.bind(this);
+    this.raiseItemSucceed = this.raiseItemSucceed.bind(this);
   }
 
   componentDidMount(): void {
@@ -71,6 +74,7 @@ class Demo extends React.Component {
     this.viewModel.addEventListener('onLookForItemToScroll', this.lookUpItem);
     this.viewModel.addEventListener('onLookForItemToScrollTop', this.lookUpItemToScrollTop);
     this.viewModel.addEventListener('onLookForItemToScrollBottom', this.lookUpItemToScrollBottom);
+    this.viewModel.addEventListener('raiseItemSucceed', this.raiseItemSucceed);
   };
 
 
@@ -99,6 +103,14 @@ class Demo extends React.Component {
     }
   }
 
+  handleChangeRaiseIndex(e) {
+    if (this._isInRange(e.target.value, 0, this.viewModel.getDataUnfreeze().length)) {
+      this.setState({raiseIndex: e.target.value});
+    }
+    else {
+      alert('OUT OF RANGE');
+    }
+  };
 
   /* ========================================================================
    Events Listener Callback
@@ -179,10 +191,10 @@ class Demo extends React.Component {
    ======================================================================== */
   _fakeDataList = () => {
     // Dynamic height
-    return generation.generateItems(DATA_TOTAL_NUMBER);
+    //return generation.generateItems(DATA_TOTAL_NUMBER);
 
     // Equal height
-    //return generation.generateIdenticalItems(DATA_TOTAL_NUMBER);
+    return generation.generateIdenticalItems(DATA_TOTAL_NUMBER);
   };
 
   loadMoreTop(firstItemIdInCurrentUI) {
@@ -290,9 +302,19 @@ class Demo extends React.Component {
       this.updateDataIndexMap();
       deletedItems.forEach(item => {
         this.dataTotalMap.delete(item.itemId);
-      })
+      });
     }
   };
+
+  raiseItemSucceed({oldIndex}) {
+    if (Array.isArray(this.dataTotal)) {
+      const validIndex = oldIndex === 0 ?
+        0 :
+        oldIndex - 1;
+      this.dataTotal.unshift(this.dataTotal.splice(validIndex, 1)[0]);
+      this.updateDataIndexMap();
+    }
+  }
 
   updateDataIndexMap() {
     // High cost :)
@@ -376,6 +398,7 @@ class Demo extends React.Component {
       }}>
         {this._renderAddControl()}
         {this._renderScrollControl()}
+        {this._renderUpdateDataControl()}
         {this._renderDevTool()}
       </div>
     );
@@ -526,7 +549,7 @@ class Demo extends React.Component {
     return (
       <div className={'card'}
            style={{
-             marginTop: GConst.Spacing['3'],
+             marginTop: GConst.Spacing['2'],
              borderRadius: '5px',
              padding: `
          ${GConst.Spacing['0.25']}
@@ -791,11 +814,155 @@ class Demo extends React.Component {
     );
   };
 
+  _renderUpdateDataControl = () => {
+    const {raiseIndex} = this.state;
+    return (
+      <div className={'card'}
+           style={{
+             marginTop: GConst.Spacing['2'],
+             borderRadius: '5px',
+             padding: `
+         ${GConst.Spacing['0.25']}
+         ${GConst.Spacing['0.75']}
+         ${GConst.Spacing['0.5']}
+         ${GConst.Spacing['0.75']}`,
+           }}>
+        <div style={{
+          fontStyle: GConst.Font.Style.Italic,
+          fontSize: GConst.Font.Size.Medium,
+          marginBottom: GConst.Spacing['0.5'],
+        }}>
+          Update Data Controller
+        </div>
+
+        <div style={{
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={() => {
+                this.viewModel.raiseItemByIndex(raiseIndex);
+              }}>
+              Raise item at:
+            </button>
+          </div>
+          <div style={{
+            display: 'flex',
+            width: '50%',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <div style={{
+              display: 'flex',
+              maxWidth: '180px',
+              alignItems: 'center',
+            }}>
+              <input style={{
+                minWidth: '100px',
+                width: '50%',
+                minHeight: '34px',
+                height: 'auto',
+                maxHeight: '34px',
+                borderRadius: '5px',
+                outline: 'none',
+                fontSize: '1rem',
+                textAlign: 'center',
+                paddingLeft: GConst.Spacing['0.5'],
+              }}
+                     type={'number'}
+                     placeholder={`Index`}
+                     value={raiseIndex}
+                     onChange={this.handleChangeRaiseIndex}/>
+
+              <div style={{
+                display: 'flex',
+                width: '100%',
+                justifyContent: 'center',
+              }}>
+                <p
+                  style={{margin: 0}}>(index)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          marginTop: GConst.Spacing['0.75'],
+          border: '0.5px dashed #000',
+        }}/>
+
+        <div style={{
+          display: 'flex',
+          marginTop: GConst.Spacing['0.75'],
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={this.updateData}>
+              Update Outer data
+            </button>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={() => {
+                this.viewModel.onRemoveItemsAt(2, 3);
+              }}>
+              Remove 3 items from 2
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   _renderDevTool = () => {
     return (
       <div className={'card'}
            style={{
-             marginTop: GConst.Spacing['3'],
+             marginTop: GConst.Spacing['2'],
              borderRadius: '5px',
              padding: `
          ${GConst.Spacing['0.25']}
@@ -891,48 +1058,6 @@ class Demo extends React.Component {
               margin: GConst.Spacing[0],
               fontSize: GConst.Font.Size.Medium,
             }}
-            onClick={this.updateData}>
-            Updata outer data
-          </button>
-        </div>
-
-        <div style={{
-          display: 'flex',
-          margin: GConst.Spacing['0'],
-          marginTop: GConst.Spacing['0.5'],
-        }}>
-          <button
-            style={{
-              minWidth: '370px',
-              width: '100%',
-              minHeight: '40px',
-              height: 'auto',
-              maxHeight: '40px',
-              margin: GConst.Spacing[0],
-              fontSize: GConst.Font.Size.Medium,
-            }}
-            onClick={() => {
-              this.viewModel.onRemoveItemsAt(2, 3);
-            }}>
-            Remove 3 items from 2
-          </button>
-        </div>
-
-        <div style={{
-          display: 'flex',
-          margin: GConst.Spacing['0'],
-          marginTop: GConst.Spacing['0.5'],
-        }}>
-          <button
-            style={{
-              minWidth: '370px',
-              width: '100%',
-              minHeight: '40px',
-              height: 'auto',
-              maxHeight: '40px',
-              margin: GConst.Spacing[0],
-              fontSize: GConst.Font.Size.Medium,
-            }}
             onClick={() => {
               const item = this.viewModel.getItemAt(1);
               const gId = generation.generateId();
@@ -940,9 +1065,9 @@ class Demo extends React.Component {
                 ...item,
                 userName: gId,
               };
-              this.viewModel.raiseItemByIndex('2');
+              this.viewModel.raiseItemByIndex(16);
             }}>
-            Test xàm xàm 
+            Test xàm xàm
           </button>
         </div>
       </div>
