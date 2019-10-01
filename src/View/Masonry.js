@@ -602,8 +602,11 @@ class Masonry extends React.Component<Props> {
       }
 
       const el = document.getElementById(removedItemId);
+      const range = this._getItemsIndexInViewport(scrollTop, height);
+      const first = range.firstItemIndex;
+      const last = range.lastItemIndex;
       let parent;
-      if (el) {
+      if (el && itemIndex >= first && itemIndex <= last) {
         AnimExecution.removeStyle(el, scrollToAnim);
         const estimateTotalHeight = this.estimateTotalHeight;
         requestAnimationFrame(function () {
