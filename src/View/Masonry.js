@@ -606,7 +606,7 @@ class Masonry extends React.Component<Props> {
       const first = range.firstItemIndex;
       const last = range.lastItemIndex;
       let parent;
-      if (el && itemIndex >= first && itemIndex <= last) {
+      if (el && itemIndex >= first && itemIndex <= last + 1) {
         AnimExecution.removeStyle(el, scrollToAnim);
         const estimateTotalHeight = this.estimateTotalHeight;
         requestAnimationFrame(function () {
@@ -787,10 +787,16 @@ class Masonry extends React.Component<Props> {
               if (parent.children[i]) {
                 const id = parent.children[i].id;
                 if (id !== removedItemId && oldMap.get(id) !== undefined) {
-                  if (itemCache.getIndex(id) >= removedItemIndex) {
+                  if (itemCache.getIndex(id) < removedItemIndex) {
                     parent.children[i].style.willChange = 'transform';
-                    const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
-                    AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                    const fromPos = itemHeight;
+                    AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, 0, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                    parent.children[i].style.willChange = 'auto';
+                  }
+                  else {
+                    parent.children[i].style.willChange = 'transform';
+                    const fromPos = itemHeight;
+                    AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
                     parent.children[i].style.willChange = 'auto';
                   }
                 }
@@ -798,6 +804,7 @@ class Masonry extends React.Component<Props> {
             }
             this._updateEstimatedHeight(itemHeight);
             setTimeout(() => {
+                this._scrollToOffset(scrollTop - itemHeight);
                 this._updateEstimatedHeight(-itemHeight);
                 this.reRender();
               },
@@ -2228,7 +2235,7 @@ class Masonry extends React.Component<Props> {
 
   _removeStyleOfSpecialItem() {
     if (this.isStableAfterScrollToSpecialItem) {
-      console.log('aa')
+      console.log('aa');
       // console.log(this.itemAddedScrollToAnim.itemId);
       const el = this.masonry.firstChild.children.namedItem(this.itemAddedScrollToAnim.itemId);
       AnimExecution.removeStyle(el, this.itemAddedScrollToAnim.anim);
