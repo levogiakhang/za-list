@@ -22,7 +22,7 @@ function executeDefaultAnim(el, animName, fromPos, toPos, duration) {
   ) {
     switch (animName) {
       case AnimName.zoomOut: {
-        defaultAnim.zoomOut(el);
+        defaultAnim.zoomOut(el, duration);
         break;
       }
 
