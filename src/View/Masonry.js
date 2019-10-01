@@ -85,6 +85,7 @@ class Masonry extends React.Component<Props> {
     }
 
     this.scrTopTimeOutId = undefined;
+    this.scrBottomTimeOutId = undefined;
     this.scrUpTimeOutId = undefined;
     this.scrDownTimeOutId = undefined;
 
@@ -1558,13 +1559,15 @@ class Masonry extends React.Component<Props> {
   scrollToTopAtCurrentUI() {
     this.preventLoadTop = true;
     this._removeScrollBackItemTrigger();
-    this._scrollToOffset(0);
+    this.jumpBeforeScroll(0, 500);
+    this._scrollTopWithAnim(500);
   };
 
   scrollToBottomAtCurrentUI() {
     this.preventLoadBottom = true;
     this._removeScrollBackItemTrigger();
-    this._scrollToOffset(this.estimateTotalHeight);
+    this.jumpBeforeScroll(this.estimateTotalHeight - this.props.height, 500);
+    this._scrollBottomWithAnim(500);
   };
 
   reRender() {
@@ -2100,6 +2103,7 @@ class Masonry extends React.Component<Props> {
 
   _clearIntervalId() {
     clearInterval(this.scrTopTimeOutId);
+    clearInterval(this.scrBottomTimeOutId);
     clearInterval(this.scrUpTimeOutId);
     clearInterval(this.scrDownTimeOutId);
   }
@@ -2109,6 +2113,7 @@ class Masonry extends React.Component<Props> {
     msDelayInEachStep: number = 16.67) {
     const distance = this.state.scrollTop;
     const stepInPixel = distance * msDelayInEachStep / duration;
+    this._clearIntervalId();
 
     this.scrTopTimeOutId = setInterval(() => {
       this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
@@ -2116,6 +2121,25 @@ class Masonry extends React.Component<Props> {
         clearInterval(this.scrTopTimeOutId);
         this._removeScrollBackItemTrigger();
         this._scrollToOffset(0);
+      }
+    }, msDelayInEachStep);
+  }
+
+  _scrollBottomWithAnim(
+    duration: number,
+    msDelayInEachStep: number = 16.67) {
+    const height = this.props.height;
+    const estimateTotalHeight = this.estimateTotalHeight;
+    const distance = estimateTotalHeight -  this.state.scrollTop - height;
+    const stepInPixel = distance * msDelayInEachStep / duration;
+    this._clearIntervalId();
+
+    this.scrBottomTimeOutId = setInterval(() => {
+      this.masonry.scrollTo(0, this.state.scrollTop + stepInPixel);
+      if (this.state.scrollTop + height >= estimateTotalHeight) {
+        clearInterval(this.scrBottomTimeOutId);
+        this._removeScrollBackItemTrigger();
+        this._scrollToOffset(estimateTotalHeight);
       }
     }, msDelayInEachStep);
   }
