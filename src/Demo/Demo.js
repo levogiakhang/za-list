@@ -1008,7 +1008,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.onRemoveItemsAt(removeFrom, removeTo);
+                this.viewModel.onRemoveItemsAt(removeFrom, removeTo - removeFrom + 1);
               }}>
               Remove from - to:
             </button>
