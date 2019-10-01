@@ -116,13 +116,15 @@ class ItemCache {
   }
 
   deleteItem(itemIndex, itemId, data) {
-    // Update index map
-    this.updateIndexMap(itemIndex - 1, data);
-    this.__indexMap__.delete(data.length);
+    if(data) {
+      // Update index map
+      this.updateIndexMap(itemIndex - 1, data);
+      this.__indexMap__.delete(data.length);
 
-    // Update items map.
-    this.updateItemsMap(itemIndex - 1, data.length);
-    this.__itemsMap__.delete(itemId);
+      // Update items map.
+      this.updateItemsMap(itemIndex - 1, data.length);
+      this.__itemsMap__.delete(itemId);
+    }
   }
 
   updateItemOnMap(itemId: string, itemIndex: number, itemHeight: number, itemPosition: number, isRendered: boolean) {
@@ -159,7 +161,7 @@ class ItemCache {
   }
 
   updateIndexMap(startIndex: number, data: Array) {
-    if (!!data.length) {
+    if (data && !!data.length) {
       if (startIndex < 0) {
         startIndex = 0;
       }
