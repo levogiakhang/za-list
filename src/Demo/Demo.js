@@ -788,7 +788,7 @@ class Demo extends React.Component {
             alignItems: 'center',
             width: '50%',
           }}>
-            <button
+            <button disabled
               className={'other-hover'}
               style={{
                 minWidth: '100px',
@@ -812,7 +812,7 @@ class Demo extends React.Component {
             alignItems: 'center',
             width: '50%',
           }}>
-            <button
+            <button disabled
               className={'other-hover'}
               style={{
                 minWidth: '100px',
