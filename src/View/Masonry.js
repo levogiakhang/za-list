@@ -18,6 +18,7 @@ import {
   AnimExecution,
   AnimName,
 } from './AnimationExecution';
+import GLog from '../utils/GLog';
 
 type RenderDirection = 'TopDown' | 'BottomUp';
 
@@ -50,7 +51,7 @@ let LOAD_MORE_BOTTOM_TRIGGER_POS = 0;
 const NEED_TO_SCROLL_TOP_POS = 300;
 const NEED_TO_SCROLL_BOTTOM_POS = 600;
 const TIMING_ADDITION_ANIM_VIRTUALIZED = 100;
-const TIMING_REMOVAL_ANIM_VIRTUALIZED = 200;
+const TIMING_REMOVAL_ANIM_VIRTUALIZED = 250;
 const TIMING_RAISE_ANIM_VIRTUALIZED = 230;
 
 class Masonry extends React.Component<Props> {
@@ -117,8 +118,12 @@ class Masonry extends React.Component<Props> {
 
     // For removal anim in Virtualized
     this.needHoldItemToExcuteRemovalAnim = false;
-    this.removedItemIndexToExecuteRemovalAnim = 0;
-    this.removedElement = undefined;
+    this.removedElements = [
+      {
+        item: undefined,
+        index: 0,
+      },
+    ];
 
     // Raise Item
     this.needHoldItemToExcuteRaiseAnim = false;
@@ -331,7 +336,8 @@ class Masonry extends React.Component<Props> {
       isNum(oldHeight) &&
       isNum(newHeight) &&
       // case defaultHeight = real height
-      (itemCache.getHeight(itemId) !== newHeight || !isRendered)
+      (itemCache.getHeight(itemId) !== newHeight || !isRendered) &&
+      itemCache.getHeight(itemId) !== NOT_FOUND
     ) {
       // this.firstItemInViewportBefore = {
       //   itemId: this.curItemInViewPort,
@@ -514,6 +520,11 @@ class Masonry extends React.Component<Props> {
 
       this._removeStyleOfSpecialItem();
 
+      const selectedIndex = this.viewModel.getSelectedItem();
+      if (startIndex + items.length <= selectedIndex + 1) {
+        this.viewModel.setSelectedItem(selectedIndex + items.length);
+      }
+
       // Conflict with trigger load more when scroll to first | last item on UI
       this._clearIntervalId();
 
@@ -556,6 +567,7 @@ class Masonry extends React.Component<Props> {
     const {scrollTop} = this.state;
 
     this._removeStyleOfSpecialItem();
+    this.removedElements = [];
 
     // ToNumber(null) = 0 => isNaN(null) = false
     if (
@@ -704,11 +716,18 @@ class Masonry extends React.Component<Props> {
           itemIndex <= rangeIndexInViewport.lastItemIndex + 1
         ) {
           this.needHoldItemToExcuteRemovalAnim = true;
-          this.removedItemIndexToExecuteRemovalAnim = removedItemIndex;
-          this.removedElement = removedItem;
+          let pos = 0;
+          if (oldMap.get(removedItemId) && isNum(oldMap.get(removedItemId).position)) {
+            pos = oldMap.get(removedItemId).position;
+          }
+          this.removedElements.push({
+            item: removedItem,
+            index: removedItemIndex,
+            position: pos,
+          });
         }
         if (el) {
-          AnimExecution.executeDefaultAnim(el, AnimName.zoomOut);
+          AnimExecution.executeDefaultAnim(el, AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
           setTimeout(() => {
             this.needHoldItemToExcuteRemovalAnim = false;
             this.reRender();
@@ -808,6 +827,7 @@ class Masonry extends React.Component<Props> {
       removedItemsId,
       startIndex,
       deleteCount,
+      removedLastItemIndex,
       removedItemsHeight,
       removedFirstItemPos,
       removedItems,
@@ -816,6 +836,7 @@ class Masonry extends React.Component<Props> {
     const {scrollTop} = this.state;
 
     this._removeStyleOfSpecialItem();
+    this.removedElements = [];
 
     if (
       removedItemsId &&
@@ -828,19 +849,20 @@ class Masonry extends React.Component<Props> {
 
       let totalItemsHeight = 0;
       if (Array.isArray(removedItemsHeight)) {
-        removedItemsHeight.forEach((height) => {
-          totalItemsHeight += height;
-        });
+        for (let i = 0; i < removedItemsHeight.length; i++) {
+          totalItemsHeight += removedItemsHeight[i];
+        }
+      }
+
+      const selectedItemIndex = this.viewModel.getSelectedItem();
+      if (selectedItemIndex >= startIndex + deleteCount) {
+        this.viewModel.setSelectedItem(selectedItemIndex - deleteCount);
+      }
+      else if (startIndex <= selectedItemIndex && selectedItemIndex <= startIndex + deleteCount) {
+        this.viewModel.clearSelectedItem();
       }
 
       this.isRemoveItem = true;
-      if (
-        itemCache.getIndex(this.curItemInViewPort) !== NOT_FOUND &&
-        removedLastItemIndex - deleteCount <= itemCache.getIndex(this.curItemInViewPort)
-      ) {
-        this.needScrollBackWhenRemoveItem = true;
-        this.removedItemHeight = totalItemsHeight;
-      }
 
       // Non-virtualized list
       if (!isVirtualized) {
@@ -849,30 +871,322 @@ class Masonry extends React.Component<Props> {
       // Virtualized list
       else {
         const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
-        let remainHeight = 0;
-        if (
-          rangeIndexInViewport &&
-          removedLastItemIndex >= rangeIndexInViewport.firstItemIndex &&
-          removedLastItemIndex <= rangeIndexInViewport.lastItemIndex + 1
-        ) {
+        const first = rangeIndexInViewport.firstItemIndex;
+        const last = rangeIndexInViewport.lastItemIndex;
+        const timing = TIMING_REMOVAL_ANIM_VIRTUALIZED;
+
+        if (removedLastItemIndex < first) {
+          // scroll back
+          this.needScrollBackWhenRemoveItem = true;
+          this.removedItemHeight = totalItemsHeight;
+          this._updateEstimatedHeight(-totalItemsHeight);
+        }
+        else if (this.estimateTotalHeight < height) {
+          console.log('[Remove Multi] - Case 1');
           this.needHoldItemToExcuteRemovalAnim = true;
-          this.removedItemIndexToExecuteRemovalAnim = startIndex;
-        }
-        if (scrollTop + height >= this.estimateTotalHeight - 2) {
-          this.isBottomWhenRemoveItemVirtualized = true;
-        }
-        else if (scrollTop + height > this.estimateTotalHeight - totalItemsHeight) {
-          this.isRemovedItemHeightGreaterThan = true;
-          console.log('abc', scrollTop);
 
-          this.disparityFromLastItemInVPToVPHeight = scrollTop + height - itemCache.getPosition(itemCache.getItemId(startIndex)) + totalItemsHeight;
-        }
+          const els = [];
+          let parent = null;
+          for (let i = 0; i < removedItemsId.length; i++) {
+            let pos = 0;
+            if (oldMap.get(removedItemsId[i]) && isNum(oldMap.get(removedItemsId[i]).position)) {
+              pos = oldMap.get(removedItemsId[i]).position;
+            }
+            this.removedElements.push({
+              item: removedItems[i],
+              index: removedLastItemIndex - deleteCount + 1 + i,
+              position: pos,
+            });
+            const el = document.getElementById(removedItemsId[i]);
+            if (el && parent === null) {
+              parent = el.parentElement;
+            }
+            els.push(el);
+          }
 
-        const oldEst = this.estimateTotalHeight;
-        this._updateEstimatedHeight(-totalItemsHeight);
-        remainHeight = oldEst - scrollTop - height;
-        const deltaScrTop = totalItemsHeight - remainHeight;
-        console.log(deltaScrTop);
+          for (let i = 0; i < els.length; i++) {
+            if (els[i]) {
+              setTimeout(() => {
+                AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+              }, (timing / els.length) * (els.length - i - 1));
+            }
+          }
+
+          if (parent && parent.children) {
+            for (let i = 0; i < parent.children.length; i++) {
+              if (parent.children[i]) {
+                const id = parent.children[i].id;
+                if (!removedItemsId.includes(id) && oldMap.get(id) !== undefined) {
+                  if (itemCache.getIndex(id) >= removedLastItemIndex - deleteCount) {
+                    parent.children[i].style.willChange = 'transform';
+                    const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
+                    AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                    parent.children[i].style.willChange = 'auto';
+                  }
+                }
+              }
+            }
+          }
+
+          setTimeout(() => {
+            this.needHoldItemToExcuteRemovalAnim = false;
+            this._updateEstimatedHeight(-totalItemsHeight);
+            this.reRender();
+          }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+        }
+        else if (this.estimateTotalHeight - scrollTop - height < totalItemsHeight) {
+          this.needHoldItemToExcuteRemovalAnim = true;
+
+          const els = [];
+          let parent = null;
+          for (let i = 0; i < removedItemsId.length; i++) {
+            let pos = 0;
+            if (oldMap.get(removedItemsId[i]) && isNum(oldMap.get(removedItemsId[i]).position)) {
+              pos = oldMap.get(removedItemsId[i]).position;
+            }
+            this.removedElements.push({
+              item: removedItems[i],
+              index: removedLastItemIndex - deleteCount + 1 + i,
+              position: pos,
+            });
+            const el = document.getElementById(removedItemsId[i]);
+            if (el && parent === null) {
+              parent = el.parentElement;
+            }
+            els.push(el);
+          }
+
+          // After remove items, need to check whether estimate height is lesser than height?
+          // If yes, call scroll to while removing
+          if (this.estimateTotalHeight - totalItemsHeight <= height) {
+            GLog.logInfo(this, '[Remove Multi] - Case', 2.1);
+            for (let i = 0; i < els.length; i++) {
+              if (els[i]) {
+                setTimeout(() => {
+                  AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                }, (timing / els.length) * (els.length - i - 1));
+              }
+            }
+
+            if (parent && parent.children) {
+              for (let i = 0; i < parent.children.length; i++) {
+                if (parent.children[i]) {
+                  const id = parent.children[i].id;
+                  if (!removedItemsId.includes(id) && oldMap.get(id) !== undefined) {
+                    if (itemCache.getIndex(id) <= removedLastItemIndex - deleteCount) {
+
+                    }
+                    else {
+                      parent.children[i].style.willChange = 'transform';
+                      const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
+                      AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                      parent.children[i].style.willChange = 'auto';
+                    }
+                  }
+                }
+              }
+            }
+
+            this._scrollTopWithAnim(TIMING_REMOVAL_ANIM_VIRTUALIZED);
+            setTimeout(() => {
+              this.needHoldItemToExcuteRemovalAnim = false;
+              this._updateEstimatedHeight(-totalItemsHeight);
+              this.reRender();
+            }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+          }
+          else {
+            GLog.logInfo(this, '[Remove Multi] - Case', 2.2);
+            for (let i = 0; i < els.length; i++) {
+              if (els[i]) {
+                setTimeout(() => {
+                  AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                }, (timing / (els.length + 1)) * (i));
+              }
+            }
+
+            if (parent && parent.children) {
+              for (let i = 0; i < parent.children.length; i++) {
+                if (parent.children[i]) {
+                  const id = parent.children[i].id;
+                  if (!removedItemsId.includes(id) && oldMap.get(id) !== undefined) {
+                    if (itemCache.getIndex(id) <= removedLastItemIndex - deleteCount) {
+                      parent.children[i].style.willChange = 'transform';
+                      const fromPos = totalItemsHeight;
+                      AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, 0, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                      parent.children[i].style.willChange = 'auto';
+                    }
+                    else {
+                      parent.children[i].style.willChange = 'transform';
+                      const fromPos = totalItemsHeight;
+                      AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                      parent.children[i].style.willChange = 'auto';
+                    }
+                  }
+                }
+              }
+            }
+
+            setTimeout(() => {
+              this.needHoldItemToExcuteRemovalAnim = false;
+              this._scrollToOffset(scrollTop - totalItemsHeight);
+              this._updateEstimatedHeight(-totalItemsHeight);
+            }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+          }
+        }
+        else if (startIndex < first && removedLastItemIndex >= last) {
+          // ACE :D
+          GLog.logInfo(this, '[Remove Multi] - Case', 3);
+          this.needHoldItemToExcuteRemovalAnim = true;
+
+          const els = [];
+          let parent = null;
+          for (let i = 0; i < removedItemsId.length; i++) {
+            let pos = 0;
+            if (oldMap.get(removedItemsId[i]) && isNum(oldMap.get(removedItemsId[i]).position)) {
+              pos = oldMap.get(removedItemsId[i]).position;
+            }
+            this.removedElements.push({
+              item: removedItems[i],
+              index: removedLastItemIndex - deleteCount + 1 + i,
+              position: pos,
+            });
+            const el = document.getElementById(removedItemsId[i]);
+            if (el && parent === null) {
+              parent = el.parentElement;
+            }
+            els.push(el);
+          }
+
+          for (let i = 0; i < els.length; i++) {
+            if (els[i]) {
+              setTimeout(() => {
+                AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+              }, (timing / els.length) * (els.length - i - 1));
+            }
+          }
+          this._updateEstimatedHeight(-totalItemsHeight);
+          setTimeout(() => {
+            this.needHoldItemToExcuteRemovalAnim = false;
+          }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+        }
+        else if (startIndex < first && removedLastItemIndex >= first && removedLastItemIndex <= last) {
+          GLog.logInfo(this, '[Remove Multi] - Case', 4);
+          this.needHoldItemToExcuteRemovalAnim = true;
+
+          const els = [];
+          let parent = null;
+          for (let i = 0; i < removedItemsId.length; i++) {
+            let pos = 0;
+            if (oldMap.get(removedItemsId[i]) && isNum(oldMap.get(removedItemsId[i]).position)) {
+              pos = oldMap.get(removedItemsId[i]).position;
+            }
+            this.removedElements.push({
+              item: removedItems[i],
+              index: removedLastItemIndex - deleteCount + 1 + i,
+              position: pos,
+            });
+            const el = document.getElementById(removedItemsId[i]);
+            if (el && parent === null) {
+              parent = el.parentElement;
+            }
+            els.push(el);
+          }
+
+          for (let i = 0; i < els.length; i++) {
+            if (els[i]) {
+              setTimeout(() => {
+                AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+              }, (timing / els.length) * (els.length - i - 1));
+            }
+          }
+
+          if (parent && parent.children) {
+            for (let i = 0; i < parent.children.length; i++) {
+              if (parent.children[i]) {
+                const id = parent.children[i].id;
+                if (!removedItemsId.includes(id) && oldMap.get(id) !== undefined) {
+                  if (itemCache.getIndex(id) >= removedLastItemIndex - deleteCount) {
+                    parent.children[i].style.willChange = 'transform';
+                    const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
+                    AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                    parent.children[i].style.willChange = 'auto';
+                  }
+                }
+              }
+            }
+          }
+
+          this._updateEstimatedHeight(-totalItemsHeight);
+
+          setTimeout(() => {
+            this.needHoldItemToExcuteRemovalAnim = false;
+            this.reRender();
+          }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+        }
+        else if (startIndex >= first && startIndex <= last) {
+          GLog.logInfo(this, '[Remove Multi] - Case', 5);
+          this.needHoldItemToExcuteRemovalAnim = true;
+
+          const els = [];
+          let parent = null;
+          for (let i = 0; i < removedItemsId.length; i++) {
+            let pos = 0;
+            if (oldMap.get(removedItemsId[i]) && isNum(oldMap.get(removedItemsId[i]).position)) {
+              pos = oldMap.get(removedItemsId[i]).position;
+            }
+            this.removedElements.push({
+              item: removedItems[i],
+              index: removedLastItemIndex - deleteCount + 1 + i,
+              position: pos,
+            });
+            const el = document.getElementById(removedItemsId[i]);
+            if (el && parent === null) {
+              parent = el.parentElement;
+            }
+            els.push(el);
+          }
+
+          for (let i = 0; i < els.length; i++) {
+            if (els[i]) {
+              setTimeout(() => {
+                AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+              }, (timing / els.length) * (els.length - i - 1));
+            }
+          }
+
+          if (parent && parent.children) {
+            for (let i = 0; i < parent.children.length; i++) {
+              if (parent.children[i]) {
+                const id = parent.children[i].id;
+                if (!removedItemsId.includes(id) && oldMap.get(id) !== undefined) {
+                  if (itemCache.getIndex(id) >= removedLastItemIndex - deleteCount) {
+                    parent.children[i].style.willChange = 'transform';
+                    const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
+                    AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                    parent.children[i].style.willChange = 'auto';
+                  }
+                }
+              }
+            }
+          }
+
+          this._updateEstimatedHeight(-totalItemsHeight);
+
+          setTimeout(() => {
+            this.needHoldItemToExcuteRemovalAnim = false;
+            this.reRender();
+          }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+        }
+        else {
+          GLog.logInfo(this, '[Remove Multi] - Case', 'Else');
+          if (removedLastItemIndex - deleteCount) {
+            console.log(deleteCount);
+          }
+          console.log(totalItemsHeight);
+          this._updateEstimatedHeight(-totalItemsHeight);
+          console.log(startIndex, removedLastItemIndex, first, last);
+          this.reRender();
+        }
       }
     }
   }
@@ -1297,40 +1611,40 @@ class Masonry extends React.Component<Props> {
 
     // Prevent removed item is disappeared.
     if (this.needHoldItemToExcuteRemovalAnim) {
-      const item = this.removedElement;
-      const removedItemIndex = this.removedItemIndexToExecuteRemovalAnim;
-      const getTopPos = removedItemIndex === this.viewModel.getDataUnfreeze().length ?
-        itemCache.getPosition(itemCache.getItemId(removedItemIndex - 1)) :
-        itemCache.getPosition(itemCache.getItemId(removedItemIndex));
-      const position = {
-        top: getTopPos,
-        left: 0,
-      };
+      for (let i = 0; i < this.removedElements.length; i++) {
+        const item = this.removedElements[i].item;
+        const removedItemIndex = this.removedElements[i].index;
+        const getTopPos = this.removedElements[i].position;
+        const position = {
+          top: getTopPos,
+          left: 0,
+        };
 
-      if (
-        item &&
-        item.itemId &&
-        isNum(position.top) &&
-        position.top !== NOT_FOUND
-      ) {
-        this.children.push(
-          <CellMeasurer
-            id={item.itemId}
-            key={item.itemId}
-            isVirtualized={this.props.isVirtualized}
-            defaultHeight={itemCache.getDefaultHeight}
-            onChangedHeight={this.onChildrenChangeHeight}
-            position={position}>
-            {
-              isFunction(this.props.cellRenderer) ?
-                this.props.cellRenderer({
-                  item,
-                  removedItemIndex,
-                }) :
-                null
-            }
-          </CellMeasurer>,
-        );
+        if (
+          item &&
+          item.itemId &&
+          isNum(position.top) &&
+          position.top !== NOT_FOUND
+        ) {
+          this.children.push(
+            <CellMeasurer
+              id={item.itemId}
+              key={item.itemId}
+              isVirtualized={this.props.isVirtualized}
+              defaultHeight={itemCache.getDefaultHeight}
+              onChangedHeight={this.onChildrenChangeHeight}
+              position={position}>
+              {
+                isFunction(this.props.cellRenderer) ?
+                  this.props.cellRenderer({
+                    item,
+                    removedItemIndex,
+                  }) :
+                  null
+              }
+            </CellMeasurer>,
+          );
+        }
       }
     }
 
