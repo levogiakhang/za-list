@@ -137,7 +137,7 @@ function scrollTop(el, currentScrollTop: number, duration: number = 500, delay: 
     el &&
     isFunction(el.animate)
   ) {
-    console.log(el, duration)
+
     el.animate([
         {
           scrollTop: _currentScrollTop,
