@@ -722,12 +722,12 @@ function createMasonryViewModel({data, defaultHeight}) {
       const raiseData = _raiseItemInData(index);
       const raiseCache = _raiseItemInCache(index);
 
-      if(raiseData && raiseCache) {
+      if (raiseData && raiseCache) {
         if (storageEvents['viewOnRaiseItem'] && isFunction(storageEvents['viewOnRaiseItem'][0])) {
           storageEvents['viewOnRaiseItem'][0](0, index, oldMap);
         }
 
-        if(storageEvents['raiseItemSucceed'] && isFunction(storageEvents['raiseItemSucceed'][0])) {
+        if (storageEvents['raiseItemSucceed'] && isFunction(storageEvents['raiseItemSucceed'][0])) {
           storageEvents['raiseItemSucceed'][0]({oldIndex: index});
         }
       }
@@ -940,7 +940,7 @@ function createMasonryViewModel({data, defaultHeight}) {
 
       __itemCache__.updateItemsMap(storeStartIndex - 1, data.length);
       updateItemsPositionFromSpecifiedItem(aboveItemId);
-      if(__itemCache__.getItemsMap.size !== __itemCache__.getIndexMap.size) {
+      if (__itemCache__.getItemsMap.size !== __itemCache__.getIndexMap.size) {
         for (let key of __itemCache__.getItemsMap.keys()) {
           if (__itemCache__.getPosition(key) === NOT_FOUND) {
             __itemCache__.getItemsMap.delete(key);
@@ -1322,7 +1322,7 @@ function createMasonryViewModel({data, defaultHeight}) {
         selectedItem = validIndex;
       }
       //console.log('[ViewModel] - On Selected Item At Index:', selectedItem);
-      GLog.logInfo('ViewModel','On Selected Item At Index', selectedItem);
+      GLog.logInfo('ViewModel', 'On Selected Item At Index', selectedItem);
       throttleRenderUI();
     }
   }
