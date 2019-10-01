@@ -8,7 +8,7 @@ import throttle from '../vendors/throttle';
 import createMasonryViewModel from '../ViewModel/MasonryViewModel';
 import UserMessage from './Message/UserMessage';
 
-const DATA_TOTAL_NUMBER = 15;
+const DATA_TOTAL_NUMBER = 40;
 const DATA_UI_NUMBER = 15;
 
 const lv1 = 'background-color: #3F51B5; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1.1rem; font-weight: 700l; font-style: italic';
@@ -24,6 +24,9 @@ class Demo extends React.Component {
       raiseIndex: 0,
       itemIdToScroll: 0,
       indexToScroll: 0,
+      removeId: 0,
+      removeFrom: 0,
+      removeTo: 0,
     };
 
     this.loadTopCount = 5;
@@ -40,6 +43,9 @@ class Demo extends React.Component {
     this.handleChangeItemIdToScroll = this.handleChangeItemIdToScroll.bind(this);
     this.handleChangeIndexToScroll = this.handleChangeIndexToScroll.bind(this);
     this.handleChangeRaiseIndex = this.handleChangeRaiseIndex.bind(this);
+    this.handleChangeRemoveId = this.handleChangeRemoveId.bind(this);
+    this.handleChangeRemoveFrom = this.handleChangeRemoveFrom.bind(this);
+    this.handleChangeRemoveTo = this.handleChangeRemoveTo.bind(this);
     this.loadMoreTop = this.loadMoreTop.bind(this);
     this.loadMoreBottom = this.loadMoreBottom.bind(this);
     this.enableLoadMoreTop = this.enableLoadMoreTop.bind(this);
@@ -111,6 +117,18 @@ class Demo extends React.Component {
       alert('OUT OF RANGE');
     }
   };
+
+  handleChangeRemoveId(e) {
+    this.setState({removeId: e.target.value});
+  }
+
+  handleChangeRemoveFrom(e) {
+    this.setState({removeFrom: e.target.value});
+  }
+
+  handleChangeRemoveTo(e) {
+    this.setState({removeTo: e.target.value});
+  }
 
   /* ========================================================================
    Events Listener Callback
@@ -817,7 +835,7 @@ class Demo extends React.Component {
   };
 
   _renderUpdateDataControl = () => {
-    const {raiseIndex} = this.state;
+    const {raiseIndex, removeId, removeFrom, removeTo} = this.state;
     return (
       <div className={'card'}
            style={{
@@ -904,9 +922,146 @@ class Demo extends React.Component {
         </div>
 
         <div style={{
-          marginTop: GConst.Spacing['0.75'],
-          border: '0.5px dashed #000',
-        }}/>
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={() => {
+                this.viewModel.onRemoveItemById('itemId_' + removeId);
+              }}>
+              Remove item id:
+            </button>
+          </div>
+          <div style={{
+            display: 'flex',
+            width: '50%',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <div style={{
+              display: 'flex',
+              maxWidth: '180px',
+              alignItems: 'center',
+            }}>
+              <input style={{
+                minWidth: '100px',
+                width: '50%',
+                minHeight: '34px',
+                height: 'auto',
+                maxHeight: '34px',
+                borderRadius: '5px',
+                outline: 'none',
+                fontSize: '1rem',
+                textAlign: 'center',
+                paddingLeft: GConst.Spacing['0.5'],
+              }}
+                     type={'number'}
+                     placeholder={`Id`}
+                     value={removeId}
+                     onChange={this.handleChangeRemoveId}/>
+
+              <div style={{
+                display: 'flex',
+                width: '100%',
+                justifyContent: 'center',
+              }}>
+                <p
+                  style={{margin: 0}}>(id)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          margin: GConst.Spacing['0'],
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '50%',
+          }}>
+            <button
+              style={{
+                minWidth: '100px',
+                width: '100%',
+                minHeight: '40px',
+                height: 'auto',
+                maxHeight: '40px',
+                margin: GConst.Spacing[0],
+                fontSize: GConst.Font.Size.Medium,
+              }}
+              onClick={() => {
+                this.viewModel.onRemoveItemsAt(removeFrom, removeTo);
+              }}>
+              Remove from - to:
+            </button>
+          </div>
+          <div style={{
+            display: 'flex',
+            width: '50%',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <div style={{
+              display: 'flex',
+              maxWidth: '180px',
+              alignItems: 'center',
+            }}>
+              <input style={{
+                minWidth: '70px',
+                width: '50%',
+                minHeight: '34px',
+                height: 'auto',
+                maxHeight: '34px',
+                borderRadius: '5px',
+                outline: 'none',
+                fontSize: '1rem',
+                textAlign: 'center',
+                paddingLeft: GConst.Spacing['0.5'],
+              }}
+                     type={'number'}
+                     placeholder={`Index`}
+                     value={removeFrom}
+                     onChange={this.handleChangeRemoveFrom}/>
+
+              <input style={{
+                minWidth: '70px',
+                width: '50%',
+                minHeight: '34px',
+                height: 'auto',
+                maxHeight: '34px',
+                borderRadius: '5px',
+                outline: 'none',
+                fontSize: '1rem',
+                textAlign: 'center',
+                paddingLeft: GConst.Spacing['0.5'],
+                marginLeft: '5px',
+              }}
+                     type={'number'}
+                     placeholder={`Index`}
+                     value={removeTo}
+                     onChange={this.handleChangeRemoveTo}/>
+            </div>
+          </div>
+        </div>
+
 
         <div style={{
           display: 'flex',
@@ -928,31 +1083,10 @@ class Demo extends React.Component {
                 margin: GConst.Spacing[0],
                 fontSize: GConst.Font.Size.Medium,
               }}
-              onClick={() => {this.updateData()}}>
-              Update Outer data
-            </button>
-          </div>
-
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '50%',
-          }}>
-            <button
-              style={{
-                minWidth: '100px',
-                width: '100%',
-                minHeight: '40px',
-                height: 'auto',
-                maxHeight: '40px',
-                margin: GConst.Spacing[0],
-                fontSize: GConst.Font.Size.Medium,
-              }}
               onClick={() => {
-                this.viewModel.onRemoveItemById('itemId_'+this.state.raiseIndex);
+                this.updateData();
               }}>
-              Remove 3 items from 4
+              Update Outer data
             </button>
           </div>
         </div>
