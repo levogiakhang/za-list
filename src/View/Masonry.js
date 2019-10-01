@@ -363,6 +363,33 @@ class Masonry extends React.Component<Props> {
 
         this._updateItemsOnChangedHeight(itemId, newHeight, true);
 
+        // Animation for new item
+        const itemsIndex = this._getItemsIndexInViewport(scrollTop, height);
+        if (itemCache.getIndex(itemId) >= itemsIndex.firstItemIndex &&
+          itemCache.getIndex(itemId) <= itemsIndex.lastItemIndex) {
+          const el = document.getElementById(itemId);
+          let parent;
+          if (el) {
+            AnimExecution.executeDefaultAnim(el, AnimName.zoomIn, 0, 0, TIMING_ADDITION_ANIM_VIRTUALIZED);
+            parent = el.parentElement;
+            if (parent && parent.children) {
+              for (let i = 0; i < parent.children.length; i++) {
+                if (parent.children[i]) {
+                  const id = parent.children[i].id;
+                  if (id !== itemId && this.oldMap.get(id) !== undefined) {
+                    if (itemCache.getIndex(id) > itemCache.getIndex(itemId)) {
+                      parent.children[i].style.willChange = 'transform';
+                      const fromPos = -newHeight / 1.2;
+                      AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_ADDITION_ANIM_VIRTUALIZED);
+                      parent.children[i].style.willChange = 'auto';
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
         if (isVirtualized) {
           if (this.isFirstLoadingDone) {
             if (itemCache.getIndex(this.curItemInViewPort) >= itemCache.getIndex(itemId)) {
@@ -373,33 +400,6 @@ class Masonry extends React.Component<Props> {
               //console.log(JSON.parse(JSON.stringify(this.state.scrollTop)), this.itemScrollBackWhenHavingNewItem.itemId, this.itemScrollBackWhenHavingNewItem.disparity, itemId);
 
               this.needScrollBackWhenHavingNewItem = true;
-            }
-
-            // Animation for new item
-            const itemsIndex = this._getItemsIndexInViewport(scrollTop, height);
-            if (itemCache.getIndex(itemId) >= itemsIndex.firstItemIndex &&
-              itemCache.getIndex(itemId) <= itemsIndex.lastItemIndex) {
-              const el = document.getElementById(itemId);
-              let parent;
-              if (el) {
-                AnimExecution.executeDefaultAnim(el, AnimName.zoomIn, 0, 0, TIMING_ADDITION_ANIM_VIRTUALIZED);
-                parent = el.parentElement;
-                if (parent && parent.children) {
-                  for (let i = 0; i < parent.children.length; i++) {
-                    if (parent.children[i]) {
-                      const id = parent.children[i].id;
-                      if (id !== itemId && this.oldMap.get(id) !== undefined) {
-                        if (itemCache.getIndex(id) > itemCache.getIndex(itemId)) {
-                          parent.children[i].style.willChange = 'transform';
-                          const fromPos = -newHeight / 1.2;
-                          AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_ADDITION_ANIM_VIRTUALIZED);
-                          parent.children[i].style.willChange = 'auto';
-                        }
-                      }
-                    }
-                  }
-                }
-              }
             }
           }
           if (!this.isFirstLoadingDone && !this.props.isStartAtBottom && itemCache.getIndex(itemId) === 0) {
