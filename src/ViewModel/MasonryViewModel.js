@@ -5,6 +5,7 @@ import { NOT_FOUND } from '../utils/value';
 import isFunction from '../vendors/isFunction';
 import throttle from '../vendors/throttle';
 import isNum from '../utils/isNum';
+import GLog from '../utils/GLog';
 
 type EventTypes =
 /* ========================================================================
@@ -939,6 +940,13 @@ function createMasonryViewModel({data, defaultHeight}) {
 
       __itemCache__.updateItemsMap(storeStartIndex - 1, data.length);
       updateItemsPositionFromSpecifiedItem(aboveItemId);
+      if(__itemCache__.getItemsMap.size !== __itemCache__.getIndexMap.size) {
+        for (let key of __itemCache__.getItemsMap.keys()) {
+          if (__itemCache__.getPosition(key) === NOT_FOUND) {
+            __itemCache__.getItemsMap.delete(key);
+          }
+        }
+      }
     }
 
     return willDeleteItems;
@@ -1313,6 +1321,8 @@ function createMasonryViewModel({data, defaultHeight}) {
       else {
         selectedItem = validIndex;
       }
+      //console.log('[ViewModel] - On Selected Item At Index:', selectedItem);
+      GLog.logInfo('ViewModel','On Selected Item At Index', selectedItem);
       throttleRenderUI();
     }
   }
