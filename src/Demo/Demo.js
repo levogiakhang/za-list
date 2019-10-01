@@ -8,7 +8,7 @@ import throttle from '../vendors/throttle';
 import createMasonryViewModel from '../ViewModel/MasonryViewModel';
 import UserMessage from './Message/UserMessage';
 
-const DATA_TOTAL_NUMBER = 30;
+const DATA_TOTAL_NUMBER = 15;
 const DATA_UI_NUMBER = 15;
 
 const lv1 = 'background-color: #3F51B5; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1.1rem; font-weight: 700l; font-style: italic';
@@ -324,7 +324,7 @@ class Demo extends React.Component {
   }
 
   updateData() {
-    let arr = this.viewModel.getDataUnfreeze();
+    let arr = this.dataTotal;
     [
       arr[0],
       arr[1],
@@ -334,7 +334,7 @@ class Demo extends React.Component {
     ];
 
     // const newArr = generation.generateIdenticalItems(30);
-    this.viewModel.updateData(arr);
+    this.viewModel.updateData([...arr]);
   }
 
 
@@ -928,7 +928,7 @@ class Demo extends React.Component {
                 margin: GConst.Spacing[0],
                 fontSize: GConst.Font.Size.Medium,
               }}
-              onClick={this.updateData}>
+              onClick={() => {this.updateData()}}>
               Update Outer data
             </button>
           </div>
@@ -950,7 +950,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.onRemoveItemsAt(4, 3);
+                this.viewModel.onRemoveItemById('itemId_'+this.state.raiseIndex);
               }}>
               Remove 3 items from 4
             </button>
