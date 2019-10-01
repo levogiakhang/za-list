@@ -1246,7 +1246,7 @@ class Masonry extends React.Component<Props> {
       if (this.viewModel.getSelectedItem() !== -1) {
         if (this.viewModel.getSelectedItem() === _beforeBeRaisedIndex) {
           this.viewModel.setSelectedItem(0);
-          AnimExecution.appendStyle(el, 'highlighted');
+          AnimExecution.appendStyle(el, 'selected');
           if (scrollTop !== 0) {
             isScrollToTop = true;
           }
@@ -1524,6 +1524,7 @@ class Masonry extends React.Component<Props> {
       const el = this.getElementFromId(itemId);
       if (el !== null) {
         AnimExecution.appendStyle(el, animationNames);
+        console.log(animationNames);
       }
       else {
         this.itemNeedAddAnim = itemId;
@@ -1582,10 +1583,10 @@ class Masonry extends React.Component<Props> {
       if (el) {
         if (index === this.viewModel.getSelectedItem()) {
           this.beforeItemHighlight = el;
-          AnimExecution.appendStyle(el, 'highlighted');
+          AnimExecution.appendStyle(el, 'selected');
         }
         else {
-          AnimExecution.removeStyle(el, 'highlighted');
+          AnimExecution.removeStyle(el, 'selected');
         }
       }
       if (!!item) {
@@ -2227,6 +2228,7 @@ class Masonry extends React.Component<Props> {
 
   _removeStyleOfSpecialItem() {
     if (this.isStableAfterScrollToSpecialItem) {
+      console.log('aa')
       // console.log(this.itemAddedScrollToAnim.itemId);
       const el = this.masonry.firstChild.children.namedItem(this.itemAddedScrollToAnim.itemId);
       AnimExecution.removeStyle(el, this.itemAddedScrollToAnim.anim);
