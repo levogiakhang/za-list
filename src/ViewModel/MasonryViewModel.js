@@ -117,10 +117,6 @@ function createMasonryViewModel({data, defaultHeight}) {
     removeEventListener,
 
     // Load more
-    enableLoadTop,
-    enableLoadBottom,
-    onLoadTop,
-    onLoadBottom,
     loadTop,
     loadBottom,
 
@@ -163,6 +159,7 @@ function createMasonryViewModel({data, defaultHeight}) {
     getSelectedItem,
     setSelectedItem,
     clearSelectedItem,
+    getRemainderItem,
   });
 
 
@@ -221,73 +218,10 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function enableLoadTop() {
-    if (Array.isArray(storageEvents['loadTopStart'])) {
-      storageEvents['loadTopStart'].forEach((eventCallback) => {
-        eventCallback();
-      });
-    }
-  }
-
-  function enableLoadBottom() {
-    if (Array.isArray(storageEvents['loadBottomStart'])) {
-      storageEvents['loadBottomStart'].forEach((eventCallback) => {
-        eventCallback();
-      });
-    }
-  }
-
 
   /* ========================================================================
    TODO: Load more
    ======================================================================== */
-  function onLoadTop(onLoadMoreTopCallback: Function) {
-    if (
-      isFunction(onLoadMoreTopCallback) &&
-      data &&
-      data[0] &&
-      data[0].itemId
-    ) {
-      const firstItemId = data.length !== 0 ?
-        data[0].itemId :
-        remainderItem;
-
-      const oldPosOfFirstItem = __itemCache__.getPosition(firstItemId);
-
-      if (
-        storageEvents['viewOnLoadMoreTop'] &&
-        isFunction(storageEvents['viewOnLoadMoreTop'][0])
-      ) {
-        storageEvents['viewOnLoadMoreTop'][0](firstItemId, oldPosOfFirstItem);
-      }
-
-      if (storageEvents['onLoadTop'] && isFunction(storageEvents['onLoadTop'][0])) {
-        storageEvents['onLoadTop'][0]();
-      }
-
-      onLoadMoreTopCallback(firstItemId);
-    }
-  }
-
-  function onLoadBottom(onLoadBottomCallback: Function) {
-    if (
-      isFunction(onLoadBottomCallback) &&
-      data &&
-      data[data.length - 1] &&
-      data[data.length - 1].itemId
-    ) {
-      const lastItemId = data.length > 0 ?
-        data[data.length - 1].itemId :
-        remainderItem;
-
-      if (storageEvents['onLoadBottom'] && isFunction(storageEvents['onLoadBottom'][0])) {
-        storageEvents['onLoadBottom'][0]();
-      }
-
-      onLoadBottomCallback(lastItemId);
-    }
-  }
-
   function loadTop(items: Array) {
     if (items) {
       if (!Array.isArray(items)) {
@@ -1331,6 +1265,10 @@ function createMasonryViewModel({data, defaultHeight}) {
 
   function clearSelectedItem() {
     selectedItem = -1;
+  }
+
+  function getRemainderItem() {
+    return remainderItem;
   }
 }
 
