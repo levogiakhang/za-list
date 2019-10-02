@@ -1906,7 +1906,7 @@ class Masonry extends React.Component<Props> {
     // Notify if viewport is not full.
     if (this.isFirstLoadingDone && this.estimateTotalHeight < height) {
       console.log('notify not full');
-      this.viewModel.enableLoadTop();
+      this.viewModel.enableLoadBottom();
     }
   }
 
