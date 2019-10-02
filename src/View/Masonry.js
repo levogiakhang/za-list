@@ -44,6 +44,8 @@ type Props = {
   isVirtualized?: boolean,
   numOfOverscan?: number,
   forChatBoxView?: boolean,
+  onLoadTop: any,
+  onLoadBottom: any,
 };
 
 const LOAD_MORE_TOP_TRIGGER_POS = 50;
@@ -183,7 +185,7 @@ class Masonry extends React.Component<Props> {
     this.onChildrenChangeHeight = this.onChildrenChangeHeight.bind(this);
     this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
     this._addStaticItemToChildren = this._addStaticItemToChildren.bind(this);
-    this.onLoadMoreTop = this.onLoadMoreTop.bind(this);
+    this.prepareForLoadMoreTop = this.prepareForLoadMoreTop.bind(this);
     this.onLoadMore = this.onLoadMore.bind(this);
     this.reRender = this.reRender.bind(this);
     this.zoomToItem = this.zoomToItem.bind(this);
@@ -257,7 +259,7 @@ class Masonry extends React.Component<Props> {
     window.addEventListener('resize', debounce(this._onResize, DEBOUNCING_TIMER));
     window.addEventListener('mousedown', this._removeStyleOfSpecialItem);
 
-    this.viewModel.addEventListener('viewOnLoadMoreTop', this.onLoadMoreTop);
+    this.viewModel.addEventListener('viewOnLoadMoreTop', this.prepareForLoadMoreTop);
     this.viewModel.addEventListener('viewOnLoadMore', this.onLoadMore);
     this.viewModel.addEventListener('viewReRender', this.reRender);
     this.viewModel.addEventListener('viewZoomToItem', this.zoomToItem);
@@ -283,7 +285,7 @@ class Masonry extends React.Component<Props> {
   componentWillUnmount() {
     window.removeEventListener('resize', this._onResize);
 
-    this.viewModel.removeEventListener('viewOnLoadMoreTop', this.onLoadMoreTop);
+    this.viewModel.removeEventListener('viewOnLoadMoreTop', this.prepareForLoadMoreTop);
     this.viewModel.removeEventListener('viewOnLoadMore', this.onLoadMore);
     this.viewModel.removeEventListener('viewReRender', this.reRender);
     this.viewModel.removeEventListener('viewZoomToItem', this.zoomToItem);
@@ -1757,7 +1759,6 @@ class Masonry extends React.Component<Props> {
       style,
       innerScrollStyle,
       isScrolling,
-      renderDirection,
       isVirtualized,
     } = this.props;
 
@@ -1847,9 +1848,9 @@ class Masonry extends React.Component<Props> {
 
     this._checkAndNotifyIfViewNotFull(height);
 
-    this._checkEnableLoadTop(scrollTop);
+    this._checkOnLoadTop(scrollTop);
 
-    this._checkEnableLoadBottom(scrollTop, height);
+    this._checkOnLoadBottom(scrollTop, height);
 
     this._checkAndResetTriggerLoadTop(scrollTop);
 
@@ -1875,7 +1876,7 @@ class Masonry extends React.Component<Props> {
     this._checkAndUpdateOldData(data.length);
   }
 
-  onLoadMoreTop(firstItemId, oldPosOfFirstItem) {
+  prepareForLoadMoreTop(firstItemId, oldPosOfFirstItem) {
     this.isLoadingTop = true;
     this.firstItemInViewportBefore = {
       itemId: this.curItemInViewPort,
@@ -1883,7 +1884,6 @@ class Masonry extends React.Component<Props> {
     };
 
     this.oldFirstItem = firstItemId;
-
   }
 
   _checkScrollToBottomInFirstSight() {
@@ -1910,19 +1910,32 @@ class Masonry extends React.Component<Props> {
     }
   }
 
-  _checkEnableLoadTop(scrollTop) {
+  _checkOnLoadTop(scrollTop) {
     if (
       scrollTop < LOAD_MORE_TOP_TRIGGER_POS &&
       this.isFirstLoadingDone &&
       !this.isLoadingTop &&
       !this.preventLoadTop
     ) {
-      console.log('enable load top');
-      this.viewModel.enableLoadTop();
+      GLog.logInfo(this,'Enable load more', 'Top');
+      const {onLoadTop} = this.props;
+      const __itemCache__ = this.viewModel.getCache();
+      if(isFunction(onLoadTop)) {
+        const data = this.viewModel.getDataUnfreeze();
+        let firstItemId;
+        if(data && Array.isArray(data) && data[0]) {
+          firstItemId = data.length !== 0 ?
+            data[0].itemId :
+            this.viewModel.getRemainderItem();
+        }
+        const oldPosOfFirstItem = __itemCache__.getPosition(firstItemId);
+        this.prepareForLoadMoreTop(firstItemId, oldPosOfFirstItem);
+        onLoadTop(firstItemId);
+      }
     }
   }
 
-  _checkEnableLoadBottom(scrollTop, height) {
+  _checkOnLoadBottom(scrollTop, height) {
     // trigger load more bottom
     LOAD_MORE_BOTTOM_TRIGGER_POS = this.estimateTotalHeight - height - 2;
     if (
@@ -1930,8 +1943,18 @@ class Masonry extends React.Component<Props> {
       this.isFirstLoadingDone &&
       !this.preventLoadBottom
     ) {
-      console.log('enable load bottom');
-      this.viewModel.enableLoadBottom();
+      GLog.logInfo(this,'Enable load more', 'Bottom');
+      const {onLoadBottom} = this.props;
+      if(isFunction(onLoadBottom)) {
+        const data = this.viewModel.getDataUnfreeze();
+        let lastItemId;
+        if(data && Array.isArray(data) && data[data.length - 1]) {
+          lastItemId = data.length > 0 ?
+            data[data.length - 1].itemId :
+            this.viewModel.getRemainderItem();
+        }
+        onLoadBottom(lastItemId);
+      }
     }
   }
 
