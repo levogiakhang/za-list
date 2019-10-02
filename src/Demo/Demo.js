@@ -319,7 +319,7 @@ class Demo extends React.Component {
       }
       this.updateDataIndexMap();
       deletedItems.forEach(item => {
-        this.dataTotalMap.delete(item.itemId);
+        this.dataTotalMap.delete(item);
       });
     }
   };
