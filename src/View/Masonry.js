@@ -2021,7 +2021,7 @@ class Masonry extends React.Component<Props> {
 
   _checkAndScrollBackWhenLoadOrAddTop(isVirtualized) {
     if (this.needScrollBack) {
-      if (isVirtualized && this.isLoadMore) {
+      if (isVirtualized && this.isLoadMore && this.justLoadTop) {
         //console.log('load top', this.firstItemInViewportBefore.itemId, this.firstItemInViewportBefore.disparity);
         this.isLoadMore = false;
         this.justLoadTop = true;
