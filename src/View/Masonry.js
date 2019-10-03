@@ -183,7 +183,7 @@ class Masonry extends React.Component<Props> {
     this._onScroll = this._onScroll.bind(this);
     this._onResize = this._onResize.bind(this);
     this.onChildrenChangeHeight = this.onChildrenChangeHeight.bind(this);
-    this.scrollToSpecialItem = this.scrollToSpecialItem.bind(this);
+    this._scrollToSpecialItem = this._scrollToSpecialItem.bind(this);
     this._addStaticItemToChildren = this._addStaticItemToChildren.bind(this);
     this.prepareForLoadMoreTop = this.prepareForLoadMoreTop.bind(this);
     this.onLoadMore = this.onLoadMore.bind(this);
@@ -262,10 +262,7 @@ class Masonry extends React.Component<Props> {
     this.viewModel.addEventListener('viewOnLoadMoreTop', this.prepareForLoadMoreTop);
     this.viewModel.addEventListener('viewOnLoadMore', this.onLoadMore);
     this.viewModel.addEventListener('viewReRender', this.reRender);
-    this.viewModel.addEventListener('viewZoomToItem', this.zoomToItem);
     this.viewModel.addEventListener('viewPendingScrollToSpecialItem', this.pendingScrollToSpecialItem);
-    this.viewModel.addEventListener('viewScrollToTopAtCurrentUI', this.scrollToTopAtCurrentUI);
-    this.viewModel.addEventListener('viewScrollToBottomAtCurrentUI', this.scrollToBottomAtCurrentUI);
     this.viewModel.addEventListener('viewScrollTo', this.scrollTo);
     this.viewModel.addEventListener('viewOnRemoveItem', this.onRemoveItem);
     this.viewModel.addEventListener('viewOnRemoveItems', this.onRemoveItems);
@@ -288,7 +285,6 @@ class Masonry extends React.Component<Props> {
     this.viewModel.removeEventListener('viewOnLoadMoreTop', this.prepareForLoadMoreTop);
     this.viewModel.removeEventListener('viewOnLoadMore', this.onLoadMore);
     this.viewModel.removeEventListener('viewReRender', this.reRender);
-    this.viewModel.removeEventListener('viewZoomToItem', this.zoomToItem);
     this.viewModel.removeEventListener('viewPendingScrollToSpecialItem', this.pendingScrollToSpecialItem);
     this.viewModel.removeEventListener('viewScrollToTopAtCurrentUI', this.scrollToTopAtCurrentUI);
     this.viewModel.removeEventListener('viewScrollToBottomAtCurrentUI', this.scrollToBottomAtCurrentUI);
@@ -1380,7 +1376,11 @@ class Masonry extends React.Component<Props> {
 
   zoomToItem(itemId: string, withAnim: boolean = true) {
     this._clearIntervalId();
-    if (itemId) {
+    if (!this.viewModel.getDataMap().has(itemId)) {
+      // ToDo: Notify outside when not having the item
+      GLog.logInfo(this, `Couldn't find item`);
+    }
+    else if (itemId) {
       if (itemId === this.itemIdToScroll && this.isStableAfterScrollToSpecialItem && withAnim) {
         // Re-active animation without scroll.
         if (itemId && this.props.scrollToAnim) {
@@ -1396,12 +1396,12 @@ class Masonry extends React.Component<Props> {
       else {
         this.itemIdToScroll = itemId;
         this.isScrollToSpecialItem = true;
-        this.scrollToSpecialItem(this.itemIdToScroll, withAnim);
+        this._scrollToSpecialItem(this.itemIdToScroll, withAnim);
       }
     }
   }
 
-  scrollToSpecialItem(itemId: string, withAnim: boolean = true) {
+  _scrollToSpecialItem(itemId: string, withAnim: boolean = true) {
     const {
       height,
       isItemScrollToInBottom,
@@ -1534,7 +1534,7 @@ class Masonry extends React.Component<Props> {
       const el = this.getElementFromId(itemId);
       if (el !== null) {
         AnimExecution.appendStyle(el, animationNames);
-        console.log(animationNames);
+        GLog.logInfo(this, 'Add animation when scroll to special item', animationNames);
       }
       else {
         this.itemNeedAddAnim = itemId;
@@ -1905,9 +1905,9 @@ class Masonry extends React.Component<Props> {
   _checkAndNotifyIfViewNotFull(height) {
     // Notify if viewport is not full.
     if (this.isFirstLoadingDone && this.estimateTotalHeight < height) {
-      GLog.logInfo(this,'Not full view', 'Trigger load more bottom');
+      GLog.logInfo(this, 'Not full view', 'Trigger load more bottom');
       const {onLoadBottom} = this.props;
-      if(isFunction(onLoadBottom)) {
+      if (isFunction(onLoadBottom)) {
         const data = this.viewModel.getDataUnfreeze();
         let lastItemId;
         if (data && Array.isArray(data) && data[data.length - 1]) {
@@ -1927,13 +1927,13 @@ class Masonry extends React.Component<Props> {
       !this.isLoadingTop &&
       !this.preventLoadTop
     ) {
-      GLog.logInfo(this,'Enable load more', 'Top');
+      GLog.logInfo(this, 'Enable load more', 'Top');
       const {onLoadTop} = this.props;
       const __itemCache__ = this.viewModel.getCache();
-      if(isFunction(onLoadTop)) {
+      if (isFunction(onLoadTop)) {
         const data = this.viewModel.getDataUnfreeze();
         let firstItemId;
-        if(data && Array.isArray(data) && data[0]) {
+        if (data && Array.isArray(data) && data[0]) {
           firstItemId = data.length !== 0 ?
             data[0].itemId :
             this.viewModel.getRemainderItem();
@@ -1953,12 +1953,12 @@ class Masonry extends React.Component<Props> {
       this.isFirstLoadingDone &&
       !this.preventLoadBottom
     ) {
-      GLog.logInfo(this,'Enable load more', 'Bottom');
+      GLog.logInfo(this, 'Enable load more', 'Bottom');
       const {onLoadBottom} = this.props;
-      if(isFunction(onLoadBottom)) {
+      if (isFunction(onLoadBottom)) {
         const data = this.viewModel.getDataUnfreeze();
         let lastItemId;
-        if(data && Array.isArray(data) && data[data.length - 1]) {
+        if (data && Array.isArray(data) && data[data.length - 1]) {
           lastItemId = data.length > 0 ?
             data[data.length - 1].itemId :
             this.viewModel.getRemainderItem();
@@ -2028,7 +2028,7 @@ class Masonry extends React.Component<Props> {
         const posNeedToScr =
           this.viewModel.getCache().getPosition(this.firstItemInViewportBefore.itemId) +
           this.firstItemInViewportBefore.disparity;
-        console.log('load top 2', posNeedToScr, this.curItemInViewPort);
+        console.log(this, 'Load top', posNeedToScr, this.curItemInViewPort);
         this._scrollToOffset(posNeedToScr);
         //this._scrollToItem(this.firstItemInViewportBefore.itemId, this.firstItemInViewportBefore.disparity);
       }
@@ -2109,7 +2109,7 @@ class Masonry extends React.Component<Props> {
   _checkAndScrollToSpecialItem() {
     if (this.needScrollToSpecialItem) {
       this.needScrollToSpecialItem = false;
-      this.scrollToSpecialItem(this.itemIdToScroll, this.isActiveAnimWhenScrollToItem);
+      this._scrollToSpecialItem(this.itemIdToScroll, this.isActiveAnimWhenScrollToItem);
     }
   }
 
@@ -2163,7 +2163,7 @@ class Masonry extends React.Component<Props> {
     msDelayInEachStep: number = 16.67) {
     const height = this.props.height;
     const estimateTotalHeight = this.estimateTotalHeight;
-    const distance = estimateTotalHeight -  this.state.scrollTop - height;
+    const distance = estimateTotalHeight - this.state.scrollTop - height;
     const stepInPixel = distance * msDelayInEachStep / duration;
     this._clearIntervalId();
 
@@ -2292,7 +2292,7 @@ class Masonry extends React.Component<Props> {
 
   _removeStyleOfSpecialItem() {
     if (this.isStableAfterScrollToSpecialItem) {
-      console.log('aa');
+      GLog.logInfo(this, 'Remove style of special item');
       // console.log(this.itemAddedScrollToAnim.itemId);
       const el = this.masonry.firstChild.children.namedItem(this.itemAddedScrollToAnim.itemId);
       AnimExecution.removeStyle(el, this.itemAddedScrollToAnim.anim);

@@ -44,8 +44,6 @@ type EventTypes =
   'viewReRender' |
   'viewZoomToItem' |
   'viewPendingScrollToSpecialItem' |
-  'viewScrollToTopAtCurrentUI' |
-  'viewScrollToBottomAtCurrentUI' |
   'viewScrollTo' |
   'viewOnRemoveItem' |
   'viewUpdateUIWhenScrollToItem' |
@@ -121,13 +119,9 @@ function createMasonryViewModel({data, defaultHeight}) {
     loadBottom,
 
     // Scroll to
-    scrollToSpecialItem,
     pendingScrollToSpecialItem,
-    scrollToTopAtCurrentUI,
-    scrollToBottomAtCurrentUI,
     scrollToTop,
     scrollToBottom,
-    scrollTo,
 
     // CRUD
     onAddItem,
@@ -280,27 +274,6 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    TODO: Scroll To
    ======================================================================== */
-  function scrollToSpecialItem(itemId: string) {
-    if (!_hasItem(itemId) ||
-      __itemCache__.getIndex(itemId) === 0) {
-      // Send a notification to outside.
-      if (
-        storageEvents['onLookForItemToScroll'] &&
-        isFunction(storageEvents['onLookForItemToScroll'][0])
-      ) {
-        storageEvents['onLookForItemToScroll'][0](itemId);
-      }
-    }
-    else {
-      if (
-        storageEvents['viewZoomToItem'] &&
-        isFunction(storageEvents['viewZoomToItem'][0])
-      ) {
-        storageEvents['viewZoomToItem'][0](itemId);
-      }
-    }
-  }
-
   function pendingScrollToSpecialItem(itemId: string, withAnim: boolean = true) {
     if (
       storageEvents['viewPendingScrollToSpecialItem'] &&
@@ -308,24 +281,6 @@ function createMasonryViewModel({data, defaultHeight}) {
       itemId
     ) {
       storageEvents['viewPendingScrollToSpecialItem'][0](numOfNewItems, itemId, withAnim);
-    }
-  }
-
-  function scrollToTopAtCurrentUI() {
-    if (
-      storageEvents['viewScrollToTopAtCurrentUI'] &&
-      isFunction(storageEvents['viewScrollToTopAtCurrentUI'][0])
-    ) {
-      storageEvents['viewScrollToTopAtCurrentUI'][0]();
-    }
-  }
-
-  function scrollToBottomAtCurrentUI() {
-    if (
-      storageEvents['viewScrollToBottomAtCurrentUI'] &&
-      isFunction(storageEvents['viewScrollToBottomAtCurrentUI'][0])
-    ) {
-      storageEvents['viewScrollToBottomAtCurrentUI'][0]();
     }
   }
 
@@ -368,15 +323,6 @@ function createMasonryViewModel({data, defaultHeight}) {
     }
   }
 
-  function scrollTo(index: number) {
-    if (
-      _isValidIndex(index) &&
-      storageEvents['viewScrollTo'] &&
-      isFunction(storageEvents['viewScrollTo'][0])
-    ) {
-      storageEvents['viewScrollTo'][0](index);
-    }
-  }
 
 
   /* ========================================================================
