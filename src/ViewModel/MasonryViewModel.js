@@ -160,6 +160,7 @@ function createMasonryViewModel({data, defaultHeight}) {
   /* ========================================================================
    Clear
    ======================================================================== */
+  // eslint-disable-next-line no-unused-vars
   function _clearAll() {
     _clearItemCache();
     _clearData();

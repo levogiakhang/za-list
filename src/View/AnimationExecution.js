@@ -40,6 +40,7 @@ function executeDefaultAnim(el, animName, fromPos, toPos, duration) {
         defaultAnim.scrollTop(el, fromPos, duration, 0, 'ease-in');
       }
 
+      // eslint-disable-next-line no-fallthrough
       default: {
         break;
       }
