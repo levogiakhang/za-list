@@ -48,8 +48,8 @@ class Demo extends React.Component {
     this.handleChangeRemoveTo = this.handleChangeRemoveTo.bind(this);
     this.loadMoreTop = this.loadMoreTop.bind(this);
     this.loadMoreBottom = this.loadMoreBottom.bind(this);
-    this.enableLoadMoreTop = this.enableLoadMoreTop.bind(this);
-    this.enableLoadMoreBottom = this.enableLoadMoreBottom.bind(this);
+    this.onLoadMoreTop = this.onLoadMoreTop.bind(this);
+    this.onLoadMoreBottom = this.onLoadMoreBottom.bind(this);
     this.lookUpItem = this.lookUpItem.bind(this);
     this.lookUpItemToScrollTop = this.lookUpItemToScrollTop.bind(this);
     this.lookUpItemToScrollBottom = this.lookUpItemToScrollBottom.bind(this);
@@ -75,8 +75,6 @@ class Demo extends React.Component {
     this.viewModel.addEventListener('onRemoveItemByIdSucceed', this.removeItemFromDataTotal);
     this.viewModel.addEventListener('onRemoveItemsAtSucceed', this.removeItemsFromDataTotal);
     this.viewModel.addEventListener('onRemoveItemAtSucceed', this.removeItemFromDataTotal);
-    this.viewModel.addEventListener('loadTopStart', this.enableLoadMoreTop);
-    this.viewModel.addEventListener('loadBottomStart', this.enableLoadMoreBottom);
     this.viewModel.addEventListener('onLookForItemToScroll', this.lookUpItem);
     this.viewModel.addEventListener('onLookForItemToScrollTop', this.lookUpItemToScrollTop);
     this.viewModel.addEventListener('onLookForItemToScrollBottom', this.lookUpItemToScrollBottom);
@@ -133,12 +131,12 @@ class Demo extends React.Component {
   /* ========================================================================
    Events Listener Callback
    ======================================================================== */
-  enableLoadMoreTop() {
-    this.viewModel.onLoadTop(throttle(this.loadMoreTop, 1000));
+  onLoadMoreTop(firstItemId) {
+    this.loadMoreTop(firstItemId);
   }
 
-  enableLoadMoreBottom() {
-    this.viewModel.onLoadBottom(throttle(this.loadMoreBottom, 1000));
+  onLoadMoreBottom(lastItemId) {
+    this.loadMoreBottom(lastItemId);
   }
 
   lookUpItem(itemId: string) {
@@ -318,6 +316,7 @@ class Demo extends React.Component {
         this.dataTotal.splice(this.dataTotalMap.get(afterItemId) - 1, deletedItems.length);
       }
       this.updateDataIndexMap();
+      console.log(deletedItems);
       deletedItems.forEach(item => {
         this.dataTotalMap.delete(item);
       });
@@ -607,7 +606,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.scrollToSpecialItem('itemId_' + itemIdToScroll);
+                this.masonry.current.zoomToItem('itemId_' + itemIdToScroll);
               }}>
               Scroll to item ID:
             </button>
@@ -675,7 +674,7 @@ class Demo extends React.Component {
                 fontSize: GConst.Font.Size.Medium,
               }}
               onClick={() => {
-                this.viewModel.scrollTo(indexToScroll);
+                this.masonry.current.scrollTo(indexToScroll);
               }}>
               Scroll to index:
             </button>
@@ -789,19 +788,19 @@ class Demo extends React.Component {
             width: '50%',
           }}>
             <button disabled
-              className={'other-hover'}
-              style={{
-                minWidth: '100px',
-                width: '100%',
-                minHeight: '50px',
-                height: 'auto',
-                maxHeight: '50px',
-                margin: GConst.Spacing[0],
-                fontSize: GConst.Font.Size.Medium,
-              }}
-              onClick={() => {
-                this.viewModel.scrollToTop(this.dataTotal[0].itemId);
-              }}>
+                    className={'other-hover'}
+                    style={{
+                      minWidth: '100px',
+                      width: '100%',
+                      minHeight: '50px',
+                      height: 'auto',
+                      maxHeight: '50px',
+                      margin: GConst.Spacing[0],
+                      fontSize: GConst.Font.Size.Medium,
+                    }}
+                    onClick={() => {
+                      this.viewModel.scrollToTop(this.dataTotal[0].itemId);
+                    }}>
               Scroll To Top (First Item)
             </button>
           </div>
@@ -813,19 +812,19 @@ class Demo extends React.Component {
             width: '50%',
           }}>
             <button disabled
-              className={'other-hover'}
-              style={{
-                minWidth: '100px',
-                width: '100%',
-                minHeight: '50px',
-                height: 'auto',
-                maxHeight: '50px',
-                margin: GConst.Spacing[0],
-                fontSize: GConst.Font.Size.Medium,
-              }}
-              onClick={() => {
-                this.viewModel.scrollToBottom(this.dataTotal[this.dataTotal.length - 1].itemId);
-              }}>
+                    className={'other-hover'}
+                    style={{
+                      minWidth: '100px',
+                      width: '100%',
+                      minHeight: '50px',
+                      height: 'auto',
+                      maxHeight: '50px',
+                      margin: GConst.Spacing[0],
+                      fontSize: GConst.Font.Size.Medium,
+                    }}
+                    onClick={() => {
+                      this.viewModel.scrollToBottom(this.dataTotal[this.dataTotal.length - 1].itemId);
+                    }}>
               Scroll To Bottom (Last Item)
             </button>
           </div>
@@ -1202,6 +1201,11 @@ class Demo extends React.Component {
                 userName: gId,
               };
               console.log(this.viewModel.getSelectedItem());
+              for (let i = 0; i < 29; i++) {
+                if (i % 2) {
+                  this.viewModel.onRemoveItemById('itemId_' + i);
+                }
+              }
             }}>
             Test xàm xàm
           </button>
@@ -1231,6 +1235,8 @@ class Demo extends React.Component {
                isVirtualized={true}
                numOfOverscan={3}
                forChatBoxView={false}
+               onLoadTop={this.onLoadMoreTop}
+               onLoadBottom={this.onLoadMoreBottom}
                noHScroll/>
     );
   };
