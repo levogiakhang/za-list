@@ -56,1167 +56,1166 @@ const ITEM_DEFAULT_HEIGHT = 200;
 
 
 function createMasonryViewModel({data, defaultHeight}) {
-  /* ========================================================================
-   Inner variables declaration
-   ======================================================================== */
-  // Cache items for virtualized list
-  const __itemCache__ = new ItemCache(_getCorrectDefaultHeight(defaultHeight));
+    /* ========================================================================
+     Inner variables declaration
+     ======================================================================== */
+    // Cache items for virtualized list
+    const __itemCache__ = new ItemCache(_getCorrectDefaultHeight(defaultHeight));
 
-  // Reflection `itemId` -> `item` - For purpose quick look-up
-  const dataMap = new Map();
+    // Reflection `itemId` -> `item` - For purpose quick look-up
+    const dataMap = new Map();
 
-  // List itemId of before data. Be updated when data has updated.
-  let oldItemsId = [];
-  let numOfNewItems = 0;
+    // List itemId of before data. Be updated when data has updated.
+    let oldItemsId = [];
+    let numOfNewItems = 0;
 
-  /* Store this itemId when number delete count equals data length
-   leads to error when get first & last data to load more.  */
-  let remainderItem = undefined;
+    /* Store this itemId when number delete count equals data length
+     leads to error when get first & last data to load more.  */
+    let remainderItem = undefined;
 
-  // Stores all be added events to dispatch a specialized callback
-  let storageEvents = {};
+    // Stores all be added events to dispatch a specialized callback
+    let storageEvents = {};
 
-  const throttleRenderUI = throttle(reRenderUI, 150);
+    const throttleRenderUI = throttle(reRenderUI, 150);
 
-  // Store selected item in view, this variable be passed from outside
-  let selectedItem = -1;
+    // Store selected item in view, this variable be passed from outside
+    let selectedItem = -1;
 
-  /* ========================================================================
-   Initialize
-   ======================================================================== */
-  if (Array.isArray(data)) {
-    data.forEach((item, index) => {
-      if (item && item.itemId) {
-        dataMap.set(item.itemId, item);
+    /* ========================================================================
+     Initialize
+     ======================================================================== */
+    if (Array.isArray(data)) {
+        data.forEach((item, index) => {
+            if (item && item.itemId) {
+                dataMap.set(item.itemId, item);
 
-        __itemCache__.updateItemOnMap(
-          item.itemId,
-          data.indexOf(item),
-          __itemCache__.defaultHeight,
-          index * __itemCache__.getDefaultHeight,
-          false);
-      }
+                __itemCache__.updateItemOnMap(
+                  item.itemId,
+                  data.indexOf(item),
+                  __itemCache__.defaultHeight,
+                  index * __itemCache__.getDefaultHeight,
+                  false);
+            }
+        });
+
+        __itemCache__.updateIndexMap(0, data);
+    }
+    else {
+        data = [];
+        console.error(new TypeError('The data params must be an array', this));
+    }
+
+
+    /* ========================================================================
+     [Public API] To be called by outside
+     ======================================================================== */
+    return Object.freeze({
+        // Event listener
+        addEventListener,
+        removeEventListener,
+
+        // Load more
+        loadTop,
+        loadBottom,
+
+        // Scroll to
+        pendingScrollToSpecialItem,
+        scrollToTop,
+        scrollToBottom,
+
+        // CRUD
+        onAddItem,
+        onAddItems,
+        onRemoveItemById,
+        onRemoveItemAt,
+        onRemoveItemsAt,
+        onUpdateItem,
+        addTop,
+        addBottom,
+        raiseItemByIndex,
+        raiseItemById,
+
+        // Update
+        updateItemsPositionFromSpecifiedItem,
+        updateData,
+        updateItemAt,
+        reRenderUI,
+
+        // Get - Set
+        getData,
+        getDataUnfreeze,
+        getDataMap,
+        getOldItems,
+        getCache,
+        getNumOfNewItems,
+        setNumOfNewItems,
+        getItemAt,
+        getSelectedItem,
+        setSelectedItem,
+        clearSelectedItem,
+        getRemainderItem,
     });
 
-    __itemCache__.updateIndexMap(0, data);
-  }
-  else {
-    data = [];
-    console.error(new TypeError('The data params must be an array', this));
-  }
 
+    /* ========================================================================
+     Clear
+     ======================================================================== */
 
-  /* ========================================================================
-   [Public API] To be called by outside
-   ======================================================================== */
-  return Object.freeze({
-    // Event listener
-    addEventListener,
-    removeEventListener,
-
-    // Load more
-    loadTop,
-    loadBottom,
-
-    // Scroll to
-    pendingScrollToSpecialItem,
-    scrollToTop,
-    scrollToBottom,
-
-    // CRUD
-    onAddItem,
-    onAddItems,
-    onRemoveItemById,
-    onRemoveItemAt,
-    onRemoveItemsAt,
-    onUpdateItem,
-    addTop,
-    addBottom,
-    raiseItemByIndex,
-    raiseItemById,
-
-    // Update
-    updateItemsPositionFromSpecifiedItem,
-    updateData,
-    updateItemAt,
-    reRenderUI,
-
-    // Get - Set
-    getData,
-    getDataUnfreeze,
-    getDataMap,
-    getOldItems,
-    getCache,
-    getNumOfNewItems,
-    setNumOfNewItems,
-    getItemAt,
-    getSelectedItem,
-    setSelectedItem,
-    clearSelectedItem,
-    getRemainderItem,
-  });
-
-
-  /* ========================================================================
-   Clear
-   ======================================================================== */
-  // eslint-disable-next-line no-unused-vars
-  function _clearAll() {
-    _clearItemCache();
-    _clearData();
-    _clearDataMap();
-  }
-
-  function _clearItemCache() {
-    if (__itemCache__) {
-      __itemCache__.clear();
+    // eslint-disable-next-line no-unused-vars
+    function _clearAll() {
+        _clearItemCache();
+        _clearData();
+        _clearDataMap();
     }
-  }
 
-  function _clearData() {
-    if (data) {
-      data = [];
+    function _clearItemCache() {
+        if (__itemCache__) {
+            __itemCache__.clear();
+        }
     }
-  }
 
-  function _clearDataMap() {
-    if (dataMap) {
-      dataMap.clear();
+    function _clearData() {
+        if (data) {
+            data = [];
+        }
     }
-  }
 
-
-  /* ========================================================================
-   Events listener
-   ======================================================================== */
-  function addEventListener(eventName: EventTypes, callback: Callback) {
-    storageEvents.hasOwnProperty(eventName) ?
-      storageEvents[eventName].push(callback) :
-      storageEvents = {
-        ...storageEvents,
-        [eventName]: [(callback)],
-      };
-  }
-
-  function removeEventListener(eventName: EventTypes, callback: Callback) {
-    if (storageEvents.hasOwnProperty(eventName) && Array.isArray(storageEvents[eventName])) {
-      if (storageEvents[eventName].length === 1) {
-        delete storageEvents[eventName];
-      }
-      else {
-        storageEvents[eventName].forEach((eventCallback, index) => {
-          if (eventCallback === callback) {
-            storageEvents[eventName].splice(index, 1);
-          }
-        });
-      }
+    function _clearDataMap() {
+        if (dataMap) {
+            dataMap.clear();
+        }
     }
-  }
 
 
-  /* ========================================================================
-   TODO: Load more
-   ======================================================================== */
-  function loadTop(items: Array) {
-    if (items) {
-      if (!Array.isArray(items)) {
-        items = _convertToArray(items);
-      }
-
-      const insertResult = _insertItems(0, items);
-      if (insertResult.hasInsertSucceed) {
-        if (
-          storageEvents['viewOnLoadMore'] &&
-          isFunction(storageEvents['viewOnLoadMore'][0])
-        ) {
-          storageEvents['viewOnLoadMore'][0](0, items);
-          throttleRenderUI();
-        }
-
-        // Notify to outside when load top end.
-        if (
-          storageEvents['loadTopEnd'] &&
-          isFunction(storageEvents['loadTopEnd'][0])
-        ) {
-          storageEvents['loadTopEnd'][0]();
-        }
-      }
+    /* ========================================================================
+     Events listener
+     ======================================================================== */
+    function addEventListener(eventName: EventTypes, callback: Callback) {
+        storageEvents.hasOwnProperty(eventName) ?
+          storageEvents[eventName].push(callback) :
+          storageEvents = {
+              ...storageEvents,
+              [eventName]: [(callback)],
+          };
     }
-  }
 
-  function loadBottom(items: Array) {
-    if (items && data) {
-      if (!Array.isArray(items)) {
-        items = _convertToArray(items);
-      }
-
-      const insertResult = _insertItems(data.length, items);
-      if (insertResult.hasInsertSucceed) {
-        if (
-          storageEvents['viewOnLoadMore'] &&
-          isFunction(storageEvents['viewOnLoadMore'][0])
-        ) {
-          storageEvents['viewOnLoadMore'][0](data.length, items);
-          throttleRenderUI();
-        }
-
-        // Notify to outside when load bottom end.
-        if (
-          storageEvents['loadBottomEnd'] &&
-          isFunction(storageEvents['loadBottomEnd'][0])
-        ) {
-          storageEvents['loadBottomEnd'][0]();
-        }
-      }
-    }
-  }
-
-
-  /* ========================================================================
-   TODO: Scroll To
-   ======================================================================== */
-  function pendingScrollToSpecialItem(itemId: string, withAnim: boolean = true) {
-    if (
-      storageEvents['viewPendingScrollToSpecialItem'] &&
-      isFunction(storageEvents['viewPendingScrollToSpecialItem'][0]) &&
-      itemId
-    ) {
-      storageEvents['viewPendingScrollToSpecialItem'][0](numOfNewItems, itemId, withAnim);
-    }
-  }
-
-  function scrollToTop(firstItemId: string) {
-    if (
-      !_hasItem(firstItemId) &&
-      storageEvents['onLookForItemToScrollTop'] &&
-      isFunction(storageEvents['onLookForItemToScrollTop'][0])
-    ) {
-      // Send a notification to outside.
-      storageEvents['onLookForItemToScrollTop'][0]();
-    }
-    else {
-      if (
-        storageEvents['viewScrollToTopAtCurrentUI'] &&
-        isFunction(storageEvents['viewScrollToTopAtCurrentUI'][0])
-      ) {
-        storageEvents['viewScrollToTopAtCurrentUI'][0]();
-      }
-    }
-  }
-
-  function scrollToBottom(lastItemId: string) {
-    if (!_hasItem(lastItemId)) {
-      // Send a notification to outside.
-      if (
-        storageEvents['onLookForItemToScrollBottom'] &&
-        isFunction(storageEvents['onLookForItemToScrollBottom'][0])
-      ) {
-        storageEvents['onLookForItemToScrollBottom'][0]();
-      }
-    }
-    else {
-      if (
-        storageEvents['viewScrollToBottomAtCurrentUI'] &&
-        isFunction(storageEvents['viewScrollToBottomAtCurrentUI'][0])
-      ) {
-        storageEvents['viewScrollToBottomAtCurrentUI'][0]();
-      }
-    }
-  }
-
-
-
-  /* ========================================================================
-   [Public API] - Interact with list
-   ======================================================================== */
-  function onAddItem(index: number, item: Object) {
-    if (item) {
-      const start = _getValidIndex(index);
-      if (!Array.isArray(item)) {
-        item = _convertToArray(item);
-      }
-
-      const oldMap = new Map(__itemCache__.getItemsMap);
-      const insertResult = _insertItems(start, item);
-
-      if (insertResult.hasInsertSucceed) {
-        if (
-          storageEvents['viewOnAddItems'] &&
-          isFunction(storageEvents['viewOnAddItems'][0])) {
-          storageEvents['viewOnAddItems'][0](start, item, oldMap);
-          throttleRenderUI();
-        }
-
-        // Notify to outside when add item succeed.
-        if (
-          storageEvents['onAddItemsSucceed'] &&
-          isFunction(storageEvents['onAddItemsSucceed'][0])
-        ) {
-          storageEvents['onAddItemsSucceed'][0]({
-            startIndex: start,
-            items: item,
-            beforeItem: insertResult.successValues.beforeItem,
-            afterItem: insertResult.successValues.afterItem,
-          });
-        }
-      }
-      else {
-        // Notify to outside when add item failure.
-        if (
-          storageEvents['onAddItemsFail'] &&
-          isFunction(storageEvents['onAddItemsFail'][0])
-        ) {
-          const msgError = `Try to add item ${item} failed!`;
-          storageEvents['onAddItemsFail'][0](msgError);
-        }
-      }
-    }
-  }
-
-  function onAddItems(startIndex: number, items: Array) {
-    if (items) {
-      const start = _getValidIndex(startIndex);
-      if (!Array.isArray(items)) {
-        items = _convertToArray(items);
-      }
-
-      const oldMap = new Map(__itemCache__.getItemsMap);
-      const insertResult = _insertItems(start, items);
-
-      if (insertResult.hasInsertSucceed) {
-        if (
-          storageEvents['viewOnAddItems'] &&
-          isFunction(storageEvents['viewOnAddItems'][0])) {
-          storageEvents['viewOnAddItems'][0](start, items, oldMap);
-          throttleRenderUI();
-        }
-
-        // Notify to outside when add item(s) succeed.
-        if (
-          storageEvents['onAddItemsSucceed'] &&
-          isFunction(storageEvents['onAddItemsSucceed'][0])
-        ) {
-          storageEvents['onAddItemsSucceed'][0]({
-            startIndex: start,
-            items: items,
-            beforeItem: insertResult.successValues.beforeItem,
-            afterItem: insertResult.successValues.afterItem,
-          });
-        }
-      }
-      else {
-        // Notify to outside when add item(s) failure.
-        if (
-          storageEvents['onAddItemsFail'] &&
-          isFunction(storageEvents['onAddItemsFail'][0])
-        ) {
-          const msgError = `Try to add item(s) ${items} failed!`;
-          storageEvents['onAddItemsFail'][0](msgError);
-        }
-      }
-    }
-  }
-
-  function onRemoveItemById(itemId: string) {
-    if (_hasAlreadyId(itemId)) {
-      const iIndex = __itemCache__.getIndex(itemId);
-      const iHeight = __itemCache__.getHeight(itemId);
-      const iPosition = __itemCache__.getPosition(itemId);
-      const removedItem = dataMap.get(itemId);
-      const oldMap = new Map(__itemCache__.getItemsMap);
-      const result = _deleteItemsById(itemId, 1);
-
-      if (result.hasDeleteSucceed) {
-        if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
-          storageEvents['viewOnRemoveItem'][0]({
-            removedItemId: itemId,
-            removedItemIndex: iIndex,
-            removedItemHeight: iHeight,
-            removedItemPos: iPosition,
-            removedItem,
-            oldMap,
-          });
-          throttleRenderUI();
-        }
-
-        // Notify to outside to remove item.
-        if (
-          storageEvents['onRemoveItemByIdSucceed'] &&
-          isFunction(storageEvents['onRemoveItemByIdSucceed'][0])
-        ) {
-          storageEvents['onRemoveItemByIdSucceed'][0]({
-            fromItemId: itemId,
-            deletedItems: result.successValues.willDeleteItems,
-            beforeItem: result.successValues.beforeItem,
-            afterItem: result.successValues.afterItem,
-          });
-        }
-      }
-      else {
-        if (
-          storageEvents['onRemoveItemsByIdFail'] &&
-          isFunction(storageEvents['onRemoveItemsByIdFail'][0])
-        ) {
-          const msgError = 'Can not find itemId';
-          storageEvents['onRemoveItemsByIdFail'][0](msgError);
-        }
-      }
-    }
-  }
-
-  function onRemoveItemAt(index: number) {
-    const removedItemId = __itemCache__.getItemId(parseInt(index));
-    if (removedItemId !== NOT_FOUND && _hasAlreadyId(removedItemId)) {
-      const removedItemIndex = _getValidIndex(index);
-      const removedItemHeight = __itemCache__.getHeight(removedItemId);
-      const removedItemPos = __itemCache__.getPosition(removedItemId);
-      const removedItem = dataMap.get(removedItemId);
-      const oldMap = new Map(__itemCache__.getItemsMap);
-      const result = _deleteItemsAt(removedItemIndex, 1);
-
-      if (result.hasDeleteSucceed) {
-        if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
-          storageEvents['viewOnRemoveItem'][0]({
-            removedItemId,
-            removedItemIndex,
-            removedItemHeight,
-            removedItemPos,
-            removedItem,
-            oldMap,
-          });
-          throttleRenderUI();
-        }
-
-        // Notify to outside to remove item.
-        if (
-          storageEvents['onRemoveItemAtSucceed'] &&
-          isFunction(storageEvents['onRemoveItemAtSucceed'][0])
-        ) {
-          storageEvents['onRemoveItemAtSucceed'][0]({
-            fromIndex: index,
-            deletedItems: result.successValues.willDeleteItems,
-            beforeItem: result.successValues.beforeItem,
-            afterItem: result.successValues.afterItem,
-          });
-        }
-      }
-      else {
-        if (
-          storageEvents['onRemoveItemAtFail'] &&
-          isFunction(storageEvents['onRemoveItemAtFail'][0])
-        ) {
-          const msgError = 'Can not find itemId';
-          storageEvents['onRemoveItemAtFail'][0](msgError);
-        }
-      }
-    }
-  }
-
-  function onRemoveItemsAt(startIndex: number, deleteCount: number = 1) {
-    let start = _getValidIndex(startIndex);
-    if (start === data.length) {
-      start = data.length - 1;
-    }
-    const _deleteCount = parseInt(deleteCount);
-
-    const removedItemsId: Array<string> = [];
-    const removedItems: Array<Object> = [];
-    let removedItemsHeight: Array = [];
-    const removedFirstItemPos = __itemCache__.getPosition(__itemCache__.getItemId(start));
-
-    if (isNum(_deleteCount))
-    {
-      const removedLastItemIndex = start + _deleteCount - 1;
-      for (let i = start; i < start + _deleteCount; i++) {
-        const id = __itemCache__.getItemId(i);
-        if (id !== NOT_FOUND) {
-          removedItemsId.push(id);
-          removedItems.push(dataMap.get(id));
-          const h = __itemCache__.getHeight(id);
-          if (h !== NOT_FOUND) {
-            removedItemsHeight.push(h);
-          }
-        }
-      }
-
-      const oldMap = new Map(__itemCache__.getItemsMap);
-      const result = _deleteItemsAt(start, _deleteCount);
-      if (result.hasDeleteSucceed) {
-        if (storageEvents['viewOnRemoveItems'] && isFunction(storageEvents['viewOnRemoveItems'][0])) {
-          storageEvents['viewOnRemoveItems'][0]({
-            removedItemsId,
-            startIndex: start,
-            removedLastItemIndex,
-            removedItemsHeight,
-            removedFirstItemPos,
-            deleteCount: removedItemsId.length,
-            removedItems,
-            oldMap,
-          });
-          throttleRenderUI();
-        }
-
-        // Notify to outside to remove item.
-        if (
-          storageEvents['onRemoveItemsAtSucceed'] &&
-          isFunction(storageEvents['onRemoveItemsAtSucceed'][0])
-        ) {
-          storageEvents['onRemoveItemsAtSucceed'][0]({
-            fromIndex: start,
-            deletedItems: result.successValues.willDeleteItems,
-            beforeItem: result.successValues.beforeItem,
-            afterItem: result.successValues.afterItem,
-          });
-        }
-      }
-      else {
-        if (
-          storageEvents['onRemoveItemsAtFail'] &&
-          isFunction(storageEvents['onRemoveItemsAtFail'][0])
-        ) {
-          const msgError = 'Fail to remove items';
-          storageEvents['onRemoveItemsAtFail'][0](msgError);
-        }
-      }
-    }
-  }
-
-  function onUpdateItem(itemId: string, item: Object) {
-    if (_hasAlreadyId(itemId)) {
-      const itemIndex = __itemCache__.getIndex(itemId);
-      if (itemIndex !== NOT_FOUND) {
-        data[itemIndex] = item;
-        throttleRenderUI();
-      }
-    }
-  }
-
-  function addTop(items: Array) {
-    onAddItems(0, items);
-  }
-
-  function addBottom(items: Array) {
-    onAddItems(data.length, items);
-  }
-
-  function raiseItemByIndex(index: number) {
-    if (isNum(index)) {
-      const oldMap = new Map(__itemCache__.getItemsMap);
-      const raiseData = _raiseItemInData(index);
-      const raiseCache = _raiseItemInCache(index);
-
-      if (raiseData && raiseCache) {
-        if (storageEvents['viewOnRaiseItem'] && isFunction(storageEvents['viewOnRaiseItem'][0])) {
-          storageEvents['viewOnRaiseItem'][0](0, index, oldMap);
-        }
-
-        if (storageEvents['raiseItemSucceed'] && isFunction(storageEvents['raiseItemSucceed'][0])) {
-          storageEvents['raiseItemSucceed'][0]({oldIndex: index});
-        }
-      }
-    }
-  }
-
-  function raiseItemById(itemId: string) {
-    const index = __itemCache__.getIndex(itemId);
-    if (index !== NOT_FOUND) {
-      raiseItemByIndex(index);
-    }
-  }
-
-  /* ========================================================================
-   Interaction with list data & cache
-   ======================================================================== */
-  function _insertItems(startIndex: number, items: Array) {
-    let validIndex = _getValidIndex(startIndex);
-    let positionStartOfNewItems = 0;
-    let hasInsertSucceed = undefined;
-    let beforeItem, afterItem = undefined;
-
-    if (validIndex !== undefined) {
-      const beforeItemId = __itemCache__.getItemId(validIndex - 1 < 0 ?
-        0 :
-        validIndex - 1);
-      const beforeItemPos = __itemCache__.getPosition(beforeItemId);
-      const beforeItemHeight = __itemCache__.getHeight(beforeItemId);
-      if (beforeItemPos !== NOT_FOUND && beforeItemHeight !== NOT_FOUND) {
-        positionStartOfNewItems = validIndex === 0 ?
-          0 :
-          beforeItemPos + beforeItemHeight;
-      }
-
-      if (!items) {
-        hasInsertSucceed = false;
-      }
-      else {
-        if (!Array.isArray(items)) {
-          items = _convertToArray(items);
-        }
-
-        if (Array.isArray(data) && Array.isArray(items)) {
-          const temp = _getItemBeforeAndAfterByIndex(validIndex);
-          beforeItem = temp.beforeItem;
-          afterItem = temp.afterItem;
-
-          for (let i = 0; i < items.length; i++) {
-            if (!items[i] || !items[i].itemId || _hasAlreadyId(items[i].itemId)) {
-              console.error('Insert item(s) failed');
-              hasInsertSucceed = false;
-              return hasInsertSucceed;
+    function removeEventListener(eventName: EventTypes, callback: Callback) {
+        if (storageEvents.hasOwnProperty(eventName) && Array.isArray(storageEvents[eventName])) {
+            if (storageEvents[eventName].length === 1) {
+                delete storageEvents[eventName];
             }
-          }
-
-          data.splice(validIndex, 0, items);
-          data = data.flat();
-
-          // Insert item on itemCache
-          __itemCache__.updateIndexMap(validIndex - 1, data);
-
-          items.forEach((item) => {
-            if (
-              item &&
-              item.itemId &&
-              !_hasAlreadyId(item.itemId)
-            ) {
-              dataMap.set(item.itemId, item);
-              __itemCache__.updateItemOnMap(
-                item.itemId,
-                data.indexOf(item),
-                __itemCache__.getDefaultHeight,
-                positionStartOfNewItems,
-                false);
+            else {
+                storageEvents[eventName].forEach((eventCallback, index) => {
+                    if (eventCallback === callback) {
+                        storageEvents[eventName].splice(index, 1);
+                    }
+                });
             }
-          });
-
-          __itemCache__.updateItemsMap(validIndex - 1, data.length);
-          updateItemsPositionFromSpecifiedItem(validIndex === 0 ?
-            data[0].itemId :
-            beforeItemId);
-          hasInsertSucceed = true;
         }
-      }
-    }
-    else {
-      hasInsertSucceed = false;
     }
 
-    return {
-      hasInsertSucceed,
-      successValues: {
-        beforeItem,
-        afterItem,
-      },
-    };
-  }
 
-  function _deleteItemsById(itemId: string, deleteCount: number = 1) {
-    const itemIndex = __itemCache__.getIndex(itemId);
-    let willDeleteItems = undefined;
-    let beforeItem, afterItem = undefined;
-    let hasDeleteSucceed = undefined;
+    /* ========================================================================
+     TODO: Load more
+     ======================================================================== */
+    function loadTop(items: Array) {
+        if (items) {
+            if (!Array.isArray(items)) {
+                items = _convertToArray(items);
+            }
 
-    if (itemIndex !== NOT_FOUND) {
-      // Get before & after itemId of `be deleted item`.
-      const temp = _getItemBeforeAndAfterByIndex(itemIndex);
-      beforeItem = temp.beforeItem;
-      afterItem = temp.afterItem;
+            const insertResult = _insertItems(0, items);
+            if (insertResult.hasInsertSucceed) {
+                if (
+                  storageEvents['viewOnLoadMore'] &&
+                  isFunction(storageEvents['viewOnLoadMore'][0])
+                ) {
+                    storageEvents['viewOnLoadMore'][0](0, items);
+                    throttleRenderUI();
+                }
 
-      // All itemId of deleted items
-      willDeleteItems = _deleteItems(itemIndex, deleteCount);
-      hasDeleteSucceed = true;
-    }
-    else {
-      hasDeleteSucceed = false;
-    }
-
-    return {
-      hasDeleteSucceed,
-      successValues: {
-        willDeleteItems,
-        beforeItem,
-        afterItem,
-      },
-    };
-  }
-
-  function _deleteItemsAt(index: number, deleteCount: number = 1) {
-    let startIndex = _getValidIndex(index);
-    if (data && startIndex === data.length) {
-      startIndex = data.length - 1;
-    }
-    let willDeleteItems = undefined;
-    let beforeItem, afterItem = undefined;
-    let hasDeleteSucceed = undefined;
-
-    if (startIndex !== undefined) {
-      // Get before & after itemId of `be deleted item`.
-      const temp = _getItemBeforeAndAfterByIndex(startIndex);
-      beforeItem = temp.beforeItem;
-      afterItem = temp.afterItem;
-
-      // All itemId of deleted items
-      willDeleteItems = _deleteItems(startIndex, deleteCount);
-      hasDeleteSucceed = true;
-    }
-    else {
-      hasDeleteSucceed = false;
-    }
-
-    return {
-      hasDeleteSucceed,
-      successValues: {
-        willDeleteItems,
-        beforeItem,
-        afterItem,
-      },
-    };
-  }
-
-  function _deleteItems(index: number, deleteCount: number = 1) {
-    let startIndex = _getValidIndex(index);
-    if (data && startIndex === data.length) {
-      startIndex = data.length - 1;
-    }
-    const storeStartIndex = startIndex;
-
-    let willDeleteItems = [];
-
-    // Delete items on dataOnList - dataMap
-    if (
-      Array.isArray(data) &&
-      _isValidIndex(startIndex) &&
-      Number.isInteger(deleteCount)
-    ) {
-      for (let i = 0; i < deleteCount; i++) {
-        if (startIndex < data.length && data[startIndex] && data[startIndex].itemId) {
-          const itemId = data[startIndex].itemId;
-          if (itemId && _hasItem(itemId)) {
-            willDeleteItems.push(itemId);
-            dataMap.delete(data[startIndex].itemId);
-            __itemCache__.getIndexMap.delete(startIndex);
-          }
+                // Notify to outside when load top end.
+                if (
+                  storageEvents['loadTopEnd'] &&
+                  isFunction(storageEvents['loadTopEnd'][0])
+                ) {
+                    storageEvents['loadTopEnd'][0]();
+                }
+            }
         }
-        startIndex++;
-      }
+    }
 
-      if (data && data.length === deleteCount && data[data.length - 1].itemId) {
-        remainderItem = data[data.length - 1].itemId;
-      }
+    function loadBottom(items: Array) {
+        if (items && data) {
+            if (!Array.isArray(items)) {
+                items = _convertToArray(items);
+            }
 
-      data.splice(storeStartIndex, deleteCount);
+            const insertResult = _insertItems(data.length, items);
+            if (insertResult.hasInsertSucceed) {
+                if (
+                  storageEvents['viewOnLoadMore'] &&
+                  isFunction(storageEvents['viewOnLoadMore'][0])
+                ) {
+                    storageEvents['viewOnLoadMore'][0](data.length, items);
+                    throttleRenderUI();
+                }
 
-      __itemCache__.updateIndexMap(storeStartIndex, data);
-
-      for (let i = 0; i < willDeleteItems.length; i++) {
-        __itemCache__.getIndexMap.delete(data.length + i);
-        __itemCache__.getItemsMap.delete(willDeleteItems[i]);
-      }
-
-      let aboveItemId = undefined;
-      if (storeStartIndex - 1 < 0) {
-        aboveItemId = __itemCache__.getItemId(0);
-        __itemCache__.updateItemPosition(aboveItemId, 0);
-      }
-      else {
-        aboveItemId = __itemCache__.getItemId(storeStartIndex - 1);
-      }
-
-      __itemCache__.updateItemsMap(storeStartIndex - 1, data.length);
-      updateItemsPositionFromSpecifiedItem(aboveItemId);
-      if (__itemCache__.getItemsMap.size !== __itemCache__.getIndexMap.size) {
-        for (let key of __itemCache__.getItemsMap.keys()) {
-          if (__itemCache__.getPosition(key) === NOT_FOUND) {
-            __itemCache__.getItemsMap.delete(key);
-          }
+                // Notify to outside when load bottom end.
+                if (
+                  storageEvents['loadBottomEnd'] &&
+                  isFunction(storageEvents['loadBottomEnd'][0])
+                ) {
+                    storageEvents['loadBottomEnd'][0]();
+                }
+            }
         }
-      }
     }
 
-    return willDeleteItems;
-  }
 
-
-  /* ========================================================================
-   Update data & cache
-   ======================================================================== */
-  /**
-   *  Calculate items' position from specified item to end the dataOnList list => reduces number of calculation
-   */
-  function updateItemsPositionFromSpecifiedItem(itemId: string) {
-    if (!!data.length) {
-      let currentItemId = itemId;
-      const currentIndex = __itemCache__.getIndex(itemId);
-
-      if (currentIndex !== NOT_FOUND) {
-        for (let i = currentIndex; i < data.length; i++) {
-          if (i === data.length - 1) {
-            break;
-          }
-
-          const currentItemPosition = __itemCache__.getPosition(currentItemId);
-          const currentItemHeight = __itemCache__.getHeight(currentItemId);
-          const followingItemId = __itemCache__.getItemId(i + 1);
-
-          if (currentItemPosition === NOT_FOUND) {
-            console.log(`Could not get position of: ${currentItemId}`);
-          }
-          else if (currentItemHeight === NOT_FOUND) {
-            console.log(`Could not get height of: ${currentItemId}`);
-          }
-          else if (followingItemId !== NOT_FOUND) {
-            __itemCache__.updateItemOnMap(
-              followingItemId,
-              __itemCache__.getIndex(followingItemId),
-              __itemCache__.getHeight(followingItemId),
-              currentItemPosition + currentItemHeight,
-              __itemCache__.isRendered(followingItemId),
-            );
-            currentItemId = followingItemId;
-          }
+    /* ========================================================================
+     TODO: Scroll To
+     ======================================================================== */
+    function pendingScrollToSpecialItem(itemId: string, withAnim: boolean = true) {
+        if (
+          storageEvents['viewPendingScrollToSpecialItem'] &&
+          isFunction(storageEvents['viewPendingScrollToSpecialItem'][0]) &&
+          itemId
+        ) {
+            storageEvents['viewPendingScrollToSpecialItem'][0](numOfNewItems, itemId, withAnim);
         }
-      }
-    }
-  }
-
-  function _updateCache() {
-    if (Array.isArray(data)) {
-      data.forEach((item) => {
-        if (item && item.itemId) {
-          dataMap.set(item.itemId, item);
-
-          if (__itemCache__.hasItem(item.itemId)) {
-            __itemCache__.updateItemOnMap(
-              item.itemId,
-              data.indexOf(item),
-              __itemCache__.getHeight(item.itemId),
-              0,
-              true);
-          }
-          else {
-            __itemCache__.updateItemOnMap(
-              item.itemId,
-              data.indexOf(item),
-              __itemCache__.defaultHeight,
-              0,
-              false);
-          }
-
-          if (!oldItemsId.includes(item.itemId)) {
-            numOfNewItems++;
-          }
-        }
-      });
-      __itemCache__.getIndexMap.clear();
-      __itemCache__.updateIndexMap(0, data);
-
-      // Remove redundant items in cache;
-      for (let i = 0; i <= oldItemsId.length - 1; i++) {
-        if (!dataMap.has(oldItemsId[i])) {
-          __itemCache__.getItemsMap.delete(oldItemsId[i]);
-        }
-      }
-
-      if (data && data[0] && data[0].itemId) {
-        updateItemsPositionFromSpecifiedItem(data[0].itemId);
-      }
-    }
-  }
-
-  function updateData(newData: Array) {
-    if (!Array.isArray(newData)) {
-      console.error('New data is NOT array');
-      return;
     }
 
-    _updateOldDataIds();
-    _clearData();
-    _clearDataMap();
-    data = newData;
-    numOfNewItems = 0;
-    _updateCache();
-
-    if (
-      storageEvents['viewUpdateUIWhenScrollToItem'] &&
-      isFunction(storageEvents['viewUpdateUIWhenScrollToItem'][0])
-    ) {
-      storageEvents['viewUpdateUIWhenScrollToItem'][0]();
-    }
-  }
-
-  function _updateOldDataIds() {
-    oldItemsId = [];
-    for (let key of dataMap.keys()) {
-      oldItemsId.push(key);
-    }
-  }
-
-  function updateItemAt(index: number, newItem: Object): boolean {
-    const validIndex = _getValidIndex(index);
-
-    if (validIndex === index && newItem && newItem.itemId) {
-      const oldItemId = __itemCache__.getItemId(index);
-      data.splice(index, 1, newItem);
-      dataMap.set(newItem.itemId, newItem);
-      if (newItem.itemId !== oldItemId) {
-        dataMap.delete(oldItemId);
-      }
-      __itemCache__.getIndexMap.set(index, newItem.itemId);
-      __itemCache__.updateItemId(newItem.itemId, oldItemId);
-      throttleRenderUI();
-      return true;
-    }
-    return false;
-  }
-
-  function _raiseItemInData(index: number) {
-    if (Array.isArray(data)) {
-      const validIndex = _getValidIndex(index) === data.length ?
-        data.length - 1 :
-        _getValidIndex(index);
-
-      const arrRaisedItem = data.splice(validIndex, 1);
-      data.unshift(arrRaisedItem[0]);
-      return true;
-    }
-    return false;
-  }
-
-  function _raiseItemInCache(index: number) {
-    if (Array.isArray(data)) {
-      const validIndex = _getValidIndex(index) === data.length ?
-        data.length - 1 :
-        _getValidIndex(index);
-      let tempId = undefined;
-
-      for (let i = 0; i < validIndex; i++) {
-        tempId = __itemCache__.getItemId(i + 1);
-        __itemCache__.updateIndexItem(i + 1, __itemCache__.getItemId(0));
-        __itemCache__.updateIndexItem(0, tempId);
-      }
-
-      for (let i = 0; i <= validIndex; i++) {
-        if (i === 0) {
-          __itemCache__.updateItemIndex(__itemCache__.getItemId(0), 0);
+    function scrollToTop(firstItemId: string) {
+        if (
+          !_hasItem(firstItemId) &&
+          storageEvents['onLookForItemToScrollTop'] &&
+          isFunction(storageEvents['onLookForItemToScrollTop'][0])
+        ) {
+            // Send a notification to outside.
+            storageEvents['onLookForItemToScrollTop'][0]();
         }
         else {
-          __itemCache__.updateItemIndex(__itemCache__.getItemId(i), i);
+            if (
+              storageEvents['viewScrollToTopAtCurrentUI'] &&
+              isFunction(storageEvents['viewScrollToTopAtCurrentUI'][0])
+            ) {
+                storageEvents['viewScrollToTopAtCurrentUI'][0]();
+            }
         }
-      }
-
-      _updateItemsPositionAfterRaise(validIndex);
-      return true;
     }
-    return false;
-  }
 
-  function _updateItemsPositionAfterRaise(endIndex: number) {
-    if (Array.isArray(data)) {
-      const validEndIndex = _getValidIndex(endIndex) === data.length ?
-        data.length - 1 :
-        _getValidIndex(endIndex);
-      let currentItemId = __itemCache__.getItemId(0);
-
-      if (currentItemId !== NOT_FOUND) {
-        __itemCache__.updateItemPosition(currentItemId, 0, __itemCache__.isRendered(currentItemId));
-
-        for (let i = 0; i < validEndIndex; i++) {
-          const currentItemPosition = __itemCache__.getPosition(currentItemId);
-          const currentItemHeight = __itemCache__.getHeight(currentItemId);
-          const followingItemId = __itemCache__.getItemId(i + 1);
-
-          if (currentItemPosition === NOT_FOUND) {
-            console.log(`Could not get position of: ${currentItemId}`);
-          }
-          else if (currentItemHeight === NOT_FOUND) {
-            console.log(`Could not get height of: ${currentItemId}`);
-          }
-          else if (followingItemId !== NOT_FOUND) {
-            __itemCache__.updateItemOnMap(
-              followingItemId,
-              __itemCache__.getIndex(followingItemId),
-              __itemCache__.getHeight(followingItemId),
-              currentItemPosition + currentItemHeight,
-              __itemCache__.isRendered(followingItemId),
-            );
-            currentItemId = followingItemId;
-          }
+    function scrollToBottom(lastItemId: string) {
+        if (!_hasItem(lastItemId)) {
+            // Send a notification to outside.
+            if (
+              storageEvents['onLookForItemToScrollBottom'] &&
+              isFunction(storageEvents['onLookForItemToScrollBottom'][0])
+            ) {
+                storageEvents['onLookForItemToScrollBottom'][0]();
+            }
         }
-      }
-    }
-  }
-
-
-  function reRenderUI() {
-    if (storageEvents['viewReRender']) {
-      if (isFunction(storageEvents['viewReRender'][0])) {
-        storageEvents['viewReRender'][0]();
-      }
-      else {
-        console.error('UI reRender callback is not a function');
-      }
-    }
-    else {
-      console.error('UI reRender callback is undefined');
-    }
-  }
-
-
-  /* ========================================================================
-   Checkers
-   ======================================================================== */
-  function _hasAlreadyId(id: string): boolean {
-    return dataMap.has(id);
-  }
-
-  function _isValidIndex(index: number, dataLength: number = data.length): boolean {
-    const rsIndex = parseInt(index);
-    return (
-      typeof rsIndex === 'number' &&
-      !isNaN(rsIndex) &&
-      rsIndex <= dataLength &&
-      rsIndex >= 0
-    );
-  }
-
-  function _hasItem(itemId: string): boolean {
-    return dataMap.has(itemId);
-  }
-
-
-  /* ========================================================================
-   Supporters
-   ======================================================================== */
-  function _getCorrectDefaultHeight(defaultHeight: number) {
-    let _defaultHeight = undefined;
-
-    if (typeof defaultHeight === 'number') {
-      _defaultHeight = defaultHeight;
-    }
-    else if (typeof defaultHeight === 'string') {
-      _defaultHeight = parseInt(defaultHeight);
-      if (isNaN(_defaultHeight)) {
-        _defaultHeight = ITEM_DEFAULT_HEIGHT;
-      }
-    }
-    else {
-      _defaultHeight = ITEM_DEFAULT_HEIGHT;
+        else {
+            if (
+              storageEvents['viewScrollToBottomAtCurrentUI'] &&
+              isFunction(storageEvents['viewScrollToBottomAtCurrentUI'][0])
+            ) {
+                storageEvents['viewScrollToBottomAtCurrentUI'][0]();
+            }
+        }
     }
 
-    return _defaultHeight;
-  }
 
-  function _getItemBeforeAndAfterByIndex(itemIndex: number) {
-    let bItemId = __itemCache__.getItemId(itemIndex - 1);
-    let aItemId = __itemCache__.getItemId(itemIndex + 1);
+    /* ========================================================================
+     [Public API] - Interact with list
+     ======================================================================== */
+    function onAddItem(index: number, item: Object) {
+        if (item) {
+            const start = _getValidIndex(index);
+            if (!Array.isArray(item)) {
+                item = _convertToArray(item);
+            }
 
-    let beforeItem = bItemId !== NOT_FOUND ?
-      dataMap.get(bItemId) :
-      null;
-    let afterItem = aItemId !== NOT_FOUND ?
-      dataMap.get(aItemId) :
-      null;
+            const oldMap = new Map(__itemCache__.getItemsMap);
+            const insertResult = _insertItems(start, item);
 
-    return {
-      beforeItem,
-      afterItem,
-    };
-  }
+            if (insertResult.hasInsertSucceed) {
+                if (
+                  storageEvents['viewOnAddItems'] &&
+                  isFunction(storageEvents['viewOnAddItems'][0])) {
+                    storageEvents['viewOnAddItems'][0](start, item, oldMap);
+                    throttleRenderUI();
+                }
 
-  /* Get startIndex as params and return valid index
-   If startIndex is NaN or less than 0, return 0.
-   If startIndex is greater than dataLength return dataLength.
-   Else return itself.
-   */
-  function _getValidIndex(startIndex: number) {
-    const validStartIndex = parseInt(startIndex);
-    let start = undefined;
-
-    if (isNaN(validStartIndex)) {
-      console.error('Invalid startIndex');
-      start = 0;
+                // Notify to outside when add item succeed.
+                if (
+                  storageEvents['onAddItemsSucceed'] &&
+                  isFunction(storageEvents['onAddItemsSucceed'][0])
+                ) {
+                    storageEvents['onAddItemsSucceed'][0]({
+                        startIndex: start,
+                        items: item,
+                        beforeItem: insertResult.successValues.beforeItem,
+                        afterItem: insertResult.successValues.afterItem,
+                    });
+                }
+            }
+            else {
+                // Notify to outside when add item failure.
+                if (
+                  storageEvents['onAddItemsFail'] &&
+                  isFunction(storageEvents['onAddItemsFail'][0])
+                ) {
+                    const msgError = `Try to add item ${item} failed!`;
+                    storageEvents['onAddItemsFail'][0](msgError);
+                }
+            }
+        }
     }
-    else if (validStartIndex < 0) {
-      start = 0;
+
+    function onAddItems(startIndex: number, items: Array) {
+        if (items) {
+            const start = _getValidIndex(startIndex);
+            if (!Array.isArray(items)) {
+                items = _convertToArray(items);
+            }
+
+            const oldMap = new Map(__itemCache__.getItemsMap);
+            const insertResult = _insertItems(start, items);
+
+            if (insertResult.hasInsertSucceed) {
+                if (
+                  storageEvents['viewOnAddItems'] &&
+                  isFunction(storageEvents['viewOnAddItems'][0])) {
+                    storageEvents['viewOnAddItems'][0](start, items, oldMap);
+                    throttleRenderUI();
+                }
+
+                // Notify to outside when add item(s) succeed.
+                if (
+                  storageEvents['onAddItemsSucceed'] &&
+                  isFunction(storageEvents['onAddItemsSucceed'][0])
+                ) {
+                    storageEvents['onAddItemsSucceed'][0]({
+                        startIndex: start,
+                        items: items,
+                        beforeItem: insertResult.successValues.beforeItem,
+                        afterItem: insertResult.successValues.afterItem,
+                    });
+                }
+            }
+            else {
+                // Notify to outside when add item(s) failure.
+                if (
+                  storageEvents['onAddItemsFail'] &&
+                  isFunction(storageEvents['onAddItemsFail'][0])
+                ) {
+                    const msgError = `Try to add item(s) ${items} failed!`;
+                    storageEvents['onAddItemsFail'][0](msgError);
+                }
+            }
+        }
     }
-    else if (validStartIndex > data.length) {
-      start = data.length;
+
+    function onRemoveItemById(itemId: string) {
+        if (_hasAlreadyId(itemId)) {
+            const iIndex = __itemCache__.getIndex(itemId);
+            const iHeight = __itemCache__.getHeight(itemId);
+            const iPosition = __itemCache__.getPosition(itemId);
+            const removedItem = dataMap.get(itemId);
+            const oldMap = new Map(__itemCache__.getItemsMap);
+            const result = _deleteItemsById(itemId, 1);
+
+            if (result.hasDeleteSucceed) {
+                if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
+                    storageEvents['viewOnRemoveItem'][0]({
+                        removedItemId: itemId,
+                        removedItemIndex: iIndex,
+                        removedItemHeight: iHeight,
+                        removedItemPos: iPosition,
+                        removedItem,
+                        oldMap,
+                    });
+                    throttleRenderUI();
+                }
+
+                // Notify to outside to remove item.
+                if (
+                  storageEvents['onRemoveItemByIdSucceed'] &&
+                  isFunction(storageEvents['onRemoveItemByIdSucceed'][0])
+                ) {
+                    storageEvents['onRemoveItemByIdSucceed'][0]({
+                        fromItemId: itemId,
+                        deletedItems: result.successValues.willDeleteItems,
+                        beforeItem: result.successValues.beforeItem,
+                        afterItem: result.successValues.afterItem,
+                    });
+                }
+            }
+            else {
+                if (
+                  storageEvents['onRemoveItemsByIdFail'] &&
+                  isFunction(storageEvents['onRemoveItemsByIdFail'][0])
+                ) {
+                    const msgError = 'Can not find itemId';
+                    storageEvents['onRemoveItemsByIdFail'][0](msgError);
+                }
+            }
+        }
     }
-    else {
-      start = validStartIndex;
+
+    function onRemoveItemAt(index: number) {
+        const removedItemId = __itemCache__.getItemId(parseInt(index));
+        if (removedItemId !== NOT_FOUND && _hasAlreadyId(removedItemId)) {
+            const removedItemIndex = _getValidIndex(index);
+            const removedItemHeight = __itemCache__.getHeight(removedItemId);
+            const removedItemPos = __itemCache__.getPosition(removedItemId);
+            const removedItem = dataMap.get(removedItemId);
+            const oldMap = new Map(__itemCache__.getItemsMap);
+            const result = _deleteItemsAt(removedItemIndex, 1);
+
+            if (result.hasDeleteSucceed) {
+                if (storageEvents['viewOnRemoveItem'] && isFunction(storageEvents['viewOnRemoveItem'][0])) {
+                    storageEvents['viewOnRemoveItem'][0]({
+                        removedItemId,
+                        removedItemIndex,
+                        removedItemHeight,
+                        removedItemPos,
+                        removedItem,
+                        oldMap,
+                    });
+                    throttleRenderUI();
+                }
+
+                // Notify to outside to remove item.
+                if (
+                  storageEvents['onRemoveItemAtSucceed'] &&
+                  isFunction(storageEvents['onRemoveItemAtSucceed'][0])
+                ) {
+                    storageEvents['onRemoveItemAtSucceed'][0]({
+                        fromIndex: index,
+                        deletedItems: result.successValues.willDeleteItems,
+                        beforeItem: result.successValues.beforeItem,
+                        afterItem: result.successValues.afterItem,
+                    });
+                }
+            }
+            else {
+                if (
+                  storageEvents['onRemoveItemAtFail'] &&
+                  isFunction(storageEvents['onRemoveItemAtFail'][0])
+                ) {
+                    const msgError = 'Can not find itemId';
+                    storageEvents['onRemoveItemAtFail'][0](msgError);
+                }
+            }
+        }
     }
 
-    return start;
-  }
+    function onRemoveItemsAt(startIndex: number, deleteCount: number = 1) {
+        let start = _getValidIndex(startIndex);
+        if (start === data.length) {
+            start = data.length - 1;
+        }
+        const _deleteCount = parseInt(deleteCount);
 
-  function _convertToArray(item: Object): Array {
-    return [(item)];
-  }
+        const removedItemsId: Array<string> = [];
+        const removedItems: Array<Object> = [];
+        let removedItemsHeight: Array = [];
+        const removedFirstItemPos = __itemCache__.getPosition(__itemCache__.getItemId(start));
 
+        if (isNum(_deleteCount)) {
+            const removedLastItemIndex = start + _deleteCount - 1;
+            for (let i = start; i < start + _deleteCount; i++) {
+                const id = __itemCache__.getItemId(i);
+                if (id !== NOT_FOUND) {
+                    removedItemsId.push(id);
+                    removedItems.push(dataMap.get(id));
+                    const h = __itemCache__.getHeight(id);
+                    if (h !== NOT_FOUND) {
+                        removedItemsHeight.push(h);
+                    }
+                }
+            }
 
-  /* ========================================================================
-   Get - Set
-   ======================================================================== */
-  function getData() {
-    return Object.freeze([...data]);
-  }
+            const oldMap = new Map(__itemCache__.getItemsMap);
+            const result = _deleteItemsAt(start, _deleteCount);
+            if (result.hasDeleteSucceed) {
+                if (storageEvents['viewOnRemoveItems'] && isFunction(storageEvents['viewOnRemoveItems'][0])) {
+                    storageEvents['viewOnRemoveItems'][0]({
+                        removedItemsId,
+                        startIndex: start,
+                        removedLastItemIndex,
+                        removedItemsHeight,
+                        removedFirstItemPos,
+                        deleteCount: removedItemsId.length,
+                        removedItems,
+                        oldMap,
+                    });
+                    throttleRenderUI();
+                }
 
-  function getDataUnfreeze() {
-    return data;
-  }
-
-  function getDataMap() {
-    return dataMap;
-  }
-
-  function getOldItems() {
-    return oldItemsId;
-  }
-
-  function getCache() {
-    return Object.freeze(__itemCache__);
-  }
-
-  function getNumOfNewItems() {
-    return numOfNewItems;
-  }
-
-  function setNumOfNewItems(newValue: number) {
-    numOfNewItems = newValue;
-  }
-
-  function getItemAt(index: number) {
-    const validIndex = _getValidIndex(index);
-    if (validIndex === index) {
-      return data[index];
+                // Notify to outside to remove item.
+                if (
+                  storageEvents['onRemoveItemsAtSucceed'] &&
+                  isFunction(storageEvents['onRemoveItemsAtSucceed'][0])
+                ) {
+                    storageEvents['onRemoveItemsAtSucceed'][0]({
+                        fromIndex: start,
+                        deletedItems: result.successValues.willDeleteItems,
+                        beforeItem: result.successValues.beforeItem,
+                        afterItem: result.successValues.afterItem,
+                    });
+                }
+            }
+            else {
+                if (
+                  storageEvents['onRemoveItemsAtFail'] &&
+                  isFunction(storageEvents['onRemoveItemsAtFail'][0])
+                ) {
+                    const msgError = 'Fail to remove items';
+                    storageEvents['onRemoveItemsAtFail'][0](msgError);
+                }
+            }
+        }
     }
-  }
 
-  function getSelectedItem() {
-    return selectedItem;
-  }
-
-  function setSelectedItem(index: number) {
-    const validIndex = _getValidIndex(index);
-    if (Array.isArray(data)) {
-      if (validIndex === data.length) {
-        selectedItem = validIndex - 1;
-      }
-      else {
-        selectedItem = validIndex;
-      }
-      //console.log('[ViewModel] - On Selected Item At Index:', selectedItem);
-      GLog.logInfo('ViewModel', 'On Selected Item At Index', selectedItem);
-      throttleRenderUI();
+    function onUpdateItem(itemId: string, item: Object) {
+        if (_hasAlreadyId(itemId)) {
+            const itemIndex = __itemCache__.getIndex(itemId);
+            if (itemIndex !== NOT_FOUND) {
+                data[itemIndex] = item;
+                throttleRenderUI();
+            }
+        }
     }
-  }
 
-  function clearSelectedItem() {
-    selectedItem = -1;
-  }
+    function addTop(items: Array) {
+        onAddItems(0, items);
+    }
 
-  function getRemainderItem() {
-    return remainderItem;
-  }
+    function addBottom(items: Array) {
+        onAddItems(data.length, items);
+    }
+
+    function raiseItemByIndex(index: number) {
+        if (isNum(index)) {
+            const oldMap = new Map(__itemCache__.getItemsMap);
+            const raiseData = _raiseItemInData(index);
+            const raiseCache = _raiseItemInCache(index);
+
+            if (raiseData && raiseCache) {
+                if (storageEvents['viewOnRaiseItem'] && isFunction(storageEvents['viewOnRaiseItem'][0])) {
+                    storageEvents['viewOnRaiseItem'][0](0, index, oldMap);
+                }
+
+                if (storageEvents['raiseItemSucceed'] && isFunction(storageEvents['raiseItemSucceed'][0])) {
+                    storageEvents['raiseItemSucceed'][0]({oldIndex: index});
+                }
+            }
+        }
+    }
+
+    function raiseItemById(itemId: string) {
+        const index = __itemCache__.getIndex(itemId);
+        if (index !== NOT_FOUND) {
+            raiseItemByIndex(index);
+        }
+    }
+
+    /* ========================================================================
+     Interaction with list data & cache
+     ======================================================================== */
+    function _insertItems(startIndex: number, items: Array) {
+        let validIndex = _getValidIndex(startIndex);
+        let positionStartOfNewItems = 0;
+        let hasInsertSucceed = undefined;
+        let beforeItem, afterItem = undefined;
+
+        if (validIndex !== undefined) {
+            const beforeItemId = __itemCache__.getItemId(validIndex - 1 < 0 ?
+              0 :
+              validIndex - 1);
+            const beforeItemPos = __itemCache__.getPosition(beforeItemId);
+            const beforeItemHeight = __itemCache__.getHeight(beforeItemId);
+            if (beforeItemPos !== NOT_FOUND && beforeItemHeight !== NOT_FOUND) {
+                positionStartOfNewItems = validIndex === 0 ?
+                  0 :
+                  beforeItemPos + beforeItemHeight;
+            }
+
+            if (!items) {
+                hasInsertSucceed = false;
+            }
+            else {
+                if (!Array.isArray(items)) {
+                    items = _convertToArray(items);
+                }
+
+                if (Array.isArray(data) && Array.isArray(items)) {
+                    const temp = _getItemBeforeAndAfterByIndex(validIndex);
+                    beforeItem = temp.beforeItem;
+                    afterItem = temp.afterItem;
+
+                    for (let i = 0; i < items.length; i++) {
+                        if (!items[i] || !items[i].itemId || _hasAlreadyId(items[i].itemId)) {
+                            console.error('Insert item(s) failed');
+                            hasInsertSucceed = false;
+                            return hasInsertSucceed;
+                        }
+                    }
+
+                    data.splice(validIndex, 0, items);
+                    data = data.flat();
+
+                    // Insert item on itemCache
+                    __itemCache__.updateIndexMap(validIndex - 1, data);
+
+                    items.forEach((item) => {
+                        if (
+                          item &&
+                          item.itemId &&
+                          !_hasAlreadyId(item.itemId)
+                        ) {
+                            dataMap.set(item.itemId, item);
+                            __itemCache__.updateItemOnMap(
+                              item.itemId,
+                              data.indexOf(item),
+                              __itemCache__.getDefaultHeight,
+                              positionStartOfNewItems,
+                              false);
+                        }
+                    });
+
+                    __itemCache__.updateItemsMap(validIndex - 1, data.length);
+                    updateItemsPositionFromSpecifiedItem(validIndex === 0 ?
+                      data[0].itemId :
+                      beforeItemId);
+                    hasInsertSucceed = true;
+                }
+            }
+        }
+        else {
+            hasInsertSucceed = false;
+        }
+
+        return {
+            hasInsertSucceed,
+            successValues: {
+                beforeItem,
+                afterItem,
+            },
+        };
+    }
+
+    function _deleteItemsById(itemId: string, deleteCount: number = 1) {
+        const itemIndex = __itemCache__.getIndex(itemId);
+        let willDeleteItems = undefined;
+        let beforeItem, afterItem = undefined;
+        let hasDeleteSucceed = undefined;
+
+        if (itemIndex !== NOT_FOUND) {
+            // Get before & after itemId of `be deleted item`.
+            const temp = _getItemBeforeAndAfterByIndex(itemIndex);
+            beforeItem = temp.beforeItem;
+            afterItem = temp.afterItem;
+
+            // All itemId of deleted items
+            willDeleteItems = _deleteItems(itemIndex, deleteCount);
+            hasDeleteSucceed = true;
+        }
+        else {
+            hasDeleteSucceed = false;
+        }
+
+        return {
+            hasDeleteSucceed,
+            successValues: {
+                willDeleteItems,
+                beforeItem,
+                afterItem,
+            },
+        };
+    }
+
+    function _deleteItemsAt(index: number, deleteCount: number = 1) {
+        let startIndex = _getValidIndex(index);
+        if (data && startIndex === data.length) {
+            startIndex = data.length - 1;
+        }
+        let willDeleteItems = undefined;
+        let beforeItem, afterItem = undefined;
+        let hasDeleteSucceed = undefined;
+
+        if (startIndex !== undefined) {
+            // Get before & after itemId of `be deleted item`.
+            const temp = _getItemBeforeAndAfterByIndex(startIndex);
+            beforeItem = temp.beforeItem;
+            afterItem = temp.afterItem;
+
+            // All itemId of deleted items
+            willDeleteItems = _deleteItems(startIndex, deleteCount);
+            hasDeleteSucceed = true;
+        }
+        else {
+            hasDeleteSucceed = false;
+        }
+
+        return {
+            hasDeleteSucceed,
+            successValues: {
+                willDeleteItems,
+                beforeItem,
+                afterItem,
+            },
+        };
+    }
+
+    function _deleteItems(index: number, deleteCount: number = 1) {
+        let startIndex = _getValidIndex(index);
+        if (data && startIndex === data.length) {
+            startIndex = data.length - 1;
+        }
+        const storeStartIndex = startIndex;
+
+        let willDeleteItems = [];
+
+        // Delete items on dataOnList - dataMap
+        if (
+          Array.isArray(data) &&
+          _isValidIndex(startIndex) &&
+          Number.isInteger(deleteCount)
+        ) {
+            for (let i = 0; i < deleteCount; i++) {
+                if (startIndex < data.length && data[startIndex] && data[startIndex].itemId) {
+                    const itemId = data[startIndex].itemId;
+                    if (itemId && _hasItem(itemId)) {
+                        willDeleteItems.push(itemId);
+                        dataMap.delete(data[startIndex].itemId);
+                        __itemCache__.getIndexMap.delete(startIndex);
+                    }
+                }
+                startIndex++;
+            }
+
+            if (data && data.length === deleteCount && data[data.length - 1].itemId) {
+                remainderItem = data[data.length - 1].itemId;
+            }
+
+            data.splice(storeStartIndex, deleteCount);
+
+            __itemCache__.updateIndexMap(storeStartIndex, data);
+
+            for (let i = 0; i < willDeleteItems.length; i++) {
+                __itemCache__.getIndexMap.delete(data.length + i);
+                __itemCache__.getItemsMap.delete(willDeleteItems[i]);
+            }
+
+            let aboveItemId = undefined;
+            if (storeStartIndex - 1 < 0) {
+                aboveItemId = __itemCache__.getItemId(0);
+                __itemCache__.updateItemPosition(aboveItemId, 0);
+            }
+            else {
+                aboveItemId = __itemCache__.getItemId(storeStartIndex - 1);
+            }
+
+            __itemCache__.updateItemsMap(storeStartIndex - 1, data.length);
+            updateItemsPositionFromSpecifiedItem(aboveItemId);
+            if (__itemCache__.getItemsMap.size !== __itemCache__.getIndexMap.size) {
+                for (let key of __itemCache__.getItemsMap.keys()) {
+                    if (__itemCache__.getPosition(key) === NOT_FOUND) {
+                        __itemCache__.getItemsMap.delete(key);
+                    }
+                }
+            }
+        }
+
+        return willDeleteItems;
+    }
+
+
+    /* ========================================================================
+     Update data & cache
+     ======================================================================== */
+    /**
+     *  Calculate items' position from specified item to end the dataOnList list => reduces number of calculation
+     */
+    function updateItemsPositionFromSpecifiedItem(itemId: string) {
+        if (!!data.length) {
+            let currentItemId = itemId;
+            const currentIndex = __itemCache__.getIndex(itemId);
+
+            if (currentIndex !== NOT_FOUND) {
+                for (let i = currentIndex; i < data.length; i++) {
+                    if (i === data.length - 1) {
+                        break;
+                    }
+
+                    const currentItemPosition = __itemCache__.getPosition(currentItemId);
+                    const currentItemHeight = __itemCache__.getHeight(currentItemId);
+                    const followingItemId = __itemCache__.getItemId(i + 1);
+
+                    if (currentItemPosition === NOT_FOUND) {
+                        console.log(`Could not get position of: ${currentItemId}`);
+                    }
+                    else if (currentItemHeight === NOT_FOUND) {
+                        console.log(`Could not get height of: ${currentItemId}`);
+                    }
+                    else if (followingItemId !== NOT_FOUND) {
+                        __itemCache__.updateItemOnMap(
+                          followingItemId,
+                          __itemCache__.getIndex(followingItemId),
+                          __itemCache__.getHeight(followingItemId),
+                          currentItemPosition + currentItemHeight,
+                          __itemCache__.isRendered(followingItemId),
+                        );
+                        currentItemId = followingItemId;
+                    }
+                }
+            }
+        }
+    }
+
+    function _updateCache() {
+        if (Array.isArray(data)) {
+            data.forEach((item) => {
+                if (item && item.itemId) {
+                    dataMap.set(item.itemId, item);
+
+                    if (__itemCache__.hasItem(item.itemId)) {
+                        __itemCache__.updateItemOnMap(
+                          item.itemId,
+                          data.indexOf(item),
+                          __itemCache__.getHeight(item.itemId),
+                          0,
+                          true);
+                    }
+                    else {
+                        __itemCache__.updateItemOnMap(
+                          item.itemId,
+                          data.indexOf(item),
+                          __itemCache__.defaultHeight,
+                          0,
+                          false);
+                    }
+
+                    if (!oldItemsId.includes(item.itemId)) {
+                        numOfNewItems++;
+                    }
+                }
+            });
+            __itemCache__.getIndexMap.clear();
+            __itemCache__.updateIndexMap(0, data);
+
+            // Remove redundant items in cache;
+            for (let i = 0; i <= oldItemsId.length - 1; i++) {
+                if (!dataMap.has(oldItemsId[i])) {
+                    __itemCache__.getItemsMap.delete(oldItemsId[i]);
+                }
+            }
+
+            if (data && data[0] && data[0].itemId) {
+                updateItemsPositionFromSpecifiedItem(data[0].itemId);
+            }
+        }
+    }
+
+    function updateData(newData: Array) {
+        if (!Array.isArray(newData)) {
+            console.error('New data is NOT array');
+            return;
+        }
+
+        _updateOldDataIds();
+        _clearData();
+        _clearDataMap();
+        data = newData;
+        numOfNewItems = 0;
+        _updateCache();
+
+        if (
+          storageEvents['viewUpdateUIWhenScrollToItem'] &&
+          isFunction(storageEvents['viewUpdateUIWhenScrollToItem'][0])
+        ) {
+            storageEvents['viewUpdateUIWhenScrollToItem'][0]();
+        }
+    }
+
+    function _updateOldDataIds() {
+        oldItemsId = [];
+        for (let key of dataMap.keys()) {
+            oldItemsId.push(key);
+        }
+    }
+
+    function updateItemAt(index: number, newItem: Object): boolean {
+        const validIndex = _getValidIndex(index);
+
+        if (validIndex === index && newItem && newItem.itemId) {
+            const oldItemId = __itemCache__.getItemId(index);
+            data.splice(index, 1, newItem);
+            dataMap.set(newItem.itemId, newItem);
+            if (newItem.itemId !== oldItemId) {
+                dataMap.delete(oldItemId);
+            }
+            __itemCache__.getIndexMap.set(index, newItem.itemId);
+            __itemCache__.updateItemId(newItem.itemId, oldItemId);
+            throttleRenderUI();
+            return true;
+        }
+        return false;
+    }
+
+    function _raiseItemInData(index: number) {
+        if (Array.isArray(data)) {
+            const validIndex = _getValidIndex(index) === data.length ?
+              data.length - 1 :
+              _getValidIndex(index);
+
+            const arrRaisedItem = data.splice(validIndex, 1);
+            data.unshift(arrRaisedItem[0]);
+            return true;
+        }
+        return false;
+    }
+
+    function _raiseItemInCache(index: number) {
+        if (Array.isArray(data)) {
+            const validIndex = _getValidIndex(index) === data.length ?
+              data.length - 1 :
+              _getValidIndex(index);
+            let tempId = undefined;
+
+            for (let i = 0; i < validIndex; i++) {
+                tempId = __itemCache__.getItemId(i + 1);
+                __itemCache__.updateIndexItem(i + 1, __itemCache__.getItemId(0));
+                __itemCache__.updateIndexItem(0, tempId);
+            }
+
+            for (let i = 0; i <= validIndex; i++) {
+                if (i === 0) {
+                    __itemCache__.updateItemIndex(__itemCache__.getItemId(0), 0);
+                }
+                else {
+                    __itemCache__.updateItemIndex(__itemCache__.getItemId(i), i);
+                }
+            }
+
+            _updateItemsPositionAfterRaise(validIndex);
+            return true;
+        }
+        return false;
+    }
+
+    function _updateItemsPositionAfterRaise(endIndex: number) {
+        if (Array.isArray(data)) {
+            const validEndIndex = _getValidIndex(endIndex) === data.length ?
+              data.length - 1 :
+              _getValidIndex(endIndex);
+            let currentItemId = __itemCache__.getItemId(0);
+
+            if (currentItemId !== NOT_FOUND) {
+                __itemCache__.updateItemPosition(currentItemId, 0, __itemCache__.isRendered(currentItemId));
+
+                for (let i = 0; i < validEndIndex; i++) {
+                    const currentItemPosition = __itemCache__.getPosition(currentItemId);
+                    const currentItemHeight = __itemCache__.getHeight(currentItemId);
+                    const followingItemId = __itemCache__.getItemId(i + 1);
+
+                    if (currentItemPosition === NOT_FOUND) {
+                        console.log(`Could not get position of: ${currentItemId}`);
+                    }
+                    else if (currentItemHeight === NOT_FOUND) {
+                        console.log(`Could not get height of: ${currentItemId}`);
+                    }
+                    else if (followingItemId !== NOT_FOUND) {
+                        __itemCache__.updateItemOnMap(
+                          followingItemId,
+                          __itemCache__.getIndex(followingItemId),
+                          __itemCache__.getHeight(followingItemId),
+                          currentItemPosition + currentItemHeight,
+                          __itemCache__.isRendered(followingItemId),
+                        );
+                        currentItemId = followingItemId;
+                    }
+                }
+            }
+        }
+    }
+
+
+    function reRenderUI() {
+        if (storageEvents['viewReRender']) {
+            if (isFunction(storageEvents['viewReRender'][0])) {
+                storageEvents['viewReRender'][0]();
+            }
+            else {
+                console.error('UI reRender callback is not a function');
+            }
+        }
+        else {
+            console.error('UI reRender callback is undefined');
+        }
+    }
+
+
+    /* ========================================================================
+     Checkers
+     ======================================================================== */
+    function _hasAlreadyId(id: string): boolean {
+        return dataMap.has(id);
+    }
+
+    function _isValidIndex(index: number, dataLength: number = data.length): boolean {
+        const rsIndex = parseInt(index);
+        return (
+          typeof rsIndex === 'number' &&
+          !isNaN(rsIndex) &&
+          rsIndex <= dataLength &&
+          rsIndex >= 0
+        );
+    }
+
+    function _hasItem(itemId: string): boolean {
+        return dataMap.has(itemId);
+    }
+
+
+    /* ========================================================================
+     Supporters
+     ======================================================================== */
+    function _getCorrectDefaultHeight(defaultHeight: number) {
+        let _defaultHeight = undefined;
+
+        if (typeof defaultHeight === 'number') {
+            _defaultHeight = defaultHeight;
+        }
+        else if (typeof defaultHeight === 'string') {
+            _defaultHeight = parseInt(defaultHeight);
+            if (isNaN(_defaultHeight)) {
+                _defaultHeight = ITEM_DEFAULT_HEIGHT;
+            }
+        }
+        else {
+            _defaultHeight = ITEM_DEFAULT_HEIGHT;
+        }
+
+        return _defaultHeight;
+    }
+
+    function _getItemBeforeAndAfterByIndex(itemIndex: number) {
+        let bItemId = __itemCache__.getItemId(itemIndex - 1);
+        let aItemId = __itemCache__.getItemId(itemIndex + 1);
+
+        let beforeItem = bItemId !== NOT_FOUND ?
+          dataMap.get(bItemId) :
+          null;
+        let afterItem = aItemId !== NOT_FOUND ?
+          dataMap.get(aItemId) :
+          null;
+
+        return {
+            beforeItem,
+            afterItem,
+        };
+    }
+
+    /* Get startIndex as params and return valid index
+     If startIndex is NaN or less than 0, return 0.
+     If startIndex is greater than dataLength return dataLength.
+     Else return itself.
+     */
+    function _getValidIndex(startIndex: number) {
+        const validStartIndex = parseInt(startIndex);
+        let start = undefined;
+
+        if (isNaN(validStartIndex)) {
+            console.error('Invalid startIndex');
+            start = 0;
+        }
+        else if (validStartIndex < 0) {
+            start = 0;
+        }
+        else if (validStartIndex > data.length) {
+            start = data.length;
+        }
+        else {
+            start = validStartIndex;
+        }
+
+        return start;
+    }
+
+    function _convertToArray(item: Object): Array {
+        return [(item)];
+    }
+
+
+    /* ========================================================================
+     Get - Set
+     ======================================================================== */
+    function getData() {
+        return Object.freeze([...data]);
+    }
+
+    function getDataUnfreeze() {
+        return data;
+    }
+
+    function getDataMap() {
+        return dataMap;
+    }
+
+    function getOldItems() {
+        return oldItemsId;
+    }
+
+    function getCache() {
+        return Object.freeze(__itemCache__);
+    }
+
+    function getNumOfNewItems() {
+        return numOfNewItems;
+    }
+
+    function setNumOfNewItems(newValue: number) {
+        numOfNewItems = newValue;
+    }
+
+    function getItemAt(index: number) {
+        const validIndex = _getValidIndex(index);
+        if (validIndex === index) {
+            return data[index];
+        }
+    }
+
+    function getSelectedItem() {
+        return selectedItem;
+    }
+
+    function setSelectedItem(index: number) {
+        const validIndex = _getValidIndex(index);
+        if (Array.isArray(data)) {
+            if (validIndex === data.length) {
+                selectedItem = validIndex - 1;
+            }
+            else {
+                selectedItem = validIndex;
+            }
+            //console.log('[ViewModel] - On Selected Item At Index:', selectedItem);
+            GLog.logInfo('ViewModel', 'On Selected Item At Index', selectedItem);
+            throttleRenderUI();
+        }
+    }
+
+    function clearSelectedItem() {
+        selectedItem = -1;
+    }
+
+    function getRemainderItem() {
+        return remainderItem;
+    }
 }
 
 export default createMasonryViewModel;
