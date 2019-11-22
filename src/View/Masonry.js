@@ -1275,7 +1275,7 @@ class Masonry extends React.Component<Props> {
             }
             AnimExecution.removeStyle(el, scrollToAnim);
             el.style.zIndex = 2;
-            AnimExecution.executeDefaultAnim(el, AnimName.verticalSlide, oldMap.get(beRaisedItemId).position, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+            AnimExecution.executeDefaultAnim(el, AnimName.verticalSlide, oldPos - itemCache.getPosition(beRaisedItemId), 0, TIMING_RAISE_ANIM_VIRTUALIZED);
             setTimeout(() => {
                 this.needHoldItemToExcuteRaiseAnim = false;
                 el.style.zIndex = 1;
@@ -1287,7 +1287,10 @@ class Masonry extends React.Component<Props> {
                 for (let i = 0; i < parent.children.length; i++) {
                     if (parent.children[i] && parent.children[i].id) {
                         const id = parent.children[i].id;
-                        if (parent.children[i].id !== beRaisedItemId && itemCache.getIndex(id) <= _beforeBeRaisedIndex) {
+                        const index = itemCache.getIndex(id);
+                        if (parent.children[i].id !== beRaisedItemId
+                          && index <= _beforeBeRaisedIndex
+                          && index > itemCache.getIndex(beRaisedItemId)) {
                             parent.children[i].style.willChange = 'transform';
                             AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, -itemCache.getHeight(beRaisedItemId), 0, TIMING_RAISE_ANIM_VIRTUALIZED);
                             parent.children[i].style.willChange = 'auto';

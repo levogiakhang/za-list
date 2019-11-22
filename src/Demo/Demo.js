@@ -1194,18 +1194,20 @@ class Demo extends React.Component {
                         fontSize: GConst.Font.Size.Medium,
                     }}
                     onClick={() => {
-                        const item = this.viewModel.getItemAt(1);
-                        const gId = generation.generateId();
-                        const newItem = {
-                            ...item,
-                            userName: gId,
-                        };
-                        console.log(this.viewModel.getSelectedItem());
-                        for (let i = 0; i < 29; i++) {
-                            if (i % 2) {
-                                this.viewModel.onRemoveItemById('itemId_' + i);
-                            }
-                        }
+                        // const item = this.viewModel.getItemAt(1);
+                        // const gId = generation.generateId();
+                        // const newItem = {
+                        //     ...item,
+                        //     userName: gId,
+                        // };
+                        // console.log(this.viewModel.getSelectedItem());
+                        // for (let i = 0; i < 29; i++) {
+                        //     if (i % 2) {
+                        //         this.viewModel.onRemoveItemById('itemId_' + i);
+                        //     }
+                        // }
+
+                        this.viewModel.raiseItemTo(1, 1);
                     }}>
                       Test xàm xàm
                   </button>
