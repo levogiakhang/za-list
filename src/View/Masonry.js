@@ -17,6 +17,7 @@ import {
     AnimName,
 } from './AnimationExecution';
 import GLog from '../utils/GLog';
+import AnimationManager from './anim/AnimationManager';
 
 type RenderDirection = 'TopDown' | 'BottomUp';
 
@@ -50,10 +51,13 @@ const LOAD_MORE_TOP_TRIGGER_POS = 50;
 let LOAD_MORE_BOTTOM_TRIGGER_POS = 0;
 const NEED_TO_SCROLL_TOP_POS = 300;
 const NEED_TO_SCROLL_BOTTOM_POS = 600;
-const TIMING_ADDITION_ANIM_VIRTUALIZED = 100;
-const TIMING_REMOVAL_ANIM_VIRTUALIZED = 250;
-const TIMING_RAISE_ANIM_VIRTUALIZED = 230;
-
+// const TIMING_ADDITION_ANIM_VIRTUALIZED = 100;
+// const TIMING_REMOVAL_ANIM_VIRTUALIZED = 250;
+// const TIMING_RAISE_ANIM_VIRTUALIZED = 230;
+const TIMING_ADDITION_ANIM_VIRTUALIZED = 200;
+const TIMING_REMOVAL_ANIM_VIRTUALIZED = 8000;
+const TIMING_RAISE_ANIM_VIRTUALIZED = 6500;
+const TIMING_CHANGE_INDEX_ANIM = 1000;
 class Masonry extends React.Component<Props> {
     static defaultProps = {
         minWidth: 500,
@@ -118,13 +122,8 @@ class Masonry extends React.Component<Props> {
         this.needScrollBackWhenRemoveItem = false;
 
         // For removal anim in Virtualized
-        this.needHoldItemToExcuteRemovalAnim = false;
-        this.removedElements = [
-            {
-                item: undefined,
-                index: 0,
-            },
-        ];
+        this.needHoldItemToExecuteRemovalAnim = false;
+        this.removedElements = [];
 
         // Raise Item
         this.needHoldItemToExcuteRaiseAnim = false;
@@ -139,6 +138,7 @@ class Masonry extends React.Component<Props> {
         this.scrollToSpecialItemCount = 0;
         this.numOfNewLoading = 0;
         this.itemIdToScroll = '';
+		this.itemsToExecuteAddAnim = {};
 
         this.oldData = {
             oldLength: 0,
@@ -171,6 +171,8 @@ class Masonry extends React.Component<Props> {
             top: 0,
             right: 20,
         };
+
+        this.animationManager = new AnimationManager();
 
         this.state = {
             scrollTop: 0,
@@ -366,8 +368,22 @@ class Masonry extends React.Component<Props> {
                   itemCache.getIndex(itemId) <= itemsIndex.lastItemIndex) {
                     const el = document.getElementById(itemId);
                     let parent;
+                    let addTiming = TIMING_ADDITION_ANIM_VIRTUALIZED;
+                    if(this.itemsToExecuteAddAnim[`${itemId}`]) {
+                    	addTiming = TIMING_CHANGE_INDEX_ANIM;
+                    	delete this.itemsToExecuteAddAnim[`${itemId}`];
+                    }
                     if (el) {
-                        AnimExecution.executeDefaultAnim(el, AnimName.zoomIn, 0, 0, TIMING_ADDITION_ANIM_VIRTUALIZED);
+                        // AnimExecution.executeDefaultAnim(el, AnimName.zoomIn, 0, 0, TIMING_ADDITION_ANIM_VIRTUALIZED);
+	                    AnimExecution.executeDefaultAnim({
+		                    el,
+		                    animationManager: this.animationManager,
+		                    animName: AnimName.zoomIn,
+		                    fromPos: 0,
+		                    toPos: 0,
+		                    duration: addTiming,
+		                    singleAnim: true
+	                    });
                         parent = el.parentElement;
                         if (parent && parent.children) {
                             for (let i = 0; i < parent.children.length; i++) {
@@ -377,7 +393,16 @@ class Masonry extends React.Component<Props> {
                                         if (itemCache.getIndex(id) > itemCache.getIndex(itemId)) {
                                             parent.children[i].style.willChange = 'transform';
                                             const fromPos = -newHeight / 1.2;
-                                            AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_ADDITION_ANIM_VIRTUALIZED);
+                                            // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_ADDITION_ANIM_VIRTUALIZED);
+	                                        AnimExecution.executeDefaultAnim({
+		                                        el: parent.children[i],
+		                                        animationManager: this.animationManager,
+		                                        animName: AnimName.verticalSlide,
+		                                        fromPos,
+		                                        toPos: 0,
+		                                        duration: TIMING_ADDITION_ANIM_VIRTUALIZED,
+		                                        singleAnim: true
+	                                        });
                                             parent.children[i].style.willChange = 'auto';
                                         }
                                     }
@@ -487,13 +512,31 @@ class Masonry extends React.Component<Props> {
                             const id = parent.children[i].id;
                             if (id !== itemId) {
                                 parent.children[i].style.willChange = 'transform';
-                                AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, -itemCache.getHeight(itemId) / 1.5, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+                                // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, -itemCache.getHeight(itemId) / 1.5, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+	                            AnimExecution.executeDefaultAnim({
+		                            el: parent.children[i],
+		                            animationManager: this.animationManager,
+		                            animName: AnimName.verticalSlide,
+		                            fromPos: -itemCache.getHeight(itemId) / 1.5,
+		                            toPos: 0,
+		                            duration: TIMING_RAISE_ANIM_VIRTUALIZED,
+		                            singleAnim: true
+	                            });
                                 parent.children[i].style.willChange = 'auto';
                             }
                         }
                     }
                 }
-                AnimExecution.executeDefaultAnim(el, AnimName.zoomIn, 0, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+                // AnimExecution.executeDefaultAnim(el, AnimName.zoomIn, 0, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+	            AnimExecution.executeDefaultAnim({
+		            el,
+		            animationManager: this.animationManager,
+		            animName: AnimName.zoomIn,
+		            fromPos: 0,
+		            toPos: 0,
+		            duration: TIMING_RAISE_ANIM_VIRTUALIZED,
+		            singleAnim: true
+	            });
             }
         }
         else if (this.needToExcuteRaiseAnimOutside) {
@@ -557,9 +600,10 @@ class Masonry extends React.Component<Props> {
         }
     }
 
-    onRemoveItem({removedItemId, removedItemIndex, removedItemHeight, removedItemPos, removedItem, oldMap}) {
+    onRemoveItem({removedItemId, removedItemIndex, removedItemHeight, removedItemPos, removedItem, oldMap, removalTime}) {
         const {height, isVirtualized, scrollToAnim, removalAnim} = this.props;
         const {scrollTop} = this.state;
+        const removalTiming = removalTime || TIMING_REMOVAL_ANIM_VIRTUALIZED;
 
         this._removeStyleOfSpecialItem();
         this.removedElements = [];
@@ -602,7 +646,9 @@ class Masonry extends React.Component<Props> {
             const last = range.lastItemIndex;
             let parent;
             if (el && itemIndex >= first && itemIndex <= last + 1) {
-                AnimExecution.removeStyle(el, scrollToAnim);
+	            if (scrollToAnim) {
+		            AnimExecution.removeStyle(el, scrollToAnim);
+	            }
                 const estimateTotalHeight = this.estimateTotalHeight;
                 requestAnimationFrame(function () {
                     el.style.position = 'absolute';
@@ -713,7 +759,7 @@ class Masonry extends React.Component<Props> {
                   itemIndex >= rangeIndexInViewport.firstItemIndex &&
                   itemIndex <= rangeIndexInViewport.lastItemIndex + 1
                 ) {
-                    this.needHoldItemToExcuteRemovalAnim = true;
+                    this.needHoldItemToExecuteRemovalAnim = true;
                     let pos = 0;
                     if (oldMap.get(removedItemId) && isNum(oldMap.get(removedItemId).position)) {
                         pos = oldMap.get(removedItemId).position;
@@ -725,11 +771,20 @@ class Masonry extends React.Component<Props> {
                     });
                 }
                 if (el) {
-                    AnimExecution.executeDefaultAnim(el, AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                    // AnimExecution.executeDefaultAnim(el, AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                AnimExecution.executeDefaultAnim({
+		                el,
+		                animationManager: this.animationManager,
+		                animName: AnimName.zoomOut,
+		                fromPos: 0,
+		                toPos: 0,
+		                duration: removalTiming,
+		                singleAnim: true
+	                });
                     setTimeout(() => {
-                        this.needHoldItemToExcuteRemovalAnim = false;
+                        this.needHoldItemToExecuteRemovalAnim = false;
                         this.reRender();
-                    }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                    }, removalTiming);
                 }
 
                 if (this.estimateTotalHeight <= height) {
@@ -742,7 +797,16 @@ class Masonry extends React.Component<Props> {
                                     if (itemCache.getIndex(id) >= removedItemIndex) {
                                         parent.children[i].style.willChange = 'transform';
                                         const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
-                                        AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                        // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                    AnimExecution.executeDefaultAnim({
+		                                    el: parent.children[i],
+		                                    animationManager: this.animationManager,
+		                                    animName: AnimName.verticalSlide,
+		                                    fromPos,
+		                                    toPos: 0,
+		                                    duration: removalTiming,
+		                                    singleAnim: true
+	                                    });
                                         parent.children[i].style.willChange = 'auto';
                                     }
                                 }
@@ -754,7 +818,7 @@ class Masonry extends React.Component<Props> {
                               this._updateEstimatedHeight(-itemHeight);
                               this.reRender();
                           },
-                          TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                          removalTiming);
                     }
                 }
                 else if (scrollTop + height >= this.estimateTotalHeight - 2) {
@@ -767,7 +831,16 @@ class Masonry extends React.Component<Props> {
                                     if (itemCache.getIndex(id) < removedItemIndex) {
                                         parent.children[i].style.willChange = 'transform';
                                         const fromPos = -removedItemHeight;
-                                        AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                        // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                    AnimExecution.executeDefaultAnim({
+		                                    el: parent.children[i],
+		                                    animationManager: this.animationManager,
+		                                    animName: AnimName.verticalSlide,
+		                                    fromPos,
+		                                    toPos: 0,
+		                                    duration: removalTiming,
+		                                    singleAnim: true
+	                                    });
                                         parent.children[i].style.willChange = 'auto';
                                     }
                                 }
@@ -785,13 +858,31 @@ class Masonry extends React.Component<Props> {
                                     if (itemCache.getIndex(id) < removedItemIndex) {
                                         parent.children[i].style.willChange = 'transform';
                                         const fromPos = itemHeight;
-                                        AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, 0, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                        // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, 0, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                    AnimExecution.executeDefaultAnim({
+		                                    el: parent.children[i],
+		                                    animationManager: this.animationManager,
+		                                    animName: AnimName.verticalSlide,
+		                                    fromPos: 0,
+		                                    toPos: fromPos,
+		                                    duration: removalTiming,
+		                                    singleAnim: true
+	                                    });
                                         parent.children[i].style.willChange = 'auto';
                                     }
                                     else {
                                         parent.children[i].style.willChange = 'transform';
                                         const fromPos = itemHeight;
-                                        AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                        // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, fromPos, removalTiming);
+	                                    AnimExecution.executeDefaultAnim({
+		                                    el: parent.children[i],
+		                                    animationManager: this.animationManager,
+		                                    animName: AnimName.verticalSlide,
+		                                    fromPos: fromPos,
+		                                    toPos: fromPos,
+		                                    duration: removalTiming,
+		                                    singleAnim: true
+	                                    });
                                         parent.children[i].style.willChange = 'auto';
                                     }
                                 }
@@ -803,7 +894,7 @@ class Masonry extends React.Component<Props> {
                               this._updateEstimatedHeight(-itemHeight);
                               this.reRender();
                           },
-                          TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                          removalTiming);
                     }
                 }
                 else {
@@ -814,7 +905,16 @@ class Masonry extends React.Component<Props> {
                                 if (id !== removedItemId && oldMap.get(id) !== undefined) {
                                     parent.children[i].style.willChange = 'transform';
                                     const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
-                                    AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                    // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, removalTiming);
+	                                AnimExecution.executeDefaultAnim({
+		                                el: parent.children[i],
+		                                animationManager: this.animationManager,
+		                                animName: AnimName.verticalSlide,
+		                                fromPos,
+		                                toPos: 0,
+		                                duration: removalTiming,
+		                                singleAnim: true
+	                                });
                                     parent.children[i].style.willChange = 'auto';
                                 }
                             }
@@ -827,7 +927,7 @@ class Masonry extends React.Component<Props> {
         }
     }
 
-    onRemoveItems({removedItemsId, startIndex, removedLastItemIndex, deleteCount, removedItemsHeight, removedFirstItemPos, removedItems, oldMap}) {
+    onRemoveItems({removedItemsId, startIndex, removedLastItemIndex, deleteCount, removedItemsHeight, removedFirstItemPos, removedItems, oldMap, removalTime}) {
         GLog.logInfo(this, `[Remove Multi]`, {
             removedItemsId,
             startIndex,
@@ -840,6 +940,7 @@ class Masonry extends React.Component<Props> {
 
         const {height, isVirtualized} = this.props;
         const {scrollTop} = this.state;
+        const removalTiming = removalTime || TIMING_REMOVAL_ANIM_VIRTUALIZED;
 
         this._removeStyleOfSpecialItem();
         this.removedElements = [];
@@ -881,6 +982,7 @@ class Masonry extends React.Component<Props> {
                 const last = rangeIndexInViewport.lastItemIndex;
                 const timing = TIMING_REMOVAL_ANIM_VIRTUALIZED;
 
+	            this.needHoldItemToExecuteRemovalAnim = true;
                 if (removedLastItemIndex < first) {
                     // scroll back
                     this.needScrollBackWhenRemoveItem = true;
@@ -889,7 +991,6 @@ class Masonry extends React.Component<Props> {
                 }
                 else if (this.estimateTotalHeight < height) {
                     GLog.logInfo(this, `[Remove Multi]`, 'Case', 1);
-                    this.needHoldItemToExcuteRemovalAnim = true;
 
                     const els = [];
                     let parent = null;
@@ -913,7 +1014,16 @@ class Masonry extends React.Component<Props> {
                     for (let i = 0; i < els.length; i++) {
                         if (els[i]) {
                             setTimeout(() => {
-                                AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                // AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                            AnimExecution.executeDefaultAnim({
+		                            el: els[i],
+		                            animationManager: this.animationManager,
+		                            animName: AnimName.zoomOut,
+		                            fromPos: 0,
+		                            toPos: 0,
+		                            duration: removalTiming,
+		                            singleAnim: true
+	                            });
                             }, (timing / els.length) * (els.length - i - 1));
                         }
                     }
@@ -926,7 +1036,16 @@ class Masonry extends React.Component<Props> {
                                     if (itemCache.getIndex(id) >= removedLastItemIndex - deleteCount) {
                                         parent.children[i].style.willChange = 'transform';
                                         const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
-                                        AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                        // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                    AnimExecution.executeDefaultAnim({
+		                                    el: parent.children[i],
+		                                    animationManager: this.animationManager,
+		                                    animName: AnimName.verticalSlide,
+		                                    fromPos,
+		                                    toPos: 0,
+		                                    duration: removalTiming,
+		                                    singleAnim: true
+	                                    });
                                         parent.children[i].style.willChange = 'auto';
                                     }
                                 }
@@ -935,13 +1054,13 @@ class Masonry extends React.Component<Props> {
                     }
 
                     setTimeout(() => {
-                        this.needHoldItemToExcuteRemovalAnim = false;
+                        this.needHoldItemToExecuteRemovalAnim = false;
                         this._updateEstimatedHeight(-totalItemsHeight);
                         this.reRender();
                     }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
                 }
                 else if (this.estimateTotalHeight - scrollTop - height < totalItemsHeight) {
-                    this.needHoldItemToExcuteRemovalAnim = true;
+                    this.needHoldItemToExecuteRemovalAnim = true;
 
                     const els = [];
                     let parent = null;
@@ -969,7 +1088,16 @@ class Masonry extends React.Component<Props> {
                         for (let i = 0; i < els.length; i++) {
                             if (els[i]) {
                                 setTimeout(() => {
-                                    AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                    // AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                AnimExecution.executeDefaultAnim({
+		                                el: els[i],
+		                                animationManager: this.animationManager,
+		                                animName: AnimName.zoomOut,
+		                                fromPos: 0,
+		                                toPos: 0,
+		                                duration: removalTiming,
+		                                singleAnim: true
+	                                });
                                 }, (timing / els.length) * (els.length - i - 1));
                             }
                         }
@@ -985,7 +1113,16 @@ class Masonry extends React.Component<Props> {
                                         else {
                                             parent.children[i].style.willChange = 'transform';
                                             const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
-                                            AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                            // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                        AnimExecution.executeDefaultAnim({
+		                                        el: parent.children[i],
+		                                        animationManager: this.animationManager,
+		                                        animName: AnimName.verticalSlide,
+		                                        fromPos,
+		                                        toPos: 0,
+		                                        duration: removalTiming,
+		                                        singleAnim: true
+	                                        });
                                             parent.children[i].style.willChange = 'auto';
                                         }
                                     }
@@ -995,7 +1132,7 @@ class Masonry extends React.Component<Props> {
 
                         this._scrollTopWithAnim(TIMING_REMOVAL_ANIM_VIRTUALIZED);
                         setTimeout(() => {
-                            this.needHoldItemToExcuteRemovalAnim = false;
+                            this.needHoldItemToExecuteRemovalAnim = false;
                             this._updateEstimatedHeight(-totalItemsHeight);
                             this.reRender();
                         }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
@@ -1005,7 +1142,16 @@ class Masonry extends React.Component<Props> {
                         for (let i = 0; i < els.length; i++) {
                             if (els[i]) {
                                 setTimeout(() => {
-                                    AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                    // AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                AnimExecution.executeDefaultAnim({
+		                                el: els[i],
+		                                animationManager: this.animationManager,
+		                                animName: AnimName.zoomOut,
+		                                fromPos: 0,
+		                                toPos: 0,
+		                                duration: removalTiming,
+		                                singleAnim: true
+	                                });
                                 }, (timing / (els.length + 1)) * (i));
                             }
                         }
@@ -1018,13 +1164,31 @@ class Masonry extends React.Component<Props> {
                                         if (itemCache.getIndex(id) <= removedLastItemIndex - deleteCount) {
                                             parent.children[i].style.willChange = 'transform';
                                             const fromPos = totalItemsHeight;
-                                            AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, 0, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                            // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, 0, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                        AnimExecution.executeDefaultAnim({
+		                                        el: parent.children[i],
+		                                        animationManager: this.animationManager,
+		                                        animName: AnimName.verticalSlide,
+		                                        fromPos: 0,
+		                                        toPos: fromPos,
+		                                        duration: removalTiming,
+		                                        singleAnim: true
+	                                        });
                                             parent.children[i].style.willChange = 'auto';
                                         }
                                         else {
                                             parent.children[i].style.willChange = 'transform';
                                             const fromPos = totalItemsHeight;
-                                            AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                            // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, fromPos, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                        AnimExecution.executeDefaultAnim({
+		                                        el: parent.children[i],
+		                                        animationManager: this.animationManager,
+		                                        animName: AnimName.verticalSlide,
+		                                        fromPos,
+		                                        toPos: fromPos,
+		                                        duration: removalTiming,
+		                                        singleAnim: true
+	                                        });
                                             parent.children[i].style.willChange = 'auto';
                                         }
                                     }
@@ -1033,7 +1197,7 @@ class Masonry extends React.Component<Props> {
                         }
 
                         setTimeout(() => {
-                            this.needHoldItemToExcuteRemovalAnim = false;
+                            this.needHoldItemToExecuteRemovalAnim = false;
                             this._scrollToOffset(scrollTop - totalItemsHeight);
                             this._updateEstimatedHeight(-totalItemsHeight);
                         }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
@@ -1042,7 +1206,7 @@ class Masonry extends React.Component<Props> {
                 else if (startIndex < first && removedLastItemIndex >= last) {
                     // ACE :D
                     GLog.logInfo(this, '[Remove Multi] - Case', 3);
-                    this.needHoldItemToExcuteRemovalAnim = true;
+                    this.needHoldItemToExecuteRemovalAnim = true;
 
                     const els = [];
                     let parent = null;
@@ -1066,18 +1230,27 @@ class Masonry extends React.Component<Props> {
                     for (let i = 0; i < els.length; i++) {
                         if (els[i]) {
                             setTimeout(() => {
-                                AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                // AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                            AnimExecution.executeDefaultAnim({
+		                            el: els[i],
+		                            animationManager: this.animationManager,
+		                            animName: AnimName.zoomOut,
+		                            fromPos: 0,
+		                            toPos: 0,
+		                            duration: removalTiming,
+		                            singleAnim: true
+	                            });
                             }, (timing / els.length) * (els.length - i - 1));
                         }
                     }
                     this._updateEstimatedHeight(-totalItemsHeight);
                     setTimeout(() => {
-                        this.needHoldItemToExcuteRemovalAnim = false;
+                        this.needHoldItemToExecuteRemovalAnim = false;
                     }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
                 }
                 else if (startIndex < first && removedLastItemIndex >= first && removedLastItemIndex <= last) {
                     GLog.logInfo(this, '[Remove Multi] - Case', 4);
-                    this.needHoldItemToExcuteRemovalAnim = true;
+                    this.needHoldItemToExecuteRemovalAnim = true;
 
                     const els = [];
                     let parent = null;
@@ -1101,7 +1274,16 @@ class Masonry extends React.Component<Props> {
                     for (let i = 0; i < els.length; i++) {
                         if (els[i]) {
                             setTimeout(() => {
-                                AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                // AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                            AnimExecution.executeDefaultAnim({
+		                            el: els[i],
+		                            animationManager: this.animationManager,
+		                            animName: AnimName.zoomOut,
+		                            fromPos: 0,
+		                            toPos: 0,
+		                            duration: removalTiming,
+		                            singleAnim: true
+	                            });
                             }, (timing / els.length) * (els.length - i - 1));
                         }
                     }
@@ -1114,7 +1296,16 @@ class Masonry extends React.Component<Props> {
                                     if (itemCache.getIndex(id) >= removedLastItemIndex - deleteCount) {
                                         parent.children[i].style.willChange = 'transform';
                                         const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
-                                        AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                        // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                    AnimExecution.executeDefaultAnim({
+		                                    el: parent.children[i],
+		                                    animationManager: this.animationManager,
+		                                    animName: AnimName.verticalSlide,
+		                                    fromPos,
+		                                    toPos: 0,
+		                                    duration: removalTiming,
+		                                    singleAnim: true
+	                                    });
                                         parent.children[i].style.willChange = 'auto';
                                     }
                                 }
@@ -1125,13 +1316,13 @@ class Masonry extends React.Component<Props> {
                     this._updateEstimatedHeight(-totalItemsHeight);
 
                     setTimeout(() => {
-                        this.needHoldItemToExcuteRemovalAnim = false;
+                        this.needHoldItemToExecuteRemovalAnim = false;
                         this.reRender();
                     }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
                 }
                 else if (startIndex >= first && startIndex <= last) {
                     GLog.logInfo(this, '[Remove Multi] - Case', 5);
-                    this.needHoldItemToExcuteRemovalAnim = true;
+                    this.needHoldItemToExecuteRemovalAnim = true;
 
                     const els = [];
                     let parent = null;
@@ -1155,7 +1346,16 @@ class Masonry extends React.Component<Props> {
                     for (let i = 0; i < els.length; i++) {
                         if (els[i]) {
                             setTimeout(() => {
-                                AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                // AnimExecution.executeDefaultAnim(els[i], AnimName.zoomOut, 0, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                            AnimExecution.executeDefaultAnim({
+		                            el: els[i],
+		                            animationManager: this.animationManager,
+		                            animName: AnimName.zoomOut,
+		                            fromPos: 0,
+		                            toPos: 0,
+		                            duration: removalTiming,
+		                            singleAnim: true
+	                            });
                             }, (timing / els.length) * (els.length - i - 1));
                         }
                     }
@@ -1168,7 +1368,16 @@ class Masonry extends React.Component<Props> {
                                     if (itemCache.getIndex(id) >= removedLastItemIndex - deleteCount) {
                                         parent.children[i].style.willChange = 'transform';
                                         const fromPos = oldMap.get(id).position - itemCache.getPosition(id);
-                                        AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+                                        // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, fromPos, 0, TIMING_REMOVAL_ANIM_VIRTUALIZED);
+	                                    AnimExecution.executeDefaultAnim({
+		                                    el: parent.children[i],
+		                                    animationManager: this.animationManager,
+		                                    animName: AnimName.verticalSlide,
+		                                    fromPos,
+		                                    toPos: 0,
+		                                    duration: removalTiming,
+		                                    singleAnim: true
+	                                    });
                                         parent.children[i].style.willChange = 'auto';
                                     }
                                 }
@@ -1179,7 +1388,7 @@ class Masonry extends React.Component<Props> {
                     this._updateEstimatedHeight(-totalItemsHeight);
 
                     setTimeout(() => {
-                        this.needHoldItemToExcuteRemovalAnim = false;
+                        this.needHoldItemToExecuteRemovalAnim = false;
                         this.reRender();
                     }, TIMING_REMOVAL_ANIM_VIRTUALIZED);
                 }
@@ -1224,13 +1433,15 @@ class Masonry extends React.Component<Props> {
         }
     }
 
-    onRaiseItem(beRaisedItem, beforeBeRaisedIndex, oldMap) {
+    onRaiseItem(beRaisedItem, beforeBeRaisedIndex, oldMap, raiseTime) {
         const {height, scrollToAnim} = this.props;
         const scrollTop = this.state.scrollTop;
         const itemCache = this.viewModel.getCache();
         const beRaisedItemId = itemCache.getItemId(beRaisedItem);
         let isScrollToTop = false;
+	    let isScrollToFocusItem = false;
         const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
+		const raiseTiming = raiseTime || TIMING_RAISE_ANIM_VIRTUALIZED;
 
         const el = document.getElementById(beRaisedItemId);
         if (
@@ -1243,23 +1454,42 @@ class Masonry extends React.Component<Props> {
           oldMap.get(beRaisedItemId)) {
 
             const _beforeBeRaisedIndex = parseInt(beforeBeRaisedIndex);
-            if (this.viewModel.getSelectedItem() !== -1) {
-                if (this.viewModel.getSelectedItem() === _beforeBeRaisedIndex) {
-                    this.viewModel.setSelectedItem(0);
-                    AnimExecution.appendStyle(el, 'selected');
-                    if (scrollTop !== 0) {
-                        isScrollToTop = true;
-                    }
-                }
-                else if (_beforeBeRaisedIndex >= this.viewModel.getSelectedItem()) {
-                    this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
-                }
-            }
+	        const newPos = itemCache.getPosition(beRaisedItemId)
+	          ? itemCache.getPosition(beRaisedItemId)
+	          : 0;
 
-            const rangeCurrentViewport = {
-                top: scrollTop,
-                bottom: scrollTop + height,
-            };
+	        const rangeCurrentViewport = {
+		        top: scrollTop,
+		        bottom: scrollTop + height,
+	        };
+
+            // if (this.viewModel.getSelectedItem() !== -1) {
+            //     if (this.viewModel.getSelectedItem() === _beforeBeRaisedIndex) {
+            //         this.viewModel.setSelectedItem(0);
+            //         AnimExecution.appendStyle(el, 'selected');
+            //         if (scrollTop !== 0) {
+            //             isScrollToTop = true;
+            //         }
+            //     }
+            //     else if (_beforeBeRaisedIndex >= this.viewModel.getSelectedItem()) {
+            //         this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
+            //     }
+            // }
+
+	        if (this.viewModel.getSelectedItem() !== -1) {
+		        if (this.viewModel.getSelectedItem() === _beforeBeRaisedIndex) {
+			        this.viewModel.setSelectedItem(itemCache.getIndex(beRaisedItemId));
+			        AnimExecution.appendStyle(el, 'selected');
+			        // If item's new position is in current viewport => do not thing
+			        // Else scroll to item's new position
+			        if (newPos < rangeCurrentViewport.top) {
+				        isScrollToFocusItem = true;
+			        }
+		        }
+		        else if (_beforeBeRaisedIndex >= this.viewModel.getSelectedItem()) {
+			        this.viewModel.setSelectedItem(this.viewModel.getSelectedItem() + 1);
+		        }
+	        }
 
             let oldPos = 0;
             if (oldMap.get(beRaisedItemId)) {
@@ -1273,9 +1503,20 @@ class Masonry extends React.Component<Props> {
                     this.needHoldItemToExcuteRaiseAnim = true;
                 }
             }
-            AnimExecution.removeStyle(el, scrollToAnim);
+	        if (scrollToAnim) {
+		        AnimExecution.removeStyle(el, scrollToAnim);
+	        }
             el.style.zIndex = 2;
-            AnimExecution.executeDefaultAnim(el, AnimName.verticalSlide, oldPos - itemCache.getPosition(beRaisedItemId), 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+            // AnimExecution.executeDefaultAnim(el, AnimName.verticalSlide, oldPos - itemCache.getPosition(beRaisedItemId), 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+	        AnimExecution.executeDefaultAnim({
+		        el,
+		        animationManager: this.animationManager,
+		        animName: AnimName.verticalSlide,
+		        fromPos: oldPos - itemCache.getPosition(beRaisedItemId),
+		        toPos: 0,
+		        duration: raiseTiming,
+		        singleAnim: true
+	        });
             setTimeout(() => {
                 this.needHoldItemToExcuteRaiseAnim = false;
                 el.style.zIndex = 1;
@@ -1292,30 +1533,59 @@ class Masonry extends React.Component<Props> {
                           && index <= _beforeBeRaisedIndex
                           && index > itemCache.getIndex(beRaisedItemId)) {
                             parent.children[i].style.willChange = 'transform';
-                            AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, -itemCache.getHeight(beRaisedItemId), 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+                            // AnimExecution.executeDefaultAnim(parent.children[i], AnimName.verticalSlide, -itemCache.getHeight(beRaisedItemId), 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+	                        AnimExecution.executeDefaultAnim({
+		                        el,
+		                        animationManager: this.animationManager,
+		                        animName: AnimName.verticalSlide,
+		                        fromPos: -itemCache.getHeight(beRaisedItemId),
+		                        toPos: 0,
+		                        duration: raiseTiming,
+		                        singleAnim: true
+	                        });
                             parent.children[i].style.willChange = 'auto';
                         }
                     }
                 }
             }
 
-            if (isScrollToTop) {
-                if (this.props.id) {
-                    const masonry = document.getElementById('innerScrollContainerId');
-                    if (masonry) {
-                        if (scrollTop >= 1120) {
-                            setTimeout(() => {
-                                this._scrollToOffset(1120);
-                                this._scrollTopWithAnim(TIMING_RAISE_ANIM_VIRTUALIZED);
-                            }, TIMING_RAISE_ANIM_VIRTUALIZED / 2);
-                        }
-                        else {
-                            this._scrollTopWithAnim(TIMING_RAISE_ANIM_VIRTUALIZED);
-                        }
-                        //AnimExecution.executeDefaultAnim(masonry, AnimName.scrollTop, scrollTop, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
-                    }
-                }
-            }
+            // if (isScrollToTop) {
+            //     if (this.props.id) {
+            //         const masonry = document.getElementById('innerScrollContainerId');
+            //         if (masonry) {
+            //             const newPos = itemCache.getPosition(beRaisedItemId);
+            //             if (scrollTop >= 1120) {
+            //                 setTimeout(() => {
+            //                     this._scrollToOffset(newPos);
+            //                 }, 0);
+            //             }
+            //             else {
+            //                 this._scrollTopWithAnim(TIMING_RAISE_ANIM_VIRTUALIZED);
+            //             }
+            //             //AnimExecution.executeDefaultAnim(masonry, AnimName.scrollTop, scrollTop, 0, TIMING_RAISE_ANIM_VIRTUALIZED);
+            //         }
+            //     }
+            // }
+
+	        if (isScrollToFocusItem) {
+		        if (this.props.id) {
+			        const masonry = document.getElementById('innerScrollContainerId');
+			        if (masonry) {
+				        const dis = 1000;
+				        if (scrollTop - newPos >= dis) {
+					        console.log('onRaiseItem if 1 scr if', scrollTop, newPos, dis);
+					        setTimeout(() => {
+						        console.log('onRaiseItem if 1 scr do action', scrollTop, newPos, dis);
+						        this.jumpBeforeScroll(newPos);
+					        }, 20);
+				        }
+				        else {
+					        this._scrollToOffsetWithAnimUp(newPos, raiseTiming);
+				        }
+				        //AnimExecution.executeDefaultAnim(masonry, AnimName.scrollTop, scrollTop, 0, AnimTiming.RAISE);
+			        }
+		        }
+	        }
         }
         // out of view but in batch both start and end position => not call onChangedHeight
         else if (
@@ -1370,6 +1640,139 @@ class Masonry extends React.Component<Props> {
 
         this.reRender();
     }
+
+    // For virtualized
+	_removeInMixed({itemId, oldMap, item, removalTime, firstIdxInViewport}) {
+		const {height, isVirtualized, scrollToAnim} = this.props;
+		const {scrollTop} = this.state;
+		const removalTiming = removalTime || TIMING_REMOVAL_ANIM_VIRTUALIZED;
+		const selectedItemIndex = this.viewModel.getSelectedItem();
+
+		const values = oldMap.get(itemId);
+		if (!values) {return;}
+		const oldItemIdx = values.index;
+		const oldItemPos =values.position;
+
+		// Process for selected item
+		if (oldItemIdx === selectedItemIndex) {
+			this.viewModel.clearSelectedItem();
+		}
+		else if (oldItemIdx < selectedItemIndex) {
+			this.viewModel.setSelectedItem(selectedItemIndex - 1);
+		}
+
+		const el = document.getElementById(itemId);
+		if (!el) {return;}
+
+		if (oldItemIdx < firstIdxInViewport) {
+			this.isRemoveItem = true;
+			return;
+		}
+
+		if (scrollToAnim) {
+			AnimExecution.removeStyle(el, scrollToAnim);
+		}
+
+		this.needHoldItemToExecuteRemovalAnim = true;
+		console.log(itemId);
+		this.removedElements.push({
+			item: item,
+			index: oldItemIdx,
+			position: oldItemPos,
+		});
+		AnimExecution.executeDefaultAnim({
+			el,
+			animationManager: this.animationManager,
+			animName: AnimName.zoomOut,
+			fromPos: 0,
+			toPos: 0,
+			duration: removalTiming,
+			singleAnim: true
+		});
+
+		setTimeout(() => {
+			this.needHoldItemToExecuteRemovalAnim = false;
+			this.reRender();
+		}, removalTiming);
+	}
+
+	// Only for the list has items have equality height
+	playAnimationToUpdateItemsPosition(oldCache, deletedItemsObj) {
+		const {height, scrollToAnim} = this.props;
+		const scrollTop = this.state.scrollTop;
+		const itemCache = this.viewModel.getCacheUnfreeze();
+		let oldItemMap = oldCache['itemMap'];
+		const rangeIndexInViewport = this._getItemsIndexInViewport(scrollTop, height);
+		const firstIdx = rangeIndexInViewport.firstItemIndex;
+		const lastIdx = rangeIndexInViewport.lastItemIndex;
+		this.reRender();
+
+		// Remove items
+		const keys = Object.keys(deletedItemsObj);
+		if (Array.isArray(keys)) {
+			const length = keys.length;
+			for (let i = 0; i < length; i++) {
+				const removedItemId = keys[i];
+				const item = deletedItemsObj[removedItemId];
+				this._removeInMixed({
+					itemId: removedItemId,
+					oldMap: oldItemMap,
+					item,
+					removalTime: TIMING_CHANGE_INDEX_ANIM,
+					firstIdxInViewport: firstIdx
+				});
+			}
+		}
+
+		// Update items
+		for (let i = firstIdx; i <= lastIdx; i++) {
+			const itemId = itemCache.getItemId(i);
+			const el = document.getElementById(itemId);
+			if (!el) {
+				// If item is in range && not in DOM => new item
+				// [Unsafe] - new item -> be appeared when onChildrenChangeHeight called
+				this.itemsToExecuteAddAnim[itemId] = true;
+				continue;
+			}
+
+			// If item is in range && in DOM => change index
+			let oldPos = 0;
+			if (oldItemMap.has(itemId)) {
+				const v = oldItemMap.get(itemId);
+				if (v.position != null) {
+					oldPos = v.position;
+				}
+			}
+			let fromPos = 0;
+			let newPos = itemCache.getPosition(itemId);
+			if(oldPos < newPos) {
+				fromPos = -(newPos - oldPos);
+			}
+			else {
+				fromPos = oldPos - newPos;
+			}
+
+			// play anim change index (raise)
+			if (scrollToAnim) {
+				AnimExecution.removeStyle(el, scrollToAnim);
+			}
+			el.style.zIndex = 2;
+			AnimExecution.executeDefaultAnim({
+				el,
+				animationManager: this.animationManager,
+				animName: AnimName.verticalSlide,
+				fromPos,
+				toPos: 0,
+				duration: TIMING_CHANGE_INDEX_ANIM,
+				singleAnim: true
+			});
+			setTimeout(() => {
+				this.needHoldItemToExcuteRaiseAnim = false;
+				el.style.zIndex = 1;
+				this.reRender();
+			}, TIMING_CHANGE_INDEX_ANIM);
+		}
+	}
 
     zoomToItem(itemId: string, withAnim: boolean = true) {
         this._clearIntervalId();
@@ -1519,7 +1922,12 @@ class Masonry extends React.Component<Props> {
             }, timingResetAnimation);
         }
         else {
-            AnimExecution.executeDefaultAnim(el, AnimName.zoomIn);
+            // AnimExecution.executeDefaultAnim(el, AnimName.zoomIn);
+	        AnimExecution.executeDefaultAnim({
+		        el,
+		        animationManager: this.animationManager,
+		        animName: AnimName.zoomIn
+	        });
             setTimeout(() => {
                 AnimExecution.removeStyle(el, AnimName.zoomIn);
             }, timingResetAnimation);
@@ -1623,7 +2031,8 @@ class Masonry extends React.Component<Props> {
         }
 
         // Prevent removed item is disappeared.
-        if (this.needHoldItemToExcuteRemovalAnim) {
+        if (this.needHoldItemToExecuteRemovalAnim) {
+	        console.log('abc', this.removedElements);
             for (let i = 0; i < this.removedElements.length; i++) {
                 const item = this.removedElements[i].item;
                 const removedItemIndex = this.removedElements[i].index;
@@ -1677,6 +2086,7 @@ class Masonry extends React.Component<Props> {
             };
 
             if (
+              false &&
               item &&
               item.itemId &&
               isNum(position.top) &&
@@ -1911,7 +2321,7 @@ class Masonry extends React.Component<Props> {
                       data[data.length - 1].itemId :
                       this.viewModel.getRemainderItem();
                 }
-                onLoadBottom(lastItemId);
+                // onLoadBottom(lastItemId);
             }
         }
     }
@@ -2064,7 +2474,7 @@ class Masonry extends React.Component<Props> {
     _checkAndScrollBackWhenRemoveItem(isVirtualized, scrollTop) {
         if (isVirtualized && this.isRemoveItem) {
             this.isRemoveItem = false;
-            if (this.needScrollBackWhenRemoveItem && !this.needHoldItemToExcuteRemovalAnim) {
+            if (this.needScrollBackWhenRemoveItem && !this.needHoldItemToExecuteRemovalAnim) {
                 GLog.logInfo(this, 'Scroll back remove');
                 this.needScrollBackWhenRemoveItem = false;
                 this._scrollToOffset(scrollTop - this.removedItemHeight);
@@ -2135,6 +2545,22 @@ class Masonry extends React.Component<Props> {
         clearInterval(this.scrUpTimeOutId);
         clearInterval(this.scrDownTimeOutId);
     }
+
+	_scrollToOffsetWithAnimUp(offset, duration, msDelayInEachStep = 16.67) {
+		const distance = this.state.scrollTop - offset;
+		const stepInPixel = distance * msDelayInEachStep / duration;
+		this._clearIntervalId();
+		console.error('[Masonry] - _scrollToOffsetWithAnimUp', offset, distance);
+
+		this.scrToOffsetTimeOutId = setInterval(() => {
+			this.masonry.scrollTo(0, this.state.scrollTop - stepInPixel);
+			if (this.state.scrollTop <= offset) {
+				clearInterval(this.scrToOffsetTimeOutId);
+				this._removeScrollBackItemTrigger();
+				this._scrollToOffset(offset);
+			}
+		}, msDelayInEachStep);
+	}
 
     _scrollTopWithAnim(
       duration: number,

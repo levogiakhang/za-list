@@ -8,7 +8,7 @@ import throttle from '../vendors/throttle';
 import createMasonryViewModel from '../ViewModel/MasonryViewModel';
 import UserMessage from './Message/UserMessage';
 
-const DATA_TOTAL_NUMBER = 40;
+const DATA_TOTAL_NUMBER = 1;
 const DATA_UI_NUMBER = 15;
 
 const lv1 = 'background-color: #3F51B5; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1.1rem; font-weight: 700l; font-style: italic';
@@ -81,6 +81,126 @@ class Demo extends React.Component {
         this.viewModel.addEventListener('raiseItemSucceed', this.raiseItemSucceed);
     };
 
+	getChangedData() {
+		let payload;
+		let remove, add, update;
+		const d = generation.generateAlphabetUserMsg(3);
+		const h = generation.generateAlphabetUserMsg(7);
+		remove = [
+			d,
+			h,
+		];
+
+		const t = generation.generateAlphabetUserMsg(19);
+		const w = generation.generateAlphabetUserMsg(22);
+		add = [
+			{
+				index: 1,
+				item: t,
+			},
+			{
+				index: 2,
+				item: w,
+			},
+		];
+
+		const c = this.dataTotal[2];
+		const e = this.dataTotal[4];
+		const a = this.dataTotal[0];
+		const b = this.dataTotal[1];
+		const f = this.dataTotal[5];
+		update = [
+			{
+				index: 0,
+				item: c,
+			},
+			{
+				index: 3,
+				item: e,
+			},
+			{
+				index: 4,
+				item: a,
+			},
+			{
+				index: 5,
+				item: b,
+			},
+			{
+				index: 6,
+				item: f,
+			},
+		];
+
+		payload = {
+			remove,
+			add,
+			update,
+		};
+		return payload;
+	}
+
+	changeData() {
+		let {add, remove, update} = this.getChangedData();
+		console.log(add);
+		console.log(update);
+		console.log(remove);
+		const oldCache = {
+			itemMap: this.viewModel.getFreezingItemMap(),
+			indexMap: this.viewModel.getFreezingIndexMap(),
+		};
+		let deletedItemsObj = {};
+		console.log('bef', oldCache);
+
+
+		for (let i = 0; i < remove.length; i++) {
+			const id = remove[i].itemId;
+			deletedItemsObj[id] = remove[i];
+			this.viewModel.removeItemByIdWithoutAnim(id);
+		}
+		console.log('del', this.viewModel.getFreezingItemMap());
+		console.log('del', this.viewModel.getFreezingIndexMap());
+		console.log('del', this.viewModel.getData());
+
+
+		for (let i = 0; i < add.length; i++) {
+			const index = add[i].index;
+			const item = add[i].item;
+			this.viewModel.addItemsWithoutAnim(index, item);
+		}
+		console.log('add', this.viewModel.getFreezingItemMap());
+		console.log('add', this.viewModel.getFreezingIndexMap());
+		console.log('add', this.viewModel.getData());
+
+
+		for (let i = update.length - 1; i >= 0; i--) {
+			const id = update[i].item.itemId;
+			const item = update[i].item;
+			const oldIndex = this.viewModel.getCacheUnfreeze().getIndex(id);
+			const newIndex = update[i].index;
+			console.log({
+				id,
+				item,
+				oldIndex,
+				newIndex,
+			});
+			if (oldIndex === -1 || newIndex === -1) {
+				return;
+			}
+			if (oldIndex !== newIndex) {
+				this.viewModel.changeIndexWithoutAnim(oldIndex, newIndex);
+				this.viewModel.updateItemAt(newIndex, item);
+			}
+			else {
+				this.viewModel.updateItemAt(newIndex, item);
+			}
+		}
+		console.log('final', this.viewModel.getFreezingItemMap());
+		console.log('final', this.viewModel.getFreezingIndexMap());
+		console.log('final', this.viewModel.getData());
+
+		console.log(this.masonry.current.playAnimationToUpdateItemsPosition(oldCache, deletedItemsObj));
+	}
 
     /* ========================================================================
      Handle Changes
@@ -210,7 +330,8 @@ class Demo extends React.Component {
         //return generation.generateItems(DATA_TOTAL_NUMBER);
 
         // Equal height
-        return generation.generateIdenticalItems(DATA_TOTAL_NUMBER);
+        // return generation.generateIdenticalItems(DATA_TOTAL_NUMBER);
+	    return generation.generateAlphabetItems(DATA_TOTAL_NUMBER);
     };
 
     loadMoreTop(firstItemIdInCurrentUI) {
@@ -1207,7 +1328,8 @@ class Demo extends React.Component {
                         //     }
                         // }
 
-                        this.viewModel.raiseItemTo(1, 1);
+                        // this.viewModel.raiseItemTo(1, 1);
+	                    this.changeData();
                     }}>
                       Test xàm xàm
                   </button>

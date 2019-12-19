@@ -4,6 +4,7 @@ const MessageTypes = Object.freeze({
   Image: 3,
   WebView: 4,
   UserMessage: 5,
+	Alphabet: 6,
 });
 
 const Color = Object.freeze({

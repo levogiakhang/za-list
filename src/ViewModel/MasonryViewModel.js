@@ -135,7 +135,9 @@ function createMasonryViewModel({data, defaultHeight}) {
         // CRUD
         onAddItem,
         onAddItems,
+	    addItemsWithoutAnim,
         onRemoveItemById,
+	    removeItemByIdWithoutAnim,
         onRemoveItemAt,
         onRemoveItemsAt,
         onUpdateItem,
@@ -143,6 +145,7 @@ function createMasonryViewModel({data, defaultHeight}) {
         addBottom,
         raiseItemByIndex,
         raiseItemTo,
+	    changeIndexWithoutAnim,
         raiseItemById,
 
         // Update
@@ -157,6 +160,8 @@ function createMasonryViewModel({data, defaultHeight}) {
         getDataMap,
         getOldItems,
         getCache,
+	    getFreezingItemMap,
+	    getFreezingIndexMap,
         getCacheUnfreeze,
         getNumOfNewItems,
         setNumOfNewItems,
@@ -457,52 +462,78 @@ function createMasonryViewModel({data, defaultHeight}) {
         }
     }
 
-    function onRemoveItemById(itemId) {
-        if (_hasAlreadyId(itemId)) {
-            const iIndex = __itemCache__.getIndex(itemId);
-            const iHeight = __itemCache__.getHeight(itemId);
-            const iPosition = __itemCache__.getPosition(itemId);
-            const removedItem = dataMap.get(itemId);
-            const oldMap = new Map(__itemCache__.getItemsMap);
-            const result = _deleteItemsById(itemId, 1);
+	function addItemsWithoutAnim(startIndex, items) {
+		const start = _makeValidIndex(startIndex);
+		if (!items) {return;}
+		if (!Array.isArray(items)) {
+			items = _convertToArray(items);
+		}
+		const insertResult = _insertItems(start, items);
+		if (insertResult.hasInsertSucceed) {
+			// Notify to outside when add item(s) succeed.
+		}
+		else {
+			// Notify to outside when add item(s) failure.
+		}
+	}
 
-            if (result.hasDeleteSucceed) {
-                if (storageEvents[UIEvent.ON_REMOVE_ITEM] && isFunction(storageEvents[UIEvent.ON_REMOVE_ITEM][0])) {
-                    storageEvents[UIEvent.ON_REMOVE_ITEM][0]({
-                        removedItemId: itemId,
-                        removedItemIndex: iIndex,
-                        removedItemHeight: iHeight,
-                        removedItemPos: iPosition,
-                        removedItem,
-                        oldMap,
-                    });
-                    throttleRenderUI();
-                }
+	function onRemoveItemById(itemId) {
+		if (_hasAlreadyId(itemId)) {
+			const iIndex = __itemCache__.getIndex(itemId);
+			const iHeight = __itemCache__.getHeight(itemId);
+			const iPosition = __itemCache__.getPosition(itemId);
+			const removedItem = dataMap.get(itemId);
+			const oldMap = new Map(__itemCache__.getItemsMap);
+			const result = _deleteItemsById(itemId, 1);
 
-                // Notify to outside to remove item.
-                if (
-                  storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_SUCCEED] &&
-                  isFunction(storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_SUCCEED][0])
-                ) {
-                    storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_SUCCEED][0]({
-                        fromItemId: itemId,
-                        deletedItems: result.successValues.willDeleteItems,
-                        beforeItem: result.successValues.beforeItem,
-                        afterItem: result.successValues.afterItem,
-                    });
-                }
-            }
-            else {
-                if (
-                  storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_FAIL] &&
-                  isFunction(storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_FAIL][0])
-                ) {
-                    const msgError = 'Can not find itemId';
-                    storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_FAIL][0](msgError);
-                }
-            }
-        }
-    }
+			if (result.hasDeleteSucceed) {
+				if (storageEvents[UIEvent.ON_REMOVE_ITEM] && isFunction(storageEvents[UIEvent.ON_REMOVE_ITEM][0])) {
+					storageEvents[UIEvent.ON_REMOVE_ITEM][0]({
+						removedItemId: itemId,
+						removedItemIndex: iIndex,
+						removedItemHeight: iHeight,
+						removedItemPos: iPosition,
+						removedItem,
+						oldMap,
+					});
+					throttleRenderUI();
+				}
+
+				// Notify to outside to remove item.
+				if (
+				  storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_SUCCEED] &&
+				  isFunction(storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_SUCCEED][0])
+				) {
+					storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_SUCCEED][0]({
+						fromItemId: itemId,
+						deletedItems: result.successValues.willDeleteItems,
+						beforeItem: result.successValues.beforeItem,
+						afterItem: result.successValues.afterItem,
+					});
+				}
+			}
+			else {
+				if (
+				  storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_FAIL] &&
+				  isFunction(storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_FAIL][0])
+				) {
+					const msgError = 'Can not find itemId';
+					storageEvents[MasonryExternalEvent.ON_REMOVE_ITEM_BY_ID_FAIL][0](msgError);
+				}
+			}
+		}
+	}
+
+	function removeItemByIdWithoutAnim(itemId) {
+		if (!_hasAlreadyId(itemId)) { return; }
+		const result = _deleteItemsById(itemId, 1);
+		if (result.hasDeleteSucceed) {
+			// Notify to outside to remove item succeed.
+		}
+		else {
+			// Notify to outside to remove item failure.
+		}
+	}
 
     function onRemoveItemAt(index) {
         const removedItemId = __itemCache__.getItemId(parseInt(index));
@@ -681,6 +712,12 @@ function createMasonryViewModel({data, defaultHeight}) {
                   });
             }
         }
+    }
+
+	function changeIndexWithoutAnim(oldIdx, newIdx) {
+		if(!isNum(oldIdx) || !isNum(newIdx)) {return;}
+		_raiseItemDataTo(oldIdx, newIdx);
+		_raiseItemInCacheTo(oldIdx, newIdx);
     }
 
     /* ========================================================================
@@ -874,7 +911,9 @@ function createMasonryViewModel({data, defaultHeight}) {
             let aboveItemId = undefined;
             if (storeStartIndex - 1 < 0) {
                 aboveItemId = __itemCache__.getItemId(0);
-                __itemCache__.updateItemPosition(aboveItemId, 0);
+	            if(aboveItemId !== NOT_FOUND) {
+		            __itemCache__.updateItemPosition(aboveItemId, 0);
+	            }
             }
             else {
                 aboveItemId = __itemCache__.getItemId(storeStartIndex - 1);
@@ -1049,41 +1088,40 @@ function createMasonryViewModel({data, defaultHeight}) {
           ? data.length - 1
           : _getValidIndex(newIndex);
 
-        if (validOldIndex < validNewIndex) {
-            return;
-        }
-
         let arrRaisedItem = data.splice(validOldIndex, 1);
 
         Array.prototype.splice.apply(data, [validNewIndex, 0].concat(arrRaisedItem));
     }
 
     // Call raise data before call this function
-    function _raiseItemInCacheTo(oldIndex, newIndex) {
-        const validOldIndex = _getValidIndex(oldIndex) === data.length
-          ? data.length - 1
-          : _getValidIndex(oldIndex);
+	function _raiseItemInCacheTo(oldIndex, newIndex) {
+		const validOldIndex = _getValidIndex(oldIndex) === data.length
+		  ? data.length - 1
+		  : _getValidIndex(oldIndex);
 
-        const validNewIndex = _getValidIndex(newIndex) === data.length
-          ? data.length - 1
-          : _getValidIndex(newIndex);
+		const validNewIndex = _getValidIndex(newIndex) === data.length
+		  ? data.length - 1
+		  : _getValidIndex(newIndex);
 
-        if (validOldIndex < validNewIndex) {
-            return;
-        }
+		let min = validOldIndex < validNewIndex
+		  ? validOldIndex
+		  : validNewIndex;
+		let max = min === validOldIndex
+		  ? validNewIndex
+		  : validOldIndex;
 
-        for (let i = validNewIndex; i <= validOldIndex; i++) {
-            const curItemId = __itemCache__.getItemId(i);
-            if (curItemId !== NOT_FOUND) {
-                if (data[i] && data[i].itemId) {
-                    __itemCache__.updateIndexItem(i, data[i].itemId);
-                    __itemCache__.updateItemIndex(data[i].itemId, i);
-                }
-            }
-        }
+		for (let i = min; i <= max; i++) {
+			const curItemId = __itemCache__.getItemId(i);
+			if (curItemId !== NOT_FOUND) {
+				if (data[i] && data[i].itemId) {
+					__itemCache__.updateIndexItem(i, data[i].itemId);
+					__itemCache__.updateItemIndex(data[i].itemId, i);
+				}
+			}
+		}
 
-        _updateItemsPositionAfterRaiseTo(validOldIndex, validNewIndex);
-    }
+		_updateItemsPositionAfterRaiseTo(max, min);
+	}
 
     function _raiseItemInCache(index) {
         if (Array.isArray(data)) {
@@ -1149,57 +1187,56 @@ function createMasonryViewModel({data, defaultHeight}) {
         }
     }
 
-    function _updateItemsPositionAfterRaiseTo(oldIndex, newIndex) {
-        if (Array.isArray(data)) {
-            const validOldIndex = _getValidIndex(oldIndex) === data.length ?
-              data.length - 1 :
-              _getValidIndex(oldIndex);
-            const validNewIndex = _getValidIndex(newIndex) === data.length ?
-              data.length - 1 :
-              _getValidIndex(newIndex);
+	function _updateItemsPositionAfterRaiseTo(oldIndex, newIndex) {
+		if (Array.isArray(data)) {
+			console.log(oldIndex, newIndex);
+			const validOldIndex = _getValidIndex(oldIndex) === data.length
+			  ? data.length - 1
+			  : _getValidIndex(oldIndex);
+			const validNewIndex = _getValidIndex(newIndex) === data.length
+			  ? data.length - 1
+			  : _getValidIndex(newIndex);
 
-            if(validOldIndex < validNewIndex) return;
+			let currentItemId = __itemCache__.getItemId(validNewIndex);
 
-            let currentItemId = __itemCache__.getItemId(validNewIndex);
+			if (currentItemId !== NOT_FOUND) {
+				let beforeItemPos = 0;
+				let beforeItemHeight = 0;
 
-            if (currentItemId !== NOT_FOUND) {
-                let beforeItemPos = 0;
-                let beforeItemHeight = 0;
+				if (validNewIndex !== 0) {
+					const beforeItemId = __itemCache__.getItemId(validNewIndex - 1);
+					beforeItemPos = __itemCache__.getPosition(beforeItemId);
+					beforeItemHeight = __itemCache__.getHeight(beforeItemId);
+				}
 
-                if (validNewIndex !== 0) {
-                    const beforeItemId = __itemCache__.getItemId(validNewIndex - 1);
-                    beforeItemPos = __itemCache__.getPosition(beforeItemId);
-                    beforeItemHeight = __itemCache__.getHeight(beforeItemId);
-                }
+				const newPos = beforeItemPos + beforeItemHeight;
+				__itemCache__.updateItemPosition(currentItemId, newPos, __itemCache__.isRendered(currentItemId));
 
-                const newPos = beforeItemPos + beforeItemHeight;
-                __itemCache__.updateItemPosition(currentItemId, newPos, __itemCache__.isRendered(currentItemId));
+				for (let i = validNewIndex; i <= validOldIndex; i++) {
+					const currentItemPosition = __itemCache__.getPosition(currentItemId);
+					const currentItemHeight = __itemCache__.getHeight(currentItemId);
+					const followingItemId = __itemCache__.getItemId(i + 1);
 
-                for (let i = validNewIndex; i <= validOldIndex; i++) {
-                    const currentItemPosition = __itemCache__.getPosition(currentItemId);
-                    const currentItemHeight = __itemCache__.getHeight(currentItemId);
-                    const followingItemId = __itemCache__.getItemId(i + 1);
-
-                    if (currentItemPosition === NOT_FOUND) {
-                        GLog.logInfo(`[MasonryViewModel] - Could not get position of: ${currentItemId}`);
-                    }
-                    else if (currentItemHeight === NOT_FOUND) {
-                        GLog.logInfo(`[MasonryViewModel] - Could not get height of: ${currentItemId}`);
-                    }
-                    else if (followingItemId !== NOT_FOUND) {
-                        __itemCache__.updateItemOnMap(
-                          followingItemId,
-                          __itemCache__.getIndex(followingItemId),
-                          __itemCache__.getHeight(followingItemId),
-                          currentItemPosition + currentItemHeight,
-                          __itemCache__.isRendered(followingItemId),
-                        );
-                        currentItemId = followingItemId;
-                    }
-                }
-            }
-        }
-    }
+					if (currentItemPosition === NOT_FOUND) {
+						console.log(`[MasonryViewModel] - Could not get position of: ${currentItemId}`);
+					}
+					else if (currentItemHeight === NOT_FOUND) {
+						console.log(`[MasonryViewModel] - Could not get height of: ${currentItemId}`);
+					}
+					else if (followingItemId !== NOT_FOUND) {
+						__itemCache__.updateItemOnMap(
+						  followingItemId,
+						  __itemCache__.getIndex(followingItemId),
+						  __itemCache__.getHeight(followingItemId),
+						  currentItemPosition + currentItemHeight,
+						  __itemCache__.isRendered(followingItemId),
+						);
+						currentItemId = followingItemId;
+					}
+				}
+			}
+		}
+	}
 
 
     function reRenderUI() {
@@ -1304,6 +1341,20 @@ function createMasonryViewModel({data, defaultHeight}) {
         return start;
     }
 
+	function _makeValidIndex(idx) {
+		const parsedIdx = parseInt(idx);
+		if (isNaN(parsedIdx)) {
+			throw Error('Expected a valid index');
+		}
+		if (parsedIdx > data.length) {
+			return data.length;
+		}
+		if (parsedIdx < 0) {
+			return 0;
+		}
+		return parsedIdx;
+	}
+
     function _convertToArray(item) {
         return [(item)];
     }
@@ -1330,6 +1381,14 @@ function createMasonryViewModel({data, defaultHeight}) {
 
     function getCache() {
         return Object.freeze(__itemCache__);
+    }
+
+    function getFreezingItemMap() {
+		return new Map(__itemCache__.getItemsMap);
+    }
+
+    function getFreezingIndexMap() {
+	    return new Map(__itemCache__.getIndexMap);
     }
 
     function getCacheUnfreeze() {
