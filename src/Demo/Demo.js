@@ -1,14 +1,13 @@
 import React from 'react';
 import './scss/Demo.scss';
-import Masonry from '../View/Masonry.js';
 import Message from './Message/Message';
 import generation from './utils/Generation';
 import GConst from './utils/values';
-import throttle from '../vendors/throttle';
 import createMasonryViewModel from '../ViewModel/MasonryViewModel';
 import UserMessage from './Message/UserMessage';
+import ListWrapper from '../View/ListWrapper';
 
-const DATA_TOTAL_NUMBER = 1;
+const DATA_TOTAL_NUMBER = 50;
 const DATA_UI_NUMBER = 15;
 
 const lv1 = 'background-color: #3F51B5; color:#FFF; padding: 0 10px; border-radius: 5px; line-height: 26px; font-size: 1.1rem; font-weight: 700l; font-style: italic';
@@ -63,7 +62,7 @@ class Demo extends React.Component {
     }
 
     initList() {
-        this.masonry = React.createRef();
+        this.list = React.createRef();
 
         this.viewModel = createMasonryViewModel({
             data: this._getDataFromDataTotal(0, DATA_UI_NUMBER, DATA_TOTAL_NUMBER),
@@ -86,6 +85,7 @@ class Demo extends React.Component {
 		let remove, add, update;
 		const d = generation.generateAlphabetUserMsg(3);
 		const h = generation.generateAlphabetUserMsg(7);
+		const g = generation.generateAlphabetUserMsg(6);
 		remove = [
 			d,
 			h,
@@ -199,7 +199,8 @@ class Demo extends React.Component {
 		console.log('final', this.viewModel.getFreezingIndexMap());
 		console.log('final', this.viewModel.getData());
 
-		console.log(this.masonry.current.playAnimationToUpdateItemsPosition(oldCache, deletedItemsObj));
+		// console.log(this.masonry.current.playAnimationToUpdateItemsPosition(oldCache, deletedItemsObj));
+		console.log(this.list);
 	}
 
     /* ========================================================================
@@ -330,8 +331,8 @@ class Demo extends React.Component {
         //return generation.generateItems(DATA_TOTAL_NUMBER);
 
         // Equal height
-        // return generation.generateIdenticalItems(DATA_TOTAL_NUMBER);
-	    return generation.generateAlphabetItems(DATA_TOTAL_NUMBER);
+         return generation.generateIdenticalItems(DATA_TOTAL_NUMBER);
+	    // return generation.generateAlphabetItems(DATA_TOTAL_NUMBER);
     };
 
     loadMoreTop(firstItemIdInCurrentUI) {
@@ -727,7 +728,7 @@ class Demo extends React.Component {
                             fontSize: GConst.Font.Size.Medium,
                         }}
                         onClick={() => {
-                            this.masonry.current.zoomToItem('itemId_' + itemIdToScroll);
+                            // this.masonry.current.zoomToItem('itemId_' + itemIdToScroll);
                         }}>
                           Scroll to item ID:
                       </button>
@@ -795,7 +796,7 @@ class Demo extends React.Component {
                             fontSize: GConst.Font.Size.Medium,
                         }}
                         onClick={() => {
-                            this.masonry.current.scrollTo(indexToScroll);
+                            // this.masonry.current.scrollTo(indexToScroll);
                         }}>
                           Scroll to index:
                       </button>
@@ -1263,7 +1264,7 @@ class Demo extends React.Component {
                         console.groupEnd();
                         console.group('%cCache', `${lv2}`);
                         console.group('%cCurrent scrollTop', `${lv3}`);
-                        console.log(`%c${this.masonry.current.state.scrollTop}`, 'color: DarkSlateGray; font-size: 1.3rem; font-weight: 700');
+                        // console.log(`%c${this.masonry.current.state.scrollTop}`, 'color: DarkSlateGray; font-size: 1.3rem; font-weight: 700');
                         console.groupEnd();
                         console.log('%cItems map:', `${lv3}`, this.viewModel.getCache().getItemsMap);
                         console.log('%cIndex map:', `${lv3}`, this.viewModel.getCache().getIndexMap);
@@ -1340,28 +1341,14 @@ class Demo extends React.Component {
 
     _renderList = () => {
         return (
-          <Masonry ref={this.masonry}
-                   style={{
-                       marginTop: '0px',
-                       borderRadius: '5px',
-                   }}
-                   id={'Masonry'}
-                   viewModel={this.viewModel}
-                   height={700}
-                   cellRenderer={Demo.cellRender}
-                   isStartAtBottom={false}
-                   isItemScrollToInBott om={true}
-                   scrollToAnim={'highlighted zoomScaling'}
-                   additionAnim={'zoomIn'}
-                   removalAnim={'zoomOut'}
-                   timingResetAnimation={200}
-                   renderDirection={'BottomUp'}
-                   isVirtualized={true}
-                   numOfOverscan={3}
-                   forChatBoxView={false}
-                   onLoadTop={this.onLoadMoreTop}
-                   onLoadBottom={this.onLoadMoreBottom}
-                   noHScroll/>
+          <ListWrapper
+            ref={c => this.list = c}
+            width={700}
+            height={700}
+            cellRender={Demo.cellRender}
+            viewModel={this.viewModel}
+            onLoadTop={this.onLoadMoreTop}
+            onLoadBottom={this.onLoadMoreBottom}/>
         );
     };
 
