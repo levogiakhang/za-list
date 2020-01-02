@@ -63,11 +63,6 @@ const TIMING_REMOVAL_ANIM_VIRTUALIZED = 8000;
 const TIMING_RAISE_ANIM_VIRTUALIZED = 6500;
 const TIMING_CHANGE_INDEX_ANIM = 1000;
 
-const SCROLL_POSITION_CHANGE_REASONS = {
-	OBSERVED: 'observed',
-	REQUESTED: 'requested',
-};
-
 class Masonry extends React.PureComponent<Props> {
 	static defaultProps = {
 		minWidth: 500,
@@ -193,7 +188,7 @@ class Masonry extends React.PureComponent<Props> {
 			intervalId: 0,
 			isScrolling: false,
 			scrollDirection: SCROLL_DIRECTION_FORWARD,
-			changeScrollPositionReason: null,
+			needSyncScrollTop: false,
 		};
 
 		this._onScroll = this._onScroll.bind(this);
@@ -248,24 +243,24 @@ class Masonry extends React.PureComponent<Props> {
 
 	static getDerivedStateFromProps(nextProps, prevState) {
 		const newState = {};
+		let {prevProps, needSyncScrollTop} = prevState;
+
 		console.log({
-			pP: prevState.prevProps.scrollToOffset,
+			pP: prevProps.scrollToOffset,
 			nP: nextProps.scrollToOffset,
 			s: prevState.scrollTop,
+			sync: prevState.needSyncScrollTop,
 		});
+
 		if (
-		  prevState.changeScrollPositionReason === SCROLL_POSITION_CHANGE_REASONS.OBSERVED
-		  && prevState.prevProps.scrollToOffset === nextProps.scrollToOffset
-		  && prevState.scrollTop !== nextProps.scrollToOffset
+		  (!needSyncScrollTop
+			&& nextProps.scrollToOffset !== prevState.scrollTop
+			&& nextProps.scrollToOffset !== prevProps.scrollToOffset)
+		  ||
+		  (nextProps.scrollToOffset !== prevState.scrollTop
+			&& prevProps.scrollToOffset === prevState.scrollTop)
 		) {
 			console.log('a');
-			newState.changeScrollPositionReason = SCROLL_POSITION_CHANGE_REASONS.REQUESTED;
-		}
-		else if (
-		  (nextProps.scrollToOffset !== prevState.scrollTop && nextProps.scrollToIndex < 0)
-		  || nextProps.scrollToOffset !== prevState.prevProps.scrollToOffset
-		) {
-			console.log('b');
 			Object.assign(
 			  newState,
 			  Masonry._getScrollPositionStateUpdate({
@@ -273,18 +268,10 @@ class Masonry extends React.PureComponent<Props> {
 				  scrollTop: nextProps.scrollToOffset,
 			  }),
 			);
-		}
-		else if (
-		  nextProps.scrollToOffset === prevState.scrollTop
-		  && nextProps.scrollToOffset === prevState.prevProps.scrollToOffset
-		) {
-			console.log('c');
-			return null;
+			newState.needSyncScrollTop = true;
 		}
 
-		let {prevProps} = prevState;
 		prevProps.scrollToOffset = nextProps.scrollToOffset;
-
 		newState.prevProps = prevProps;
 
 		return newState;
@@ -292,7 +279,6 @@ class Masonry extends React.PureComponent<Props> {
 
 	static _getScrollPositionStateUpdate({prevScrollTop, scrollTop}) {
 		let newState = {};
-		newState.changeScrollPositionReason = SCROLL_POSITION_CHANGE_REASONS.REQUESTED;
 
 		if (
 		  !isNum(scrollTop)
@@ -2294,11 +2280,11 @@ class Masonry extends React.PureComponent<Props> {
 	componentDidUpdate() {
 		const data = this.viewModel.getDataUnfreeze();
 		const {isVirtualized, height} = this.props;
-		const {scrollTop, changeScrollPositionReason} = this.state;
+		const {scrollTop, needSyncScrollTop} = this.state;
 
-		if (changeScrollPositionReason === SCROLL_POSITION_CHANGE_REASONS.REQUESTED) {
-			if (scrollTop >= 0 && scrollTop !== this.masonry.scrollTop) {
-				console.log('did update', this.masonry.scrollTop, scrollTop);
+		if (needSyncScrollTop) {
+			if (this.masonry.scrollTop !== scrollTop) {
+				console.log('did', this.masonry.scrollTop, scrollTop);
 				this.masonry.scrollTop = scrollTop;
 			}
 		}
@@ -2792,7 +2778,7 @@ class Masonry extends React.PureComponent<Props> {
 		const viewHeight = this.props.height;
 		const {scrollTop} = this.state;
 
-		console.log('onScroll', this.props.scrollToOffset, this.state.scrollTop, this.masonry.scrollTop);
+		console.error('onScroll', this.props.scrollToOffset, this.state.scrollTop, this.masonry.scrollTop);
 
 		this._removeStyleOfSpecialItem();
 		//this._removeScrollBackItemTrigger();
@@ -2816,7 +2802,7 @@ class Masonry extends React.PureComponent<Props> {
 				isScrolling: true,
 				scrollPositionChangeReason: 1,
 				scrollTop: nextScrollTop,
-				changeScrollPositionReason: SCROLL_POSITION_CHANGE_REASONS.OBSERVED,
+				needSyncScrollTop: false,
 			};
 			this.setState(newState);
 		}
