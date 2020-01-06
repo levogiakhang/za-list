@@ -183,6 +183,7 @@ class Masonry extends React.PureComponent<Props> {
 		this.state = {
 			prevProps: {
 				scrollToOffset: 0,
+				scrollToIndex: -1,
 			},
 			scrollTop: 0,
 			intervalId: 0,
@@ -270,8 +271,24 @@ class Masonry extends React.PureComponent<Props> {
 			);
 			newState.needSyncScrollTop = true;
 		}
+		else if (
+		  nextProps.scrollToIndex >= 0
+		  && nextProps.scrollToIndex !== prevProps.scrollToIndex
+		) {
+			const scrollTopOffsetByIdx = nextProps.scrollToIndex * 74;
+			Object.assign(
+			  newState,
+			  Masonry._getScrollPositionStateUpdate({
+				  prevScrollTop: prevState.scrollTop,
+				  scrollTop: scrollTopOffsetByIdx,
+			  }),
+			);
+			newState.needSyncScrollTop = true;
+		}
 
 		prevProps.scrollToOffset = nextProps.scrollToOffset;
+		prevProps.scrollToIndex = nextProps.scrollToIndex;
+
 		newState.prevProps = prevProps;
 
 		return newState;

@@ -26,6 +26,7 @@ class Demo extends React.Component {
             removeId: 0,
             removeFrom: 0,
             removeTo: 0,
+	        scrollToIndex: -1,
         };
 
         this.loadTopCount = 5;
@@ -475,6 +476,12 @@ class Demo extends React.Component {
         // const newArr = generation.generateIdenticalItems(30);
         this.viewModel.updateData([...arr]);
     }
+
+	changeIndexToScroll() {
+    	this.setState((prevState) => ({
+    		scrollToIndex: prevState.scrollToIndex + 1,
+	    }), console.log(this.state.scrollToIndex))
+	}
 
 
     /* ========================================================================
@@ -1330,7 +1337,8 @@ class Demo extends React.Component {
                         // }
 
                         // this.viewModel.raiseItemTo(1, 1);
-	                    this.changeData();
+	                    // this.changeData();
+	                    this.changeIndexToScroll();
                     }}>
                       Test xàm xàm
                   </button>
@@ -1348,7 +1356,9 @@ class Demo extends React.Component {
             cellRender={Demo.cellRender}
             viewModel={this.viewModel}
             onLoadTop={this.onLoadMoreTop}
-            onLoadBottom={this.onLoadMoreBottom}/>
+            onLoadBottom={this.onLoadMoreBottom}
+            scrollToIndex={this.state.scrollToIndex}
+          />
         );
     };
 

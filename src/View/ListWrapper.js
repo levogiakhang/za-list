@@ -66,8 +66,8 @@ class ListWrapper extends Component {
 	}
 
 	render() {
-		const {cellRender, width, height, viewModel, onLoadTop, onLoadBottom} = this.props;
-		const {isScrolling, scrollToOffset} = this.state;
+		const {cellRender, width, height, viewModel, onLoadTop, onLoadBottom, scrollToIndex} = this.props;
+		const { scrollToOffset} = this.state;
 		return (
 		  <AutoSizer>
 			  {() => (
@@ -99,7 +99,7 @@ class ListWrapper extends Component {
 					         onLoadBottom={onLoadBottom}
 					         onScroll={this.handleVirtualizedScroll.bind(this)}
 					         scrollToOffset={scrollToOffset}
-					         scrollToIndex={-1}
+					         scrollToIndex={scrollToIndex}
 					         onChangeTotalHeight={this.setTotalHeight.bind(this)}
 					         noHScroll/>
 					<Scrollbars
